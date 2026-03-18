@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Healtho - Create Account</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#137fec",
+          "primary-dark": "#0e63be",
+          "background-dark": "#121212",
+          "surface": "#1e1e1e",
+          "surface-2": "#2a2a2a",
+        },
+        fontFamily: { "display": ["Lexend"] },
+        borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+      },
+    },
+  }
+</script>
+</head>
+<body class="bg-background-dark font-display text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between border-b border-slate-800 px-6 py-4 lg:px-10">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🍎</span>
+      <h2 class="text-white text-xl font-bold tracking-tight">Healtho</h2>
+    </div>
+    <div class="flex items-center gap-2 text-slate-500 text-sm font-medium">
+      Already have an account?
+      <a href="#" class="text-primary font-semibold hover:underline">Log in</a>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex items-start justify-center px-4 py-10">
+    <div class="w-full max-w-[520px]">
+
+      <!-- Step indicator -->
+      <div id="step-indicator" class="flex flex-col gap-3 mb-10">
+        <div class="flex items-center justify-between">
+          <p class="text-slate-400 text-sm font-semibold uppercase tracking-wider">Step <span id="step-label">1</span> of 3</p>
+          <p class="text-primary text-sm font-bold" id="step-pct">33%</p>
+        </div>
+        <div class="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
+          <div id="progress-bar" class="h-full rounded-full bg-primary transition-all duration-500" style="width: 33%;"></div>
+        </div>
+        <p id="step-hint" class="text-slate-500 text-sm font-medium italic">Let's start with your account details...</p>
+      </div>
+
+      <!-- ─── STEP 1: Account Details ─────────────────────────── -->
+      <div id="step-1">
+        <div class="mb-8">
+          <h1 class="text-white text-4xl font-extrabold leading-tight tracking-tight">Create your account</h1>
+          <p class="text-slate-400 text-lg mt-2">Start your health journey with Healtho.</p>
+        </div>
+
+        <div class="space-y-5">
+          <!-- Full Name -->
+          <div class="flex flex-col gap-2">
+            <label class="text-slate-300 text-sm font-semibold flex items-center gap-2" for="fullname">
+              <span class="material-symbols-outlined text-primary text-xl">person</span>
+              Full Name
+            </label>
+            <input id="fullname" type="text" placeholder="e.g. Ayush Sharma"
+              class="form-input w-full rounded-xl border-slate-800 bg-slate-900 text-slate-100 h-14 px-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-slate-600 transition-all"/>
+          </div>
+
+          <!-- Email -->
+          <div class="flex flex-col gap-2">
+            <label class="text-slate-300 text-sm font-semibold flex items-center gap-2" for="email">
+              <span class="material-symbols-outlined text-primary text-xl">mail</span>
+              Email
+            </label>
+            <input id="email" type="email" placeholder="example@email.com"
+              class="form-input w-full rounded-xl border-slate-800 bg-slate-900 text-slate-100 h-14 px-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-slate-600 transition-all"/>
+          </div>
+
+          <!-- Password -->
+          <div class="flex flex-col gap-2">
+            <label class="text-slate-300 text-sm font-semibold flex items-center gap-2" for="password">
+              <span class="material-symbols-outlined text-primary text-xl">lock</span>
+              Password
+            </label>
+            <div class="relative">
+              <input id="password" type="password" placeholder="Minimum 8 characters"
+                class="form-input w-full rounded-xl border-slate-800 bg-slate-900 text-slate-100 h-14 pl-4 pr-12 text-base focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-slate-600 transition-all"/>
+              <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+                <span id="pwd-icon" class="material-symbols-outlined">visibility</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="relative py-6">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-800"></div>
+          </div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-background-dark px-4 text-slate-500 font-medium">Or sign up with</span>
+          </div>
+        </div>
+
+        <!-- Social -->
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <button class="flex items-center justify-center gap-2 h-12 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            <span class="text-sm font-semibold text-slate-200">Google</span>
+          </button>
+          <button class="flex items-center justify-center gap-2 h-12 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 transition-colors">
+            <svg class="w-5 h-5 fill-white" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            <span class="text-sm font-semibold text-slate-200">Apple</span>
+          </button>
+        </div>
+
+        <button onclick="goToStep(2)"
+          class="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+          Continue
+          <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+        </button>
+
+        <p class="text-center text-slate-500 text-xs mt-6">
+          By continuing, you agree to our <a href="#" class="text-primary hover:underline">Terms</a> and <a href="#" class="text-primary hover:underline">Privacy Policy</a>
+        </p>
+      </div>
+
+      <!-- ─── STEP 2: Body Metrics ────────────────────────────── -->
+      <div id="step-2" class="hidden">
+        <div class="mb-8">
+          <h1 class="text-white text-4xl font-extrabold leading-tight tracking-tight">Your body metrics</h1>
+          <p class="text-slate-400 text-lg mt-2">Used to calculate your BMI and personalised daily calorie goal.</p>
+        </div>
+
+        <!-- Unit toggle -->
+        <div class="flex mb-8">
+          <div class="flex h-12 w-full items-center justify-center rounded-xl bg-slate-800/50 p-1.5">
+            <label class="flex cursor-pointer h-full grow items-center justify-center rounded-lg px-4 transition-all has-[:checked]:bg-slate-700 has-[:checked]:text-primary text-slate-400 text-base font-semibold">
+              <span>Metric (kg, cm)</span>
+              <input checked class="hidden" name="unit-toggle" type="radio" value="metric"/>
+            </label>
+            <label class="flex cursor-pointer h-full grow items-center justify-center rounded-lg px-4 transition-all has-[:checked]:bg-slate-700 has-[:checked]:text-primary text-slate-400 text-base font-semibold">
+              <span>Imperial (lb, ft)</span>
+              <input class="hidden" name="unit-toggle" type="radio" value="imperial"/>
+            </label>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <!-- Age -->
+          <div class="flex flex-col gap-2">
+            <label class="text-slate-300 text-base font-semibold flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-xl">calendar_today</span>
+              Age
+            </label>
+            <input id="age" type="number" min="13" max="120" placeholder="e.g. 27"
+              class="form-input w-full rounded-xl border-slate-800 bg-slate-900 text-slate-100 h-14 px-4 text-lg focus:border-primary focus:ring-primary placeholder:text-slate-600"/>
+          </div>
+
+          <!-- Height + Weight -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <label class="text-slate-300 text-base font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-xl">height</span>
+                Height
+              </label>
+              <div class="relative">
+                <input id="height" type="number" placeholder="175"
+                  class="form-input w-full rounded-xl border-slate-800 bg-slate-900 text-slate-100 h-14 px-4 pr-12 text-lg focus:border-primary focus:ring-primary placeholder:text-slate-600"/>
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm">cm</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-slate-300 text-base font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-xl">monitor_weight</span>
+                Weight
+              </label>
+              <div class="relative">
+                <input id="weight" type="number" placeholder="70"
+                  class="form-input w-full rounded-xl border-slate-800 bg-slate-900 text-slate-100 h-14 px-4 pr-12 text-lg focus:border-primary focus:ring-primary placeholder:text-slate-600"/>
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm">kg</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live BMI preview -->
+        <div id="bmi-preview" class="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-xl hidden">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">calculate</span>
+              <span class="text-slate-300 text-sm font-semibold">Estimated BMI</span>
+            </div>
+            <span id="bmi-value" class="text-primary text-xl font-extrabold font-mono"></span>
+          </div>
+          <div class="mt-2 w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+            <div id="bmi-bar" class="h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <p id="bmi-label" class="text-slate-500 text-xs mt-1.5"></p>
+        </div>
+
+        <div class="mt-10 flex flex-col gap-3">
+          <button onclick="goToStep(3)"
+            class="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+            Continue
+            <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+          </button>
+          <button onclick="goToStep(1)" class="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">
+            Back
+          </button>
+        </div>
+
+        <div class="mt-6 p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3">
+          <span class="material-symbols-outlined text-primary flex-shrink-0">info</span>
+          <p class="text-sm text-slate-400 leading-relaxed">Your data is stored securely and only used to personalise your nutrition and health goals.</p>
+        </div>
+      </div>
+
+      <!-- ─── STEP 3: Activity Level ──────────────────────────── -->
+      <div id="step-3" class="hidden">
+        <div class="mb-8">
+          <h1 class="text-white text-4xl font-extrabold leading-tight tracking-tight">How active are you?</h1>
+          <p class="text-slate-400 text-lg mt-2">This fine-tunes your daily calorie target to match your lifestyle.</p>
+        </div>
+
+        <div class="flex flex-col gap-3" id="activity-options">
+          <label class="activity-option flex items-center gap-4 p-4 rounded-xl border-2 border-slate-800 bg-slate-900 cursor-pointer hover:border-primary/50 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/10">
+            <input type="radio" name="activity" value="sedentary" class="hidden"/>
+            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🪑</div>
+            <div class="flex-1">
+              <p class="font-bold text-slate-100">Sedentary</p>
+              <p class="text-slate-500 text-sm">Little or no exercise, desk job</p>
+            </div>
+            <span class="material-symbols-outlined text-primary opacity-0 check-icon transition-opacity">check_circle</span>
+          </label>
+
+          <label class="activity-option flex items-center gap-4 p-4 rounded-xl border-2 border-slate-800 bg-slate-900 cursor-pointer hover:border-primary/50 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/10">
+            <input type="radio" name="activity" value="light" class="hidden"/>
+            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🚶</div>
+            <div class="flex-1">
+              <p class="font-bold text-slate-100">Lightly Active</p>
+              <p class="text-slate-500 text-sm">Light exercise 1–3 days/week</p>
+            </div>
+            <span class="material-symbols-outlined text-primary opacity-0 check-icon transition-opacity">check_circle</span>
+          </label>
+
+          <label class="activity-option flex items-center gap-4 p-4 rounded-xl border-2 border-slate-800 bg-slate-900 cursor-pointer hover:border-primary/50 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/10">
+            <input type="radio" name="activity" value="moderate" class="hidden"/>
+            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🏃</div>
+            <div class="flex-1">
+              <p class="font-bold text-slate-100">Moderately Active</p>
+              <p class="text-slate-500 text-sm">Moderate exercise 3–5 days/week</p>
+            </div>
+            <span class="material-symbols-outlined text-primary opacity-0 check-icon transition-opacity">check_circle</span>
+          </label>
+
+          <label class="activity-option flex items-center gap-4 p-4 rounded-xl border-2 border-slate-800 bg-slate-900 cursor-pointer hover:border-primary/50 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/10">
+            <input type="radio" name="activity" value="active" class="hidden"/>
+            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">💪</div>
+            <div class="flex-1">
+              <p class="font-bold text-slate-100">Very Active</p>
+              <p class="text-slate-500 text-sm">Hard exercise 6–7 days/week</p>
+            </div>
+            <span class="material-symbols-outlined text-primary opacity-0 check-icon transition-opacity">check_circle</span>
+          </label>
+
+          <label class="activity-option flex items-center gap-4 p-4 rounded-xl border-2 border-slate-800 bg-slate-900 cursor-pointer hover:border-primary/50 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/10">
+            <input type="radio" name="activity" value="very_active" class="hidden"/>
+            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🏋️</div>
+            <div class="flex-1">
+              <p class="font-bold text-slate-100">Athlete</p>
+              <p class="text-slate-500 text-sm">Very hard exercise, physical job</p>
+            </div>
+            <span class="material-symbols-outlined text-primary opacity-0 check-icon transition-opacity">check_circle</span>
+          </label>
+        </div>
+
+        <div class="mt-10 flex flex-col gap-3">
+          <button onclick="submitForm()"
+            class="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+            Create My Account 🎉
+          </button>
+          <button onclick="goToStep(2)" class="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">
+            Back
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="py-6 px-6 text-center">
+    <p class="text-slate-700 text-xs">© 2025 Healtho. All rights reserved.</p>
+  </footer>
+
+<script>
+  const steps = {
+    1: { label: "1", pct: "33%", width: "33%", hint: "Let's start with your account details..." },
+    2: { label: "2", pct: "66%", width: "66%", hint: "Your personalised plan is taking shape..." },
+    3: { label: "3", pct: "99%", width: "99%", hint: "Almost done — just one more thing!" },
+  };
+
+  function goToStep(n) {
+    // Hide all steps
+    [1, 2, 3].forEach(i => document.getElementById('step-' + i).classList.add('hidden'));
+    // Show target
+    document.getElementById('step-' + n).classList.remove('hidden');
+    // Update progress
+    const s = steps[n];
+    document.getElementById('step-label').textContent = s.label;
+    document.getElementById('step-pct').textContent = s.pct;
+    document.getElementById('progress-bar').style.width = s.width;
+    document.getElementById('step-hint').textContent = s.hint;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Password toggle
+  function togglePassword() {
+    const input = document.getElementById('password');
+    const icon = document.getElementById('pwd-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.textContent = 'visibility_off';
+    } else {
+      input.type = 'password';
+      icon.textContent = 'visibility';
+    }
+  }
+
+  // Live BMI calculator
+  function calcBMI() {
+    const h = parseFloat(document.getElementById('height').value);
+    const w = parseFloat(document.getElementById('weight').value);
+    if (!h || !w || h < 50 || w < 20) {
+      document.getElementById('bmi-preview').classList.add('hidden');
+      return;
+    }
+    const bmi = (w / ((h / 100) ** 2)).toFixed(1);
+    document.getElementById('bmi-value').textContent = bmi;
+    document.getElementById('bmi-preview').classList.remove('hidden');
+
+    // Bar + label
+    const bar = document.getElementById('bmi-bar');
+    const label = document.getElementById('bmi-label');
+    const pct = Math.min(Math.max(((bmi - 10) / 30) * 100, 5), 95);
+    bar.style.width = pct + '%';
+
+    if (bmi < 18.5) {
+      bar.className = 'h-full rounded-full transition-all duration-500 bg-blue-400';
+      label.textContent = 'Underweight — BMI below 18.5';
+    } else if (bmi < 25) {
+      bar.className = 'h-full rounded-full transition-all duration-500 bg-green-400';
+      label.textContent = 'Healthy weight — BMI 18.5–24.9 ✓';
+    } else if (bmi < 30) {
+      bar.className = 'h-full rounded-full transition-all duration-500 bg-yellow-400';
+      label.textContent = 'Overweight — BMI 25–29.9';
+    } else {
+      bar.className = 'h-full rounded-full transition-all duration-500 bg-red-400';
+      label.textContent = 'Obese range — BMI 30+';
+    }
+  }
+
+  document.getElementById('height').addEventListener('input', calcBMI);
+  document.getElementById('weight').addEventListener('input', calcBMI);
+
+  // Activity radio check icons
+  document.querySelectorAll('input[name="activity"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.check-icon').forEach(icon => icon.style.opacity = '0');
+      const checked = document.querySelector('input[name="activity"]:checked');
+      if (checked) {
+        checked.closest('label').querySelector('.check-icon').style.opacity = '1';
+      }
+    });
+  });
+
+  // Submit — redirect to profile page
+  function submitForm() {
+    const data = {
+      name: document.getElementById('fullname').value || 'Ayush Sharma',
+      email: document.getElementById('email').value || 'ayush@example.com',
+      age: document.getElementById('age').value || '27',
+      height: document.getElementById('height').value || '175',
+      weight: document.getElementById('weight').value || '72',
+      activity: document.querySelector('input[name="activity"]:checked')?.value || 'moderate',
+    };
+    const params = new URLSearchParams(data);
+    window.location.href = 'healtho-profile.html?' + params.toString();
+  }
+</script>
+</body>
+</html>
