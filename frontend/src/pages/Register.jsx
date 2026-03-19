@@ -16,6 +16,70 @@ const ACTIVITY_OPTIONS = [
   { value: 'very_active', emoji: '🏋️', label: 'Athlete',          sub: 'Very hard exercise, physical job' },
 ]
 
+// ── Validation ────────────────────────────────────────────────────────────────
+function validateStep1({ name, email, password }) {
+  const errors = {}
+  if (!name.trim())
+    errors.name = 'Full name is required'
+  else if (name.trim().length < 2)
+    errors.name = 'Name must be at least 2 characters'
+
+  if (!email.trim())
+    errors.email = 'Email is required'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    errors.email = 'Enter a valid email address'
+
+  if (!password)
+    errors.password = 'Password is required'
+  else if (password.length < 8)
+    errors.password = 'Password must be at least 8 characters'
+
+  return errors
+}
+
+function validateStep2({ age, height, weight }) {
+  const errors = {}
+  const a = parseInt(age)
+  const h = parseFloat(height)
+  const w = parseFloat(weight)
+
+  if (!age)
+    errors.age = 'Age is required'
+  else if (isNaN(a) || a < 13 || a > 120)
+    errors.age = 'Enter a valid age between 13 and 120'
+
+  if (!height)
+    errors.height = 'Height is required'
+  else if (isNaN(h) || h < 50 || h > 300)
+    errors.height = 'Enter a valid height (50–300 cm)'
+
+  if (!weight)
+    errors.weight = 'Weight is required'
+  else if (isNaN(w) || w < 20 || w > 500)
+    errors.weight = 'Enter a valid weight (20–500 kg)'
+
+  return errors
+}
+
+function validateStep3({ activity }) {
+  const errors = {}
+  if (!activity)
+    errors.activity = 'Please select your activity level'
+  return errors
+}
+
+// ── Reusable error message ────────────────────────────────────────────────────
+function FieldError({ message }) {
+  if (!message) return null
+  return (
+    <p className="flex items-center gap-1.5 text-red-400 text-xs font-semibold mt-1">
+      <span className="material-symbols-outlined text-sm">error</span>
+      {message}
+    </p>
+  )
+}
+
+// ── BMI helpers ───────────────────────────────────────────────────────────────
 function calcBMI(weight, height) {
   if (!weight || !height || height < 50 || weight < 20) return null
   return (weight / Math.pow(height / 100, 2)).toFixed(1)
@@ -23,43 +87,85 @@ function calcBMI(weight, height) {
 
 function getBmiInfo(bmi) {
   const b = parseFloat(bmi)
-  if (b < 18.5) return { label: 'Underweight — BMI below 18.5',  color: 'bg-blue-400',   text: 'text-blue-400',   pct: 20 }
-  if (b < 25)   return { label: 'Healthy weight — BMI 18.5–24.9 ✓', color: 'bg-green-400', text: 'text-green-400', pct: 50 }
-  if (b < 30)   return { label: 'Overweight — BMI 25–29.9',      color: 'bg-yellow-400', text: 'text-yellow-400', pct: 70 }
-  return             { label: 'Obese range — BMI 30+',           color: 'bg-red-400',    text: 'text-red-400',    pct: 90 }
+  if (b < 18.5) return { label: 'Underweight — BMI below 18.5',     color: 'bg-blue-400',   text: 'text-blue-400',   pct: 20 }
+  if (b < 25)   return { label: 'Healthy weight — BMI 18.5–24.9 ✓', color: 'bg-green-400',  text: 'text-green-400',  pct: 50 }
+  if (b < 30)   return { label: 'Overweight — BMI 25–29.9',         color: 'bg-yellow-400', text: 'text-yellow-400', pct: 70 }
+  return             { label: 'Obese range — BMI 30+',             color: 'bg-red-400',    text: 'text-red-400',    pct: 90 }
 }
 
+// ── Input class helpers ───────────────────────────────────────────────────────
+function inputClass(errors, field, extra = '') {
+  return `w-full bg-slate-900 border rounded-xl h-14 px-4 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 transition-all ${extra} ${
+    errors[field]
+      ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/20'
+      : 'border-slate-800 focus:border-primary focus:ring-primary/20'
+  }`
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function Register() {
   const navigate = useNavigate()
-  const [step, setStep]     = useState(1)
+  const [step, setStep]       = useState(1)
   const [showPwd, setShowPwd] = useState(false)
-  const [form, setForm]     = useState({
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors]   = useState({})
+  const [serverError, setServerError] = useState('')
+  const [form, setForm] = useState({
     name: '', email: '', password: '',
     age: '', height: '', weight: '',
     activity: '',
   })
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+  const set = (field) => (e) => {
+    setForm(f => ({ ...f, [field]: e.target.value }))
+    if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
+  }
 
   const bmi     = calcBMI(parseFloat(form.weight), parseFloat(form.height))
   const bmiInfo = bmi ? getBmiInfo(bmi) : null
 
   const goTo = (n) => {
+    setErrors({})
     setStep(n)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const submit = () => {
-    // TODO: replace with Supabase POST /api/auth/register
-    const params = new URLSearchParams({
-      name:     form.name     || 'Ayush Sharma',
-      email:    form.email    || 'ayush@example.com',
-      age:      form.age      || '27',
-      height:   form.height   || '175',
-      weight:   form.weight   || '72',
-      activity: form.activity || 'moderate',
-    })
-    navigate('/profile?' + params.toString())
+  const nextStep = (targetStep, validator) => {
+    const errs = validator(form)
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      return
+    }
+    goTo(targetStep)
+  }
+
+  const submit = async () => {
+    const errs = validateStep3(form)
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      return
+    }
+
+    setLoading(true)
+    setServerError('')
+    try {
+      // TODO: replace with → await signUp({ email, password, name, age, weight_kg, height_cm, activity_level })
+      // import { signUp } from '../lib/supabase'
+      await new Promise(r => setTimeout(r, 900)) // simulate network
+      const params = new URLSearchParams({
+        name:     form.name,
+        email:    form.email,
+        age:      form.age,
+        height:   form.height,
+        weight:   form.weight,
+        activity: form.activity,
+      })
+      navigate('/profile?' + params.toString())
+    } catch (err) {
+      setServerError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const s = STEPS[step]
@@ -91,52 +197,65 @@ export default function Register() {
                 <p className="text-slate-400 text-lg mt-2">Start your health journey with Healtho.</p>
               </div>
 
+              {serverError && (
+                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
+                  <span className="material-symbols-outlined text-red-400">warning</span>
+                  <p className="text-red-400 text-sm font-semibold">{serverError}</p>
+                </div>
+              )}
+
               <div className="space-y-5">
                 {/* Name */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">person</span>
                     Full Name
                   </label>
                   <input
                     type="text" value={form.name} onChange={set('name')}
+                    onKeyDown={e => e.key === 'Enter' && nextStep(2, validateStep1)}
                     placeholder="e.g. Ayush Sharma"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl h-14 px-4 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className={inputClass(errors, 'name')}
                   />
+                  <FieldError message={errors.name} />
                 </div>
 
                 {/* Email */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">mail</span>
                     Email
                   </label>
                   <input
                     type="email" value={form.email} onChange={set('email')}
+                    onKeyDown={e => e.key === 'Enter' && nextStep(2, validateStep1)}
                     placeholder="example@email.com"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl h-14 px-4 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className={inputClass(errors, 'email')}
                   />
+                  <FieldError message={errors.email} />
                 </div>
 
                 {/* Password */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">lock</span>
                     Password
                   </label>
                   <div className="relative">
                     <input
                       type={showPwd ? 'text' : 'password'} value={form.password} onChange={set('password')}
+                      onKeyDown={e => e.key === 'Enter' && nextStep(2, validateStep1)}
                       placeholder="Minimum 8 characters"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl h-14 pl-4 pr-12 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                      className={inputClass(errors, 'password', 'pr-12')}
                     />
                     <button
                       type="button" onClick={() => setShowPwd(v => !v)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                     >
                       <span className="material-symbols-outlined">{showPwd ? 'visibility_off' : 'visibility'}</span>
                     </button>
                   </div>
+                  <FieldError message={errors.password} />
                 </div>
               </div>
 
@@ -166,7 +285,7 @@ export default function Register() {
               </div>
 
               <button
-                onClick={() => goTo(2)}
+                onClick={() => nextStep(2, validateStep1)}
                 className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
               >
                 Continue
@@ -203,22 +322,23 @@ export default function Register() {
 
               <div className="space-y-5">
                 {/* Age */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-slate-300 text-base font-semibold flex items-center gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">calendar_today</span>
                     Age
                   </label>
                   <input
                     type="number" min="13" max="120" value={form.age} onChange={set('age')}
                     placeholder="e.g. 27"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl h-14 px-4 text-lg text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-primary transition-colors"
+                    className={inputClass(errors, 'age')}
                   />
+                  <FieldError message={errors.age} />
                 </div>
 
                 {/* Height + Weight */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-slate-300 text-base font-semibold flex items-center gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
                       <span className="material-symbols-outlined text-primary text-xl">height</span>
                       Height
                     </label>
@@ -226,13 +346,14 @@ export default function Register() {
                       <input
                         type="number" value={form.height} onChange={set('height')}
                         placeholder="175"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl h-14 px-4 pr-12 text-lg text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-primary transition-colors"
+                        className={inputClass(errors, 'height', 'pr-12')}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">cm</span>
                     </div>
+                    <FieldError message={errors.height} />
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-slate-300 text-base font-semibold flex items-center gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
                       <span className="material-symbols-outlined text-primary text-xl">monitor_weight</span>
                       Weight
                     </label>
@@ -240,10 +361,11 @@ export default function Register() {
                       <input
                         type="number" value={form.weight} onChange={set('weight')}
                         placeholder="70"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl h-14 px-4 pr-12 text-lg text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-primary transition-colors"
+                        className={inputClass(errors, 'weight', 'pr-12')}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">kg</span>
                     </div>
+                    <FieldError message={errors.weight} />
                   </div>
                 </div>
               </div>
@@ -266,7 +388,10 @@ export default function Register() {
               )}
 
               <div className="mt-10 flex flex-col gap-3">
-                <button onClick={() => goTo(3)} className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+                <button
+                  onClick={() => nextStep(3, validateStep2)}
+                  className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
+                >
                   Continue
                   <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                 </button>
@@ -295,9 +420,14 @@ export default function Register() {
                     className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       form.activity === opt.value
                         ? 'border-primary bg-primary/10'
-                        : 'border-slate-800 bg-slate-900 hover:border-primary/50'
+                        : errors.activity
+                          ? 'border-red-500/50 bg-slate-900 hover:border-red-500/70'
+                          : 'border-slate-800 bg-slate-900 hover:border-primary/50'
                     }`}
-                    onClick={() => setForm(f => ({ ...f, activity: opt.value }))}
+                    onClick={() => {
+                      setForm(f => ({ ...f, activity: opt.value }))
+                      if (errors.activity) setErrors(er => ({ ...er, activity: '' }))
+                    }}
                   >
                     <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">{opt.emoji}</div>
                     <div className="flex-1">
@@ -311,9 +441,35 @@ export default function Register() {
                 ))}
               </div>
 
+              {/* Activity error */}
+              {errors.activity && (
+                <div className="flex items-center gap-1.5 mt-3">
+                  <span className="material-symbols-outlined text-red-400 text-sm">error</span>
+                  <p className="text-red-400 text-xs font-semibold">{errors.activity}</p>
+                </div>
+              )}
+
+              {serverError && (
+                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mt-6">
+                  <span className="material-symbols-outlined text-red-400">warning</span>
+                  <p className="text-red-400 text-sm font-semibold">{serverError}</p>
+                </div>
+              )}
+
               <div className="mt-10 flex flex-col gap-3">
-                <button onClick={submit} className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-                  Create My Account 🎉
+                <button
+                  onClick={submit}
+                  disabled={loading}
+                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+                      Creating your account…
+                    </>
+                  ) : (
+                    'Create My Account 🎉'
+                  )}
                 </button>
                 <button onClick={() => goTo(2)} className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">Back</button>
               </div>

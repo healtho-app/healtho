@@ -2,25 +2,78 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 
+// ── Validation rules ──────────────────────────────────────────
+function validate({ email, password }) {
+  const errors = {}
+  if (!email.trim())
+    errors.email = 'Email is required'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    errors.email = 'Enter a valid email address'
+
+  if (!password)
+    errors.password = 'Password is required'
+  else if (password.length < 8)
+    errors.password = 'Password must be at least 8 characters'
+
+  return errors
+}
+
+// ── Reusable error message component ─────────────────────────
+function FieldError({ message }) {
+  if (!message) return null
+  return (
+    <p className="flex items-center gap-1.5 text-red-400 text-xs font-semibold mt-1">
+      <span className="material-symbols-outlined text-sm">error</span>
+      {message}
+    </p>
+  )
+}
+
 export default function Login() {
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
   const [showPwd, setShowPwd] = useState(false)
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm]       = useState({ email: '', password: '' })
+  const [errors, setErrors]   = useState({})
+  const [loading, setLoading] = useState(false)
+  const [serverError, setServerError] = useState('')
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
-
-  const submit = () => {
-    // TODO: replace with Supabase auth.signInWithPassword()
-    navigate('/dashboard')
+  const set = (field) => (e) => {
+    setForm(f => ({ ...f, [field]: e.target.value }))
+    // Clear error on change
+    if (errors[field]) setErrors(e => ({ ...e, [field]: '' }))
   }
+
+  const submit = async () => {
+    setServerError('')
+    const errs = validate(form)
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      return
+    }
+
+    setLoading(true)
+    try {
+      // TODO: replace with → await signIn({ email: form.email, password: form.password })
+      // import { signIn } from '../lib/supabase'
+      await new Promise(r => setTimeout(r, 800)) // simulate network
+      navigate('/dashboard')
+    } catch (err) {
+      setServerError(err.message || 'Invalid email or password. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const inputClass = (field) =>
+    `w-full bg-slate-900 border rounded-xl h-14 px-4 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 transition-all ${
+      errors[field]
+        ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/20'
+        : 'border-slate-800 focus:border-primary focus:ring-primary/20'
+    }`
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header
-        rightLabel="Create account"
-        rightTo="/register"
-        rightIcon="person_add"
-      />
+      <Header rightLabel="Create account" rightTo="/register" rightIcon="person_add" />
 
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[520px]">
@@ -35,12 +88,20 @@ export default function Login() {
             </p>
           </div>
 
+          {/* Server error banner */}
+          {serverError && (
+            <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
+              <span className="material-symbols-outlined text-red-400">warning</span>
+              <p className="text-red-400 text-sm font-semibold">{serverError}</p>
+            </div>
+          )}
+
           {/* Form */}
           <div className="space-y-5">
 
             {/* Email */}
-            <div className="flex flex-col gap-2">
-              <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
                 <span className="material-symbols-outlined text-primary text-xl">mail</span>
                 Email
               </label>
@@ -48,14 +109,16 @@ export default function Login() {
                 type="email"
                 value={form.email}
                 onChange={set('email')}
+                onKeyDown={e => e.key === 'Enter' && submit()}
                 placeholder="example@email.com"
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl h-14 px-4 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                className={inputClass('email')}
               />
+              <FieldError message={errors.email} />
             </div>
 
             {/* Password */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between mb-1">
                 <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-xl">lock</span>
                   Password
@@ -69,8 +132,9 @@ export default function Login() {
                   type={showPwd ? 'text' : 'password'}
                   value={form.password}
                   onChange={set('password')}
+                  onKeyDown={e => e.key === 'Enter' && submit()}
                   placeholder="Enter your password"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl h-14 pl-4 pr-12 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className={`${inputClass('password')} pr-12`}
                 />
                 <button
                   type="button"
@@ -82,17 +146,26 @@ export default function Login() {
                   </span>
                 </button>
               </div>
+              <FieldError message={errors.password} />
             </div>
 
             {/* Submit */}
             <button
               onClick={submit}
-              className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
+              disabled={loading}
+              className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
             >
-              Continue
-              <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
-                arrow_forward
-              </span>
+              {loading ? (
+                <>
+                  <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+                  Signing in…
+                </>
+              ) : (
+                <>
+                  Continue
+                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                </>
+              )}
             </button>
           </div>
 
@@ -102,9 +175,7 @@ export default function Login() {
               <div className="w-full border-t border-slate-800" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background-dark px-4 text-slate-500 font-medium">
-                Or continue with
-              </span>
+              <span className="bg-background-dark px-4 text-slate-500 font-medium">Or continue with</span>
             </div>
           </div>
 
@@ -127,7 +198,6 @@ export default function Login() {
             </button>
           </div>
 
-          {/* Footer link */}
           <p className="text-center text-slate-500 text-sm mt-8">
             Don't have an account?{' '}
             <Link to="/register" className="text-primary font-bold hover:underline">
