@@ -1,696 +1,396 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Healtho — Daily Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Healtho — Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary":         "#137fec",
+          "primary-dark":    "#0e63be",
+          "background-dark": "#121212",
+          "surface":         "#1e1e1e",
+          "surface-2":       "#2a2a2a",
+          "protein":         "#5b8def",
+          "carbs":           "#e8b84b",
+          "fat":             "#e07b5b",
+          "fiber":           "#4caf7d",
+          "water":           "#60b8d4",
+        },
+        fontFamily: { "display": ["Lexend"], "mono": ["DM Mono"] },
+        borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+      },
+    },
+  }
+</script>
+</head>
+<body class="bg-background-dark font-display text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between border-b border-slate-800 px-6 py-4 lg:px-10">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🍎</span>
+      <h2 class="text-white text-xl font-bold tracking-tight">Healtho</h2>
+    </div>
+    <a href="healtho-profile.html" class="flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+      My Profile
+      <span class="material-symbols-outlined text-base">person</span>
+    </a>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex items-start justify-center px-4 py-10">
+    <div class="w-full max-w-[520px] space-y-4">
+
+      <!-- Greeting -->
+      <div class="mb-2">
+        <p class="text-slate-400 text-sm font-medium">Saturday, 14 March 2026</p>
+        <h1 class="text-white text-4xl font-extrabold leading-tight tracking-tight mt-1">Good morning, <span class="text-primary">Ayush</span> 👋</h1>
+        <p class="text-slate-500 text-base mt-1">Here's your nutrition summary for today.</p>
+      </div>
+
+      <!-- CALORIE RING CARD -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/5 blur-2xl pointer-events-none"></div>
+        <div class="flex items-center gap-6">
+          <!-- Ring -->
+          <div class="relative flex-shrink-0">
+            <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg)">
+              <circle cx="65" cy="65" r="54" fill="none" stroke="#2a2a2a" stroke-width="11"/>
+              <circle cx="65" cy="65" r="54" fill="none" stroke="#137fec" stroke-width="11"
+                stroke-linecap="round"
+                stroke-dasharray="339.3"
+                stroke-dashoffset="101.8"
+                style="filter:drop-shadow(0 0 8px rgba(19,127,236,0.5)); animation: ringFill 1.4s cubic-bezier(.16,1,.3,1) both"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span class="font-mono text-3xl font-bold text-white leading-none">891</span>
+              <span class="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mt-1">remaining</span>
+            </div>
+          </div>
+          <!-- Stats -->
+          <div class="flex-1 space-y-3">
+            <div>
+              <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Consumed</p>
+              <p class="font-mono text-2xl font-bold text-white">1,309 <span class="text-sm text-slate-500 font-normal">kcal</span></p>
+            </div>
+            <div class="h-px bg-slate-800"></div>
+            <div>
+              <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Daily Goal</p>
+              <p class="font-mono text-2xl font-bold text-white">2,200 <span class="text-sm text-slate-500 font-normal">kcal</span></p>
+            </div>
+            <div class="h-px bg-slate-800"></div>
+            <div>
+              <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Exercise Burned</p>
+              <p class="font-mono text-2xl font-bold text-white">380 <span class="text-sm text-slate-500 font-normal">kcal</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MACRO STRIP -->
+      <div class="grid grid-cols-4 gap-3">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full bg-protein flex-shrink-0"></div>
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Protein</p>
+          </div>
+          <p class="font-mono text-sm font-bold text-white">72g</p>
+          <div class="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full rounded-full bg-protein" style="width:57%"></div>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full bg-carbs flex-shrink-0"></div>
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Carbs</p>
+          </div>
+          <p class="font-mono text-sm font-bold text-white">168g</p>
+          <div class="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full rounded-full bg-carbs" style="width:67%"></div>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full bg-fat flex-shrink-0"></div>
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Fat</p>
+          </div>
+          <p class="font-mono text-sm font-bold text-white">38g</p>
+          <div class="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full rounded-full bg-fat" style="width:48%"></div>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full bg-fiber flex-shrink-0"></div>
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Fiber</p>
+          </div>
+          <p class="font-mono text-sm font-bold text-white">18g</p>
+          <div class="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full rounded-full bg-fiber" style="width:72%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WATER TRACKER -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-water text-xl">water_drop</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-white">Water Intake</p>
+          <p class="text-xs text-slate-500 mt-0.5" id="waterLabel">1.6 / 2.5 L — tap to update</p>
+        </div>
+        <div class="flex gap-1.5" id="waterDots"></div>
+      </div>
+
+      <!-- SECTION LABEL -->
+      <div class="flex items-center justify-between pt-2">
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Today's Meals</p>
+        <p class="text-primary text-xs font-semibold cursor-pointer hover:underline">+ Log food</p>
+      </div>
+
+      <!-- BREAKFAST -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="flex items-center gap-3 px-4 py-4 cursor-pointer" onclick="toggleMeal('breakfast')">
+          <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🌅</div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-white">Breakfast</p>
+            <p class="text-xs text-slate-500 mt-0.5"><span class="text-slate-300 font-semibold">487</span> kcal · 3 items</p>
+          </div>
+          <button class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all text-lg font-light" onclick="event.stopPropagation()">+</button>
+          <span class="material-symbols-outlined text-slate-600 text-lg ml-1 transition-transform" id="chev-breakfast" style="transform:rotate(180deg)">expand_more</span>
+        </div>
+        <div id="body-breakfast" class="border-t border-slate-800 px-4 pb-4 pt-3 space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-1.5 h-1.5 rounded-full bg-slate-700 flex-shrink-0"></div>
+            <p class="text-sm text-slate-300 flex-1">Masala Oats</p>
+            <p class="text-xs text-slate-600">250g</p>
+            <span class="font-mono text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">210 kcal</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-1.5 h-1.5 rounded-full bg-slate-700 flex-shrink-0"></div>
+            <p class="text-sm text-slate-300 flex-1">Boiled Eggs</p>
+            <p class="text-xs text-slate-600">2 eggs</p>
+            <span class="font-mono text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">155 kcal</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-1.5 h-1.5 rounded-full bg-slate-700 flex-shrink-0"></div>
+            <p class="text-sm text-slate-300 flex-1">Banana</p>
+            <p class="text-xs text-slate-600">1 medium</p>
+            <span class="font-mono text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">122 kcal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LUNCH -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="flex items-center gap-3 px-4 py-4 cursor-pointer" onclick="toggleMeal('lunch')">
+          <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">☀️</div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-white">Lunch</p>
+            <p class="text-xs text-slate-500 mt-0.5"><span class="text-slate-300 font-semibold">612</span> kcal · 2 items</p>
+          </div>
+          <button class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all text-lg font-light" onclick="event.stopPropagation()">+</button>
+          <span class="material-symbols-outlined text-slate-600 text-lg ml-1 transition-transform" id="chev-lunch">expand_more</span>
+        </div>
+        <div id="body-lunch" class="hidden border-t border-slate-800 px-4 pb-4 pt-3 space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-1.5 h-1.5 rounded-full bg-slate-700 flex-shrink-0"></div>
+            <p class="text-sm text-slate-300 flex-1">Dal Rice</p>
+            <p class="text-xs text-slate-600">400g</p>
+            <span class="font-mono text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">450 kcal</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-1.5 h-1.5 rounded-full bg-slate-700 flex-shrink-0"></div>
+            <p class="text-sm text-slate-300 flex-1">Mixed Salad</p>
+            <p class="text-xs text-slate-600">150g</p>
+            <span class="font-mono text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">162 kcal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DINNER -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="flex items-center gap-3 px-4 py-4 cursor-pointer" onclick="toggleMeal('dinner')">
+          <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🌙</div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-white">Dinner</p>
+            <p class="text-xs text-slate-500 mt-0.5">Not logged yet</p>
+          </div>
+          <button class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all text-lg font-light" onclick="event.stopPropagation()">+</button>
+          <span class="material-symbols-outlined text-slate-600 text-lg ml-1 transition-transform" id="chev-dinner">expand_more</span>
+        </div>
+        <div id="body-dinner" class="hidden border-t border-slate-800 px-4 py-4">
+          <p class="text-sm text-slate-600 text-center">No dinner logged yet</p>
+        </div>
+      </div>
+
+      <!-- SNACKS -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="flex items-center gap-3 px-4 py-4 cursor-pointer" onclick="toggleMeal('snacks')">
+          <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🍎</div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-white">Snacks</p>
+            <p class="text-xs text-slate-500 mt-0.5"><span class="text-slate-300 font-semibold">210</span> kcal · 1 item</p>
+          </div>
+          <button class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all text-lg font-light" onclick="event.stopPropagation()">+</button>
+          <span class="material-symbols-outlined text-slate-600 text-lg ml-1 transition-transform" id="chev-snacks">expand_more</span>
+        </div>
+        <div id="body-snacks" class="hidden border-t border-slate-800 px-4 pb-4 pt-3 space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-1.5 h-1.5 rounded-full bg-slate-700 flex-shrink-0"></div>
+            <p class="text-sm text-slate-300 flex-1">Greek Yogurt</p>
+            <p class="text-xs text-slate-600">200g</p>
+            <span class="font-mono text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">210 kcal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STREAK -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl flex-shrink-0">🔥</div>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-white">12 day streak</p>
+          <p class="text-xs text-green-400 font-semibold mt-0.5">Best streak this month — keep going!</p>
+        </div>
+        <span class="material-symbols-outlined text-primary">emoji_events</span>
+      </div>
+
+      <!-- LOG FOOD BUTTON -->
+      <button onclick="openLog()"
+        class="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+        <span class="material-symbols-outlined">add_circle</span>
+        Log Food
+      </button>
+
+    </div>
+  </main>
+
+  <footer class="py-6 px-6 text-center">
+    <p class="text-slate-700 text-xs">© 2025 Healtho. All rights reserved.</p>
+  </footer>
+
+</body>
+
+<!-- LOG FOOD MODAL -->
+<div id="logModal" class="fixed inset-0 bg-black/60 z-50 flex items-end justify-center opacity-0 pointer-events-none transition-opacity duration-200" onclick="closeLog(event)">
+  <div id="logSheet" class="w-full max-w-[520px] bg-[#1a1a1a] border border-slate-800 rounded-t-2xl p-5 pb-10 translate-y-full transition-transform duration-300 max-h-[85vh] overflow-y-auto">
+    <div class="w-10 h-1 rounded-full bg-slate-700 mx-auto mb-5"></div>
+    <h2 class="text-white text-2xl font-extrabold mb-1">Log Food</h2>
+    <p class="text-slate-500 text-sm mb-5">Search or pick from recent & popular items.</p>
+
+    <!-- Search -->
+    <div class="relative mb-5">
+      <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xl">search</span>
+      <input class="form-input w-full rounded-xl border-slate-800 bg-slate-900 text-slate-100 h-14 pl-11 pr-4 text-base focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-slate-600"
+        placeholder="Search food, e.g. dal, banana, roti…"/>
+    </div>
+
+    <!-- Recent -->
+    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Recent</p>
+    <div class="flex flex-wrap gap-2 mb-5">
+      <span class="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full cursor-pointer hover:border-primary hover:text-primary transition-colors">Masala Oats</span>
+      <span class="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full cursor-pointer hover:border-primary hover:text-primary transition-colors">Dal Rice</span>
+      <span class="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full cursor-pointer hover:border-primary hover:text-primary transition-colors">Boiled Egg</span>
+      <span class="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-full cursor-pointer hover:border-primary hover:text-primary transition-colors">Banana</span>
+    </div>
+
+    <!-- Popular -->
+    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Popular in India 🇮🇳</p>
+    <div class="space-y-1">
+      <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-slate-700">
+        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🍚</div>
+        <div class="flex-1"><p class="text-sm font-semibold text-white">Dal Rice</p><p class="text-xs text-slate-500">Protein 12g · Carbs 68g · Fat 5g</p></div>
+        <span class="font-mono text-sm text-slate-400">450 kcal</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-slate-700">
+        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🥣</div>
+        <div class="flex-1"><p class="text-sm font-semibold text-white">Masala Oats</p><p class="text-xs text-slate-500">Protein 7g · Carbs 35g · Fat 4g</p></div>
+        <span class="font-mono text-sm text-slate-400">210 kcal</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-slate-700">
+        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🫓</div>
+        <div class="flex-1"><p class="text-sm font-semibold text-white">Roti (Wheat)</p><p class="text-xs text-slate-500">Protein 3g · Carbs 18g · Fat 1g</p></div>
+        <span class="font-mono text-sm text-slate-400">95 kcal</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-slate-700">
+        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🥛</div>
+        <div class="flex-1"><p class="text-sm font-semibold text-white">Paneer (100g)</p><p class="text-xs text-slate-500">Protein 18g · Carbs 1g · Fat 20g</p></div>
+        <span class="font-mono text-sm text-slate-400">265 kcal</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-slate-700">
+        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🍌</div>
+        <div class="flex-1"><p class="text-sm font-semibold text-white">Banana (medium)</p><p class="text-xs text-slate-500">Protein 1g · Carbs 27g · Fat 0g</p></div>
+        <span class="font-mono text-sm text-slate-400">122 kcal</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <style>
-/* ─── TOKENS ─────────────────────────────────────────────── */
-:root {
-  --bg:         #FAF8F4;
-  --surface:    #FFFFFF;
-  --surface-2:  #F3EFE8;
-  --surface-3:  #EDE7DC;
-  --primary:    #C2601A;
-  --primary-dk: #9A4A11;
-  --primary-lt: #F5E6D8;
-  --secondary:  #2D5A3D;
-  --accent:     #E8B84B;
-  --text-1:     #1A1208;
-  --text-2:     #6B5744;
-  --text-3:     #A8978A;
-  --protein:    #5B8DEF;
-  --carbs:      #E8B84B;
-  --fat:        #E07B5B;
-  --fiber:      #4CAF7D;
-  --water:      #60B8D4;
-  --success:    #4CAF7D;
-  --danger:     #E05252;
-
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 20px;
-  --r-xl: 28px;
-  --r-pill: 999px;
-
-  --shadow-sm: 0 1px 3px rgba(26,18,8,.06), 0 1px 2px rgba(26,18,8,.04);
-  --shadow-md: 0 4px 16px rgba(26,18,8,.08), 0 2px 6px rgba(26,18,8,.04);
-  --shadow-lg: 0 12px 40px rgba(26,18,8,.12), 0 4px 12px rgba(26,18,8,.06);
-
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-mono: 'DM Mono', monospace;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: var(--font-body);
-  background: var(--bg);
-  color: var(--text-1);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-button { cursor: pointer; border: none; background: none; font: inherit; }
-input { font: inherit; }
-
-.app {
-  max-width: 420px;
-  margin: 0 auto;
-  min-height: 100vh;
-  background: var(--bg);
-  position: relative;
-  overflow: hidden;
-}
-
-/* TOP BAR */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 20px 0;
-  position: relative;
-  z-index: 10;
-}
-.greeting {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text-1);
-  line-height: 1.2;
-}
-.greeting em { font-style: italic; color: var(--primary); }
-.date-label {
-  font-size: 12px;
-  color: var(--text-3);
-  margin-top: 2px;
-  font-weight: 500;
-  letter-spacing: .02em;
-}
-.avatar {
-  width: 42px; height: 42px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 16px;
-  color: white;
-  box-shadow: 0 2px 8px rgba(194,96,26,.35);
-  flex-shrink: 0;
-}
-
-.scroll-body {
-  overflow-y: auto;
-  height: calc(100vh - 80px);
-  padding-bottom: 100px;
-}
-.scroll-body::-webkit-scrollbar { display: none; }
-
-/* HERO CARD */
-.hero-card {
-  margin: 20px 16px 0;
-  background: var(--surface);
-  border-radius: var(--r-xl);
-  padding: 28px 24px 24px;
-  box-shadow: var(--shadow-md);
-  position: relative;
-  overflow: hidden;
-}
-.hero-card::before {
-  content: '';
-  position: absolute;
-  top: -40px; right: -40px;
-  width: 160px; height: 160px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(232,184,75,.18) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero-inner {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  position: relative;
-  z-index: 1;
-}
-.ring-wrap { position: relative; flex-shrink: 0; }
-.ring-svg { transform: rotate(-90deg); }
-.ring-bg { stroke: var(--surface-2); fill: none; stroke-width: 10; }
-.ring-fill {
-  fill: none;
-  stroke-width: 10;
-  stroke: var(--primary);
-  stroke-linecap: round;
-  stroke-dasharray: 339.3;
-  stroke-dashoffset: 101.8;
-  filter: drop-shadow(0 0 6px rgba(194,96,26,.4));
-  animation: ringFill 1.4s .3s cubic-bezier(.16,1,.3,1) both;
-}
-.ring-center {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-.ring-cal {
-  font-family: var(--font-display);
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--text-1);
-  line-height: 1;
-  display: block;
-}
-.ring-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-3);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  margin-top: 3px;
-  display: block;
-}
-.hero-stats { flex: 1; }
-.hero-stat-row { display: flex; flex-direction: column; gap: 12px; }
-.hero-stat { display: flex; flex-direction: column; gap: 2px; }
-.hero-stat-label {
-  font-size: 11px;
-  color: var(--text-3);
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-.hero-stat-value {
-  font-family: var(--font-mono);
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--text-1);
-}
-.hero-stat-value span { font-size: 12px; color: var(--text-3); font-weight: 400; }
-
-/* MACRO STRIP */
-.macro-strip {
-  margin: 12px 16px 0;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-.macro-chip {
-  background: var(--surface);
-  border-radius: var(--r-md);
-  padding: 10px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: var(--shadow-sm);
-}
-.macro-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.macro-name { font-size: 10px; font-weight: 600; color: var(--text-3); letter-spacing: .04em; text-transform: uppercase; }
-.macro-amount { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--text-1); }
-.macro-bar-bg { height: 3px; border-radius: var(--r-pill); background: var(--surface-2); overflow: hidden; }
-.macro-bar-fill { height: 100%; border-radius: var(--r-pill); transition: width 1.2s cubic-bezier(.16,1,.3,1); }
-
-/* SECTION HEADER */
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 20px 10px;
-}
-.section-title { font-size: 13px; font-weight: 700; color: var(--text-2); letter-spacing: .05em; text-transform: uppercase; }
-.section-action { font-size: 12px; color: var(--primary); font-weight: 600; }
-
-/* WATER CARD */
-.water-card {
-  margin: 0 16px;
-  background: var(--surface);
-  border-radius: var(--r-lg);
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.water-icon {
-  width: 40px; height: 40px;
-  border-radius: var(--r-md);
-  background: rgba(96,184,212,.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.water-info { flex: 1; }
-.water-title { font-size: 13px; font-weight: 700; color: var(--text-1); }
-.water-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
-.water-dots { display: flex; gap: 5px; }
-.water-dot {
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  border: 2px solid var(--surface-3);
-  transition: all .2s ease;
-  cursor: pointer;
-}
-.water-dot.filled {
-  background: var(--water);
-  border-color: var(--water);
-  box-shadow: 0 0 0 3px rgba(96,184,212,.2);
-}
-.water-dot:hover { transform: scale(1.15); }
-
-/* MEAL CARDS */
-.meals-stack { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; }
-.meal-card { background: var(--surface); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
-.meal-header {
-  display: flex;
-  align-items: center;
-  padding: 14px 16px;
-  cursor: pointer;
-  gap: 12px;
-  user-select: none;
-}
-.meal-emoji { font-size: 22px; flex-shrink: 0; }
-.meal-info { flex: 1; }
-.meal-name { font-size: 14px; font-weight: 700; color: var(--text-1); }
-.meal-cals { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); margin-top: 1px; }
-.meal-cals strong { color: var(--text-2); }
-.meal-add-btn {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  background: var(--primary-lt);
-  color: var(--primary);
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all .15s ease;
-  font-weight: 300;
-  flex-shrink: 0;
-}
-.meal-add-btn:hover { background: var(--primary); color: white; transform: scale(1.1); }
-.meal-chevron { width: 16px; height: 16px; color: var(--text-3); transition: transform .2s ease; flex-shrink: 0; }
-.meal-card.open .meal-chevron { transform: rotate(180deg); }
-.meal-items { display: none; padding: 0 16px 12px; flex-direction: column; gap: 8px; border-top: 1px solid var(--surface-2); }
-.meal-card.open .meal-items { display: flex; }
-.food-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
-.food-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--surface-3); flex-shrink: 0; }
-.food-name { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; }
-.food-portion { font-size: 11px; color: var(--text-3); }
-.food-cal-badge {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-2);
-  background: var(--surface-2);
-  padding: 2px 8px;
-  border-radius: var(--r-pill);
-}
-.meal-empty { padding: 12px 0; font-size: 13px; color: var(--text-3); text-align: center; border-top: 1px solid var(--surface-2); }
-
-/* STREAK */
-.streak-card {
-  margin: 0 16px;
-  background: linear-gradient(135deg, var(--secondary) 0%, #3d7a54 100%);
-  border-radius: var(--r-lg);
-  padding: 18px 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  box-shadow: 0 4px 16px rgba(45,90,61,.3);
-  position: relative;
-  overflow: hidden;
-}
-.streak-card::before {
-  content: '🔥';
-  position: absolute;
-  right: 16px; top: 50%;
-  transform: translateY(-50%);
-  font-size: 52px;
-  opacity: .12;
-}
-.streak-icon { font-size: 32px; flex-shrink: 0; }
-.streak-num { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: white; line-height: 1; }
-.streak-label { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 2px; font-weight: 500; }
-
-/* FAB */
-.fab {
-  position: fixed;
-  bottom: 88px;
-  right: calc(50% - 210px + 20px);
-  width: 58px; height: 58px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: white;
-  font-size: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(194,96,26,.5), 0 2px 8px rgba(194,96,26,.3);
-  transition: all .2s cubic-bezier(.34,1.56,.64,1);
-  z-index: 20;
-  font-weight: 300;
-  line-height: 1;
-}
-.fab:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 6px 28px rgba(194,96,26,.6); }
-.fab:active { transform: scale(.95); }
-
-/* BOTTOM NAV */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 420px;
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--surface-3);
-  display: flex;
-  align-items: center;
-  height: 72px;
-  padding: 0 8px;
-  z-index: 15;
-}
-.nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 4px;
-  border-radius: var(--r-md);
-  transition: all .15s ease;
-}
-.nav-item:hover { background: var(--surface-2); }
-.nav-item.active .nav-icon { color: var(--primary); }
-.nav-item.active .nav-label { color: var(--primary); font-weight: 700; }
-.nav-icon { font-size: 22px; color: var(--text-3); line-height: 1; }
-.nav-label { font-size: 10px; font-weight: 600; color: var(--text-3); letter-spacing: .02em; }
-.nav-center-gap { width: 58px; flex-shrink: 0; }
-
-/* MODAL */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(26,18,8,.4);
-  z-index: 50;
-  display: flex;
-  align-items: flex-end;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s ease;
-}
-.modal-overlay.open { opacity: 1; pointer-events: all; }
-.modal-sheet {
-  width: 100%;
-  max-width: 420px;
-  margin: 0 auto;
-  background: var(--surface);
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  padding: 12px 20px 40px;
-  transform: translateY(100%);
-  transition: transform .35s cubic-bezier(.16,1,.3,1);
-  max-height: 85vh;
-  overflow-y: auto;
-}
-.modal-sheet::-webkit-scrollbar { display: none; }
-.modal-overlay.open .modal-sheet { transform: translateY(0); }
-.modal-handle { width: 40px; height: 4px; border-radius: var(--r-pill); background: var(--surface-3); margin: 0 auto 20px; }
-.modal-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--text-1); margin-bottom: 16px; }
-.search-input-wrap { position: relative; margin-bottom: 16px; }
-.search-input {
-  width: 100%;
-  background: var(--surface-2);
-  border: 2px solid transparent;
-  border-radius: var(--r-md);
-  padding: 12px 16px 12px 44px;
-  font-size: 15px;
-  color: var(--text-1);
-  outline: none;
-  transition: border-color .15s ease;
-}
-.search-input:focus { border-color: var(--primary); background: var(--surface); }
-.search-input::placeholder { color: var(--text-3); }
-.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-3); pointer-events: none; }
-.chip {
-  background: var(--surface-2);
-  border-radius: var(--r-pill);
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-2);
-  cursor: pointer;
-  transition: all .15s ease;
-}
-.chip:hover { background: var(--primary-lt); color: var(--primary); }
-.food-result {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--surface-2);
-  cursor: pointer;
-  border-radius: var(--r-md);
-  transition: all .15s ease;
-}
-.food-result:hover { background: var(--surface-2); padding-left: 8px; padding-right: 8px; }
-.food-result-emoji { width: 40px; height: 40px; border-radius: var(--r-md); background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-.food-result-info { flex: 1; }
-.food-result-name { font-size: 14px; font-weight: 600; color: var(--text-1); }
-.food-result-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-.food-result-cal { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text-2); flex-shrink: 0; }
-
-/* ANIMATIONS */
-@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes scaleIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
-@keyframes ringFill { from { stroke-dashoffset: 339.3; } to { stroke-dashoffset: 101.8; } }
-
-.hero-card    { animation: scaleIn .5s cubic-bezier(.16,1,.3,1) both; }
-.macro-strip  { animation: fadeUp .5s .1s cubic-bezier(.16,1,.3,1) both; }
-.water-card   { animation: fadeUp .5s .15s cubic-bezier(.16,1,.3,1) both; }
-.meals-stack  { animation: fadeUp .5s .2s cubic-bezier(.16,1,.3,1) both; }
-.streak-card  { animation: fadeUp .5s .25s cubic-bezier(.16,1,.3,1) both; }
-
-@media (max-width: 440px) { .fab { right: 20px; } .bottom-nav { width: 100%; } }
+  @keyframes ringFill {
+    from { stroke-dashoffset: 339.3; }
+    to   { stroke-dashoffset: 101.8; }
+  }
 </style>
-</head>
-<body>
-<div class="app">
-  <div class="topbar">
-    <div>
-      <div class="greeting">Good morning, <em>Ayush</em> 👋</div>
-      <div class="date-label">Saturday, 14 March 2026</div>
-    </div>
-    <div class="avatar">A</div>
-  </div>
-
-  <div class="scroll-body">
-    <div class="hero-card">
-      <div class="hero-inner">
-        <div class="ring-wrap">
-          <svg class="ring-svg" width="120" height="120" viewBox="0 0 120 120">
-            <circle class="ring-bg" cx="60" cy="60" r="54"/>
-            <circle class="ring-fill" cx="60" cy="60" r="54"/>
-          </svg>
-          <div class="ring-center">
-            <span class="ring-cal">891</span>
-            <span class="ring-label">remaining</span>
-          </div>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat-row">
-            <div class="hero-stat">
-              <div class="hero-stat-label">Consumed</div>
-              <div class="hero-stat-value">1,309 <span>kcal</span></div>
-            </div>
-            <div style="height:1px;background:var(--surface-2)"></div>
-            <div class="hero-stat">
-              <div class="hero-stat-label">Goal</div>
-              <div class="hero-stat-value">2,200 <span>kcal</span></div>
-            </div>
-            <div style="height:1px;background:var(--surface-2)"></div>
-            <div class="hero-stat">
-              <div class="hero-stat-label">Burned</div>
-              <div class="hero-stat-value">380 <span>kcal</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="macro-strip">
-      <div class="macro-chip">
-        <div style="display:flex;align-items:center;gap:5px"><div class="macro-dot" style="background:var(--protein)"></div><div class="macro-name">Protein</div></div>
-        <div class="macro-amount">72g</div>
-        <div class="macro-bar-bg"><div class="macro-bar-fill" style="width:57%;background:var(--protein)"></div></div>
-      </div>
-      <div class="macro-chip">
-        <div style="display:flex;align-items:center;gap:5px"><div class="macro-dot" style="background:var(--carbs)"></div><div class="macro-name">Carbs</div></div>
-        <div class="macro-amount">168g</div>
-        <div class="macro-bar-bg"><div class="macro-bar-fill" style="width:67%;background:var(--carbs)"></div></div>
-      </div>
-      <div class="macro-chip">
-        <div style="display:flex;align-items:center;gap:5px"><div class="macro-dot" style="background:var(--fat)"></div><div class="macro-name">Fat</div></div>
-        <div class="macro-amount">38g</div>
-        <div class="macro-bar-bg"><div class="macro-bar-fill" style="width:48%;background:var(--fat)"></div></div>
-      </div>
-      <div class="macro-chip">
-        <div style="display:flex;align-items:center;gap:5px"><div class="macro-dot" style="background:var(--fiber)"></div><div class="macro-name">Fiber</div></div>
-        <div class="macro-amount">18g</div>
-        <div class="macro-bar-bg"><div class="macro-bar-fill" style="width:72%;background:var(--fiber)"></div></div>
-      </div>
-    </div>
-
-    <div class="section-header">
-      <div class="section-title">Water Intake</div>
-      <div class="section-action" id="water-label">1.6 / 2.5 L</div>
-    </div>
-    <div class="water-card">
-      <div class="water-icon">💧</div>
-      <div class="water-info">
-        <div class="water-title">Daily Hydration</div>
-        <div class="water-sub">Tap glasses to track</div>
-      </div>
-      <div class="water-dots">
-        <div class="water-dot filled" onclick="toggleWater(0)"></div>
-        <div class="water-dot filled" onclick="toggleWater(1)"></div>
-        <div class="water-dot filled" onclick="toggleWater(2)"></div>
-        <div class="water-dot filled" onclick="toggleWater(3)"></div>
-        <div class="water-dot" onclick="toggleWater(4)"></div>
-        <div class="water-dot" onclick="toggleWater(5)"></div>
-        <div class="water-dot" onclick="toggleWater(6)"></div>
-        <div class="water-dot" onclick="toggleWater(7)"></div>
-      </div>
-    </div>
-
-    <div class="section-header">
-      <div class="section-title">Today's Meals</div>
-      <div class="section-action">View all</div>
-    </div>
-
-    <div class="meals-stack">
-      <div class="meal-card open" id="meal-breakfast">
-        <div class="meal-header" onclick="toggleMeal('breakfast')">
-          <div class="meal-emoji">🌅</div>
-          <div class="meal-info"><div class="meal-name">Breakfast</div><div class="meal-cals"><strong>487</strong> kcal · 3 items</div></div>
-          <button class="meal-add-btn" onclick="openLog(event)">+</button>
-          <svg class="meal-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
-        </div>
-        <div class="meal-items">
-          <div class="food-item"><div class="food-dot"></div><div class="food-name">Masala Oats</div><div class="food-portion">1 bowl · 250g</div><div class="food-cal-badge">210</div></div>
-          <div class="food-item"><div class="food-dot"></div><div class="food-name">Boiled Eggs</div><div class="food-portion">2 eggs</div><div class="food-cal-badge">155</div></div>
-          <div class="food-item"><div class="food-dot"></div><div class="food-name">Banana</div><div class="food-portion">1 medium</div><div class="food-cal-badge">122</div></div>
-        </div>
-      </div>
-      <div class="meal-card open" id="meal-lunch">
-        <div class="meal-header" onclick="toggleMeal('lunch')">
-          <div class="meal-emoji">☀️</div>
-          <div class="meal-info"><div class="meal-name">Lunch</div><div class="meal-cals"><strong>612</strong> kcal · 2 items</div></div>
-          <button class="meal-add-btn" onclick="openLog(event)">+</button>
-          <svg class="meal-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
-        </div>
-        <div class="meal-items">
-          <div class="food-item"><div class="food-dot"></div><div class="food-name">Dal Rice</div><div class="food-portion">1 plate · 400g</div><div class="food-cal-badge">450</div></div>
-          <div class="food-item"><div class="food-dot"></div><div class="food-name">Mixed Salad</div><div class="food-portion">1 bowl · 150g</div><div class="food-cal-badge">162</div></div>
-        </div>
-      </div>
-      <div class="meal-card" id="meal-dinner">
-        <div class="meal-header" onclick="toggleMeal('dinner')">
-          <div class="meal-emoji">🌙</div>
-          <div class="meal-info"><div class="meal-name">Dinner</div><div class="meal-cals"><strong>0</strong> kcal · not logged</div></div>
-          <button class="meal-add-btn" onclick="openLog(event)">+</button>
-          <svg class="meal-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
-        </div>
-        <div class="meal-items"><div class="meal-empty">No dinner logged yet</div></div>
-      </div>
-      <div class="meal-card" id="meal-snacks">
-        <div class="meal-header" onclick="toggleMeal('snacks')">
-          <div class="meal-emoji">🍎</div>
-          <div class="meal-info"><div class="meal-name">Snacks</div><div class="meal-cals"><strong>210</strong> kcal · 1 item</div></div>
-          <button class="meal-add-btn" onclick="openLog(event)">+</button>
-          <svg class="meal-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
-        </div>
-        <div class="meal-items">
-          <div class="food-item"><div class="food-dot"></div><div class="food-name">Greek Yogurt</div><div class="food-portion">1 cup · 200g</div><div class="food-cal-badge">210</div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-header"><div class="section-title">Your Streak</div></div>
-    <div class="streak-card">
-      <div class="streak-icon">🔥</div>
-      <div>
-        <div class="streak-num">12 days</div>
-        <div class="streak-label">Keep going — best streak this month!</div>
-      </div>
-    </div>
-    <div style="height:20px"></div>
-  </div>
-
-  <button class="fab" onclick="openLog(event)" title="Log food">+</button>
-
-  <nav class="bottom-nav">
-    <button class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></button>
-    <button class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Nutrition</div></button>
-    <div class="nav-center-gap"></div>
-    <button class="nav-item"><div class="nav-icon">👨‍👩‍👧</div><div class="nav-label">Family</div></button>
-    <button class="nav-item"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></button>
-  </nav>
-</div>
-
-<div class="modal-overlay" id="logModal" onclick="closeLogOnOverlay(event)">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Log Food</div>
-    <div class="search-input-wrap">
-      <div class="search-icon">🔍</div>
-      <input class="search-input" type="search" placeholder="Search food, e.g. dal, rice, banana…" id="foodSearch">
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;">Recent</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-      <div class="chip">Masala Oats</div><div class="chip">Dal Rice</div><div class="chip">Boiled Egg</div><div class="chip">Banana</div><div class="chip">Greek Yogurt</div>
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px;">Popular in India 🇮🇳</div>
-    <div class="food-result"><div class="food-result-emoji">🍚</div><div class="food-result-info"><div class="food-result-name">Dal Rice</div><div class="food-result-meta">Protein 12g · Carbs 68g · Fat 5g</div></div><div class="food-result-cal">450 kcal</div></div>
-    <div class="food-result"><div class="food-result-emoji">🥣</div><div class="food-result-info"><div class="food-result-name">Masala Oats</div><div class="food-result-meta">Protein 7g · Carbs 35g · Fat 4g</div></div><div class="food-result-cal">210 kcal</div></div>
-    <div class="food-result"><div class="food-result-emoji">🫓</div><div class="food-result-info"><div class="food-result-name">Roti (Wheat)</div><div class="food-result-meta">Protein 3g · Carbs 18g · Fat 1g</div></div><div class="food-result-cal">95 kcal</div></div>
-    <div class="food-result"><div class="food-result-emoji">🥛</div><div class="food-result-info"><div class="food-result-name">Paneer (100g)</div><div class="food-result-meta">Protein 18g · Carbs 1g · Fat 20g</div></div><div class="food-result-cal">265 kcal</div></div>
-    <div class="food-result"><div class="food-result-emoji">🍌</div><div class="food-result-info"><div class="food-result-name">Banana (medium)</div><div class="food-result-meta">Protein 1g · Carbs 27g · Fat 0g</div></div><div class="food-result-cal">122 kcal</div></div>
-  </div>
-</div>
 
 <script>
-  function toggleMeal(id) { document.getElementById('meal-' + id).classList.toggle('open'); }
-  function toggleWater(idx) {
-    const dots = document.querySelectorAll('.water-dot');
-    if (dots[idx].classList.contains('filled')) {
-      for (let i = idx; i < dots.length; i++) dots[i].classList.remove('filled');
-    } else {
-      for (let i = 0; i <= idx; i++) dots[i].classList.add('filled');
+  // Water dots
+  const totalDots = 8;
+  const startFilled = 5;
+  const dotsEl = document.getElementById('waterDots');
+
+  function buildDots(filled) {
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < totalDots; i++) {
+      const d = document.createElement('div');
+      d.className = `w-5 h-5 rounded-full border-2 cursor-pointer transition-all hover:scale-110 ${
+        i < filled ? 'bg-water border-water' : 'bg-slate-800 border-slate-700'
+      }`;
+      d.onclick = () => {
+        const current = dotsEl.querySelectorAll('.bg-water').length;
+        buildDots(i < current ? i : i + 1);
+        const newFilled = dotsEl.querySelectorAll('.bg-water').length;
+        document.getElementById('waterLabel').textContent =
+          (newFilled * 0.3125).toFixed(1) + ' / 2.5 L — tap to update';
+      };
+      dotsEl.appendChild(d);
     }
-    const filled = Array.from(dots).filter(d => d.classList.contains('filled')).length;
-    document.getElementById('water-label').textContent = (filled * 0.3125).toFixed(1) + ' / 2.5 L';
   }
-  function openLog(e) {
-    e.stopPropagation();
-    document.getElementById('logModal').classList.add('open');
-    setTimeout(() => document.getElementById('foodSearch').focus(), 400);
+  buildDots(startFilled);
+
+  // Meal accordion
+  const open = { breakfast: true, lunch: false, dinner: false, snacks: false };
+  function toggleMeal(id) {
+    open[id] = !open[id];
+    document.getElementById('body-' + id).classList.toggle('hidden', !open[id]);
+    document.getElementById('chev-' + id).style.transform = open[id] ? 'rotate(180deg)' : '';
   }
-  function closeLogOnOverlay(e) {
-    if (e.target === document.getElementById('logModal')) document.getElementById('logModal').classList.remove('open');
+
+  // Log food modal
+  function openLog() {
+    const modal = document.getElementById('logModal');
+    const sheet = document.getElementById('logSheet');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
   }
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-    });
-  });
+  function closeLog(e) {
+    if (e.target === document.getElementById('logModal')) {
+      const sheet = document.getElementById('logSheet');
+      sheet.classList.add('translate-y-full');
+      setTimeout(() => {
+        document.getElementById('logModal').classList.add('opacity-0', 'pointer-events-none');
+      }, 300);
+    }
+  }
 </script>
-</body>
 </html>
