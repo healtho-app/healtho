@@ -3,7 +3,7 @@
 
 > Track meals, log calories, monitor macros, and hit your daily goals — built for the whole family.
 
-🔗 **Live App:** https://healtho-cyb250xes-ayushkapoor11s-projects.vercel.app
+🔗 **Live App:** https://healtho-git-main-ayushkapoor11s-projects.vercel.app
 📐 **UI Demos (GitHub Pages):** https://healtho-app.github.io/healtho/frontend/ui-demos/healtho-dashboard.html
 
 ---
