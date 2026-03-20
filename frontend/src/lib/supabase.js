@@ -15,7 +15,18 @@ if (!SUPABASE_URL || !SUPABASE_ANON) {
 
 export const supabase = createClient(
   SUPABASE_URL  || 'https://placeholder.supabase.co',
-  SUPABASE_ANON || 'placeholder-anon-key'
+  SUPABASE_ANON || 'placeholder-anon-key',
+  {
+    auth: {
+      // sessionStorage expires when the tab closes — safer than localStorage
+      // which persists forever and is readable by any JS on the page.
+      // Upgrade to httpOnly cookies via @supabase/ssr before public launch.
+      storage:          window.sessionStorage,
+      autoRefreshToken: true,
+      persistSession:   true,
+      detectSessionInUrl: true,
+    }
+  }
 )
 
 // ─── Auth helpers (ready to use when Ishaan connects Supabase) ───
