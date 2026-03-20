@@ -14,8 +14,10 @@ export default function App() {
       <Route path="/login"    element={<Login />} />
       <Route path="/register" element={<Register />} />
 
+      {/* Profile — unprotected until Supabase auth is live (reads from URL params for now) */}
+      <Route path="/profile"   element={<Profile />} />
+
       {/* Protected routes — require a valid session */}
-      <Route path="/profile"   element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
       {/* Fallback */}
