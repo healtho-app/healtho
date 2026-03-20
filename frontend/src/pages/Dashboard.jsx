@@ -52,7 +52,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header rightLabel="My Profile" rightTo="/profile" rightIcon="person" />
+      <Header rightLabel="My Profile" rightTo="/profile" rightIcon="person" showLogout />
 
       <main className="flex-1 flex items-start justify-center px-4 py-10">
         <div className="w-full max-w-[520px] space-y-4">
