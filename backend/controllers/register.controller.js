@@ -89,7 +89,7 @@ async function registerStep1(req, res) {
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
     password,
-    email_confirm: false, // set true if you require email verification
+    email_confirm: true, // set true if you require email verification
   });
 
   if (authError) {
@@ -103,7 +103,7 @@ async function registerStep1(req, res) {
   const userId = authData.user.id;
 
   // 2. Insert profile row
-  const { error: profileError } = await supabase.from("profiles").insert({
+  const { error: profileError } = await supabase.from("profiles").upsert({
     id: userId,
     full_name,
     email,
