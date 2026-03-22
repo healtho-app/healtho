@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { supabase } from '../lib/supabase'
 
 // ── Validation rules ──────────────────────────────────────────
 function validate({ email, password }) {
@@ -53,9 +54,11 @@ export default function Login() {
 
     setLoading(true)
     try {
-      // TODO: replace with → await signIn({ email: form.email, password: form.password })
-      // import { signIn } from '../lib/supabase'
-      await new Promise(r => setTimeout(r, 800)) // simulate network
+      const { error } = await supabase.auth.signInWithPassword({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      })
+      if (error) throw error
       navigate('/dashboard')
     } catch (err) {
       setServerError(err.message || 'Invalid email or password. Please try again.')

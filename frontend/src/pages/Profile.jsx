@@ -1,14 +1,15 @@
-import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { supabase } from '../lib/supabase'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const ACTIVITY_MAP = {
-  sedentary:   { label: 'Sedentary',         sub: 'Little or no exercise, desk job',  emoji: '🪑' },
-  light:       { label: 'Lightly Active',     sub: 'Light exercise 1–3 days/week',     emoji: '🚶' },
-  moderate:    { label: 'Moderately Active',  sub: 'Moderate exercise 3–5 days/week',  emoji: '🏃' },
-  active:      { label: 'Very Active',        sub: 'Hard exercise 6–7 days/week',       emoji: '💪' },
-  very_active: { label: 'Athlete',            sub: 'Very hard exercise, physical job',  emoji: '🏋️' },
+  sedentary:         { label: 'Sedentary',         sub: 'Little or no exercise, desk job',  emoji: '🪑' },
+  lightly_active:    { label: 'Lightly Active',    sub: 'Light exercise 1–3 days/week',     emoji: '🚶' },
+  moderately_active: { label: 'Moderately Active', sub: 'Moderate exercise 3–5 days/week',  emoji: '🏃' },
+  very_active:       { label: 'Very Active',       sub: 'Hard exercise 6–7 days/week',      emoji: '💪' },
+  athlete:           { label: 'Athlete',           sub: 'Very hard exercise, physical job',  emoji: '🏋️' },
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -19,7 +20,7 @@ function calcBMI(weight, height) {
 
 function calcCalories(weight, height, age, activity) {
   const bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5
-  const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9 }
+  const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
   return Math.round(bmr * (multipliers[activity] || 1.55))
 }
 
@@ -61,32 +62,62 @@ function inputCls(hasError) {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function Profile() {
-  const [params] = useSearchParams()
+  const [params]  = useSearchParams()
+  const navigate  = useNavigate()
 
-  // Seed initial data from URL params (Register flow) or defaults
-  // TODO: replace with → const { data } = await supabase.from('users').select().eq('id', session.user.id).single()
-  const initial = {
-    name:     params.get('name')     || 'Ayush Sharma',
-    email:    params.get('email')    || 'ayush@example.com',
-    age:      params.get('age')      || '27',
-    height:   params.get('height')   || '175',
-    weight:   params.get('weight')   || '72',
-    activity: params.get('activity') || 'moderate',
+  // Fallback values from URL params (passed by Register flow)
+  const fallback = {
+    name:     params.get('name')     || '',
+    email:    params.get('email')    || '',
+    age:      params.get('age')      || '',
+    height:   params.get('height')   || '',
+    weight:   params.get('weight')   || '',
+    activity: params.get('activity') || 'moderately_active',
   }
 
-  const [profile,  setProfile]  = useState(initial)
+  const [profile,  setProfile]  = useState(fallback)
+  const [loading,  setLoading]  = useState(true)
   const [editing,  setEditing]  = useState(false)
-  const [draft,    setDraft]    = useState(initial)
+  const [draft,    setDraft]    = useState(fallback)
   const [errors,   setErrors]   = useState({})
   const [saving,   setSaving]   = useState(false)
   const [saved,    setSaved]    = useState(false)
+
+  // Fetch profile from Supabase on mount
+  useEffect(() => {
+    async function fetchProfile() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { setLoading(false); return }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!error && data) {
+        const fetched = {
+          name:     data.full_name     || fallback.name,
+          email:    data.email         || fallback.email,
+          age:      String(data.age    ?? fallback.age),
+          height:   String(data.height_cm ?? fallback.height),
+          weight:   String(data.weight_kg ?? fallback.weight),
+          activity: data.activity_level || fallback.activity,
+        }
+        setProfile(fetched)
+        setDraft(fetched)
+      }
+      setLoading(false)
+    }
+    fetchProfile()
+  }, [])
 
   // Live-computed values from current profile (or draft while editing)
   const view     = editing ? draft : profile
   const bmi      = calcBMI(parseFloat(view.weight), parseFloat(view.height))
   const calories = calcCalories(parseFloat(view.weight), parseFloat(view.height), parseInt(view.age), view.activity)
   const bmiInfo  = getBmiInfo(bmi)
-  const actInfo  = ACTIVITY_MAP[view.activity] || ACTIVITY_MAP.moderate
+  const actInfo  = ACTIVITY_MAP[view.activity] || ACTIVITY_MAP.moderately_active
   const initials = profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
   const setDraftField = (field) => (e) => {
@@ -113,21 +144,41 @@ export default function Profile() {
 
     setSaving(true)
     try {
-      // TODO: replace with →
-      // await supabase.from('users').update({
-      //   age: parseInt(draft.age),
-      //   height_cm: parseFloat(draft.height),
-      //   weight_kg: parseFloat(draft.weight),
-      //   activity_level: draft.activity,
-      // }).eq('id', session.user.id)
-      await new Promise(r => setTimeout(r, 700)) // simulate network
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not signed in')
+
+      const weight_kg = parseFloat(draft.weight)
+      const height_cm = parseFloat(draft.height)
+      const age       = parseInt(draft.age)
+      const bmi       = calculateBMI(weight_kg, height_cm)
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          age,
+          height_cm,
+          weight_kg,
+          bmi,
+          activity_level: draft.activity,
+        })
+        .eq('id', session.user.id)
+
+      if (error) throw error
+
       setProfile({ ...profile, ...draft })
       setEditing(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      setErrors({ save: err.message || 'Could not save. Please try again.' })
     } finally {
       setSaving(false)
     }
+  }
+
+  function calculateBMI(weight_kg, height_cm) {
+    const height_m = height_cm / 100
+    return parseFloat((weight_kg / (height_m * height_m)).toFixed(1))
   }
 
   return (
@@ -135,6 +186,12 @@ export default function Profile() {
       <Header rightLabel="Dashboard" rightTo="/dashboard" rightIcon="dashboard" showLogout />
 
       <main className="flex-1 flex items-start justify-center px-4 py-10">
+        {loading ? (
+          <div className="flex flex-col items-center gap-4 pt-20">
+            <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
+            <p className="text-slate-500 text-sm font-semibold">Loading profile...</p>
+          </div>
+        ) : (
         <div className="w-full max-w-[520px] space-y-4">
 
           {/* Saved banner */}
@@ -353,15 +410,13 @@ export default function Profile() {
             </div>
           )}
 
-          {/* Dev note */}
-          <div className="p-4 bg-slate-900 border border-dashed border-slate-700 rounded-xl flex gap-3">
-            <span className="material-symbols-outlined text-slate-600 flex-shrink-0 text-sm mt-0.5">code</span>
-            <p className="text-slate-600 text-xs leading-relaxed">
-              <span className="text-slate-400 font-semibold">Dev note:</span> Save changes will call{' '}
-              <code className="text-primary bg-slate-800 px-1 py-0.5 rounded">supabase.from('users').update()</code>{' '}
-              once Supabase is connected. BMI and calorie goal will then be recalculated server-side.
-            </p>
-          </div>
+          {/* Save error */}
+          {errors.save && (
+            <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+              <span className="material-symbols-outlined text-red-400">warning</span>
+              <p className="text-red-400 text-sm font-semibold">{errors.save}</p>
+            </div>
+          )}
 
           {/* CTA */}
           {!editing && (
@@ -375,6 +430,7 @@ export default function Profile() {
           )}
 
         </div>
+        )}
       </main>
 
       <footer className="py-6 px-6 text-center">

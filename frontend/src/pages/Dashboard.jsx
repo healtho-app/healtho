@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import Header       from '../components/Header'
 import CalorieRing  from '../components/CalorieRing'
 import MacroCard    from '../components/MacroCard'
@@ -49,6 +50,21 @@ const DAILY_DATA = {
 
 export default function Dashboard() {
   const [logOpen, setLogOpen] = useState(false)
+  const [userName, setUserName] = useState('')
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', session.user.id)
+        .single()
+      if (data?.full_name) setUserName(data.full_name.split(' ')[0])
+    }
+    fetchUser()
+  }, [])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -63,7 +79,7 @@ export default function Dashboard() {
               {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
             <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight mt-1">
-              Good morning, <span className="text-primary">Ayush</span> 👋
+              Good morning, <span className="text-primary">{userName || 'there'}</span> 👋
             </h1>
             <p className="text-slate-500 text-base mt-1">Here's your nutrition summary for today.</p>
           </div>
