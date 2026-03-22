@@ -51,29 +51,44 @@
 
 ```
 healtho/
-├── frontend/                   # React web app (Vite)
+├── frontend/                       # React web app (Vite) — Ayush
 │   ├── src/
-│   │   ├── components/         # Shared UI components
+│   │   ├── components/             # Shared UI components
 │   │   │   ├── Header.jsx
 │   │   │   ├── CalorieRing.jsx
 │   │   │   ├── MacroCard.jsx
 │   │   │   ├── WaterTracker.jsx
 │   │   │   ├── MealSection.jsx
-│   │   │   └── LogFoodModal.jsx
-│   │   ├── pages/              # Route-level pages
+│   │   │   ├── LogFoodModal.jsx
+│   │   │   └── ProtectedRoute.jsx
+│   │   ├── pages/                  # Route-level pages
 │   │   │   ├── Login.jsx
 │   │   │   ├── Register.jsx
 │   │   │   ├── Profile.jsx
 │   │   │   ├── Dashboard.jsx
 │   │   │   └── NotFound.jsx
 │   │   ├── lib/
-│   │   │   └── supabase.js     # Supabase client + auth helpers
+│   │   │   └── supabase.js         # Supabase client + auth helpers
 │   │   ├── App.jsx
 │   │   └── main.jsx
-│   ├── tailwind.config.js      # Design tokens (colors, fonts)
-│   ├── .env.example            # Required env vars template
+│   ├── tailwind.config.js          # Design tokens (colors, fonts)
+│   ├── vercel.json                 # Security headers (CSP, X-Frame-Options, etc.)
+│   ├── .env.example                # Required env vars template
 │   └── package.json
-└── frontend/ui-demos/          # Static HTML mockups (GitHub Pages)
+├── backend/                        # Express API — Ishaan
+│   ├── controllers/
+│   │   └── register.controller.js  # Registration logic + BMI/TDEE calculation
+│   ├── middleware/
+│   │   └── auth.middleware.js      # Supabase JWT verification
+│   ├── routes/
+│   │   └── register.routes.js      # /api/auth/register endpoints
+│   ├── validators/
+│   │   └── register.validator.js   # Joi schema validation
+│   ├── server.js
+│   └── package.json
+├── docs/
+│   └── testing/                    # Internal team docs
+└── frontend/ui-demos/              # Static HTML mockups (GitHub Pages)
     ├── healtho-dashboard.html
     ├── healtho-register.html
     └── healtho-profile.html
@@ -99,35 +114,74 @@ healtho/
 
 ## Local Development
 
+**Frontend (Ayush)**
 ```bash
-# Clone the repo
 git clone https://github.com/healtho-app/healtho.git
 cd healtho/frontend
 
-# Install dependencies
 npm install
 
-# Set up environment variables
 cp .env.example .env.local
-# → Fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+# → Fill in VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL
 
-# Start dev server
 npm run dev
 # → Opens at http://localhost:5173
+```
+
+**Backend (Ishaan)**
+```bash
+cd healtho/backend
+
+npm install
+
+# Create a .env file with:
+# SUPABASE_URL=...
+# SUPABASE_ANON_KEY=...
+# SUPABASE_SERVICE_ROLE_KEY=...
+# PORT=3000
+
+npm run dev
+# → Runs at http://localhost:3000
 ```
 
 ---
 
 ## Environment Variables
 
-Create a `.env.local` file in `frontend/` (never commit this):
+Create a `.env.local` file in `frontend/` (never commit this — use `.env.example` as the template):
 
-```
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```bash
+# Supabase — get from supabase.com → your project → Settings → API
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+
+# Ishaan's Express backend
+# Local dev:  http://localhost:3000
+# Production: https://your-backend-url.com
+VITE_API_URL=http://localhost:3000
 ```
 
-> These keys come from the Supabase project dashboard (Ishaan sets these up on the backend side).
+> `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` come from the Supabase project dashboard (Ishaan owns this).
+> `VITE_API_URL` points to Ishaan's Express server — update to the deployed URL once it's live.
+
+---
+
+## API Endpoints (Ishaan's Backend)
+
+Base URL: `VITE_API_URL` (default: `http://localhost:3000`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET`  | `/` | None | Health check — returns `{ message: "Healtho API is running 🚀" }` |
+| `POST` | `/api/auth/register` | None | Step 1 — create account (name, email, password) |
+| `POST` | `/api/auth/register/metrics` | Bearer JWT | Step 2 — save body stats (age, height, weight, unit) |
+| `POST` | `/api/auth/register/activity` | Bearer JWT | Step 3 — set activity level, returns `daily_calorie_goal` |
+
+**Registration flow (frontend → backend):**
+1. `POST /api/auth/register` → user created in Supabase Auth + `profiles` table
+2. Frontend calls `supabase.auth.signInWithPassword()` to obtain JWT
+3. `POST /api/auth/register/metrics` with `Authorization: Bearer <jwt>`
+4. `POST /api/auth/register/activity` with `Authorization: Bearer <jwt>` → registration complete
 
 ---
 
@@ -144,19 +198,32 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ## Roadmap
 
+**Phase 1 — Foundation ✅**
 - [x] HTML mockups (Dashboard, Register, Profile)
 - [x] React app with React Router
 - [x] Login page with validation
-- [x] 3-step registration with validation
-- [x] Profile summary page
-- [x] Dashboard with calorie ring, macros, water, meals
-- [x] Supabase client file
+- [x] 3-step registration with validation + email OTP (Step 4)
+- [x] Profile summary page with BMI + calorie goal
+- [x] Dashboard with calorie ring, macros, water tracker, meal log
+- [x] Supabase client + auth helpers
 - [x] 404 Not Found page
-- [ ] Connect Supabase Auth (awaiting backend keys from Ishaan)
-- [ ] Real food search API integration
+- [x] Security headers (`vercel.json`), ProtectedRoute, sessionStorage auth
+- [x] Sign out button, smart logo routing, edit profile
+- [x] Express backend — 3-step registration API (Ishaan)
+- [x] Frontend wired to backend registration endpoints
+
+**Phase 2 — Live Auth & Data 🔄**
+- [ ] Share Supabase keys → connect frontend auth end-to-end
+- [ ] Login wired to `supabase.auth.signInWithPassword()`
+- [ ] Dashboard loads real user data from Supabase
+- [ ] Real food search API (USDA FoodData Central)
+- [ ] Save logged meals to Supabase
+
+**Phase 3 — Mobile & Growth**
 - [ ] React Native mobile app (Expo)
 - [ ] Google / Apple OAuth
 - [ ] Push notifications
+- [ ] Family sharing / multi-profile support
 
 ---
 
