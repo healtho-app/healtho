@@ -9,11 +9,19 @@ const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 async function apiPost(path, body, token) {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${API}${path}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  })
+
+  let res
+  try {
+    res = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+  } catch {
+    // Network error — backend is unreachable (not deployed yet, or no internet)
+    throw new Error('__backend_offline__')
+  }
+
   const json = await res.json()
   if (!res.ok) {
     // Surface Joi validation array or single message
@@ -233,9 +241,9 @@ export default function Register() {
 
       goTo(2)
     } catch (err) {
-      // Keep error messages generic to avoid leaking account info
-      const msg = err.message?.toLowerCase()
-      if (msg?.includes('already registered') || msg?.includes('already exists')) {
+      if (err.message === '__backend_offline__') {
+        setServerError("We're still setting up our servers — registration will be live very soon! Check back shortly.")
+      } else if (err.message?.toLowerCase().includes('already registered') || err.message?.toLowerCase().includes('already exists')) {
         setServerError('An account with this email already exists. Try logging in instead.')
       } else {
         setServerError(err.message || 'Could not create account. Please try again.')
@@ -262,7 +270,9 @@ export default function Register() {
 
       goTo(3)
     } catch (err) {
-      setServerError(err.message || 'Could not save your metrics. Please try again.')
+      setServerError(err.message === '__backend_offline__'
+        ? "We're still setting up our servers — check back shortly!"
+        : err.message || 'Could not save your metrics. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -292,7 +302,9 @@ export default function Register() {
       })
       navigate('/profile?' + params.toString())
     } catch (err) {
-      setServerError(err.message || 'Could not complete registration. Please try again.')
+      setServerError(err.message === '__backend_offline__'
+        ? "We're still setting up our servers — check back shortly!"
+        : err.message || 'Could not complete registration. Please try again.')
     } finally {
       setLoading(false)
     }
