@@ -1,8 +1,31 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { supabase } from '../lib/supabase'
 
-// ── Step config ────────────────────────────────────────────────────────────────
+// ── API base URL (Ishaan's Express backend) ────────────────────────────────────
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+async function apiPost(path, body, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const res = await fetch(`${API}${path}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+  const json = await res.json()
+  if (!res.ok) {
+    // Surface Joi validation array or single message
+    const msg = Array.isArray(json.errors)
+      ? json.errors[0]
+      : json.message || 'Something went wrong. Please try again.'
+    throw new Error(msg)
+  }
+  return json
+}
+
+// ── Step config ─────────────────────────────────────────────────────────────────
 const STEPS = {
   1: { label: '1', pct: '25%',  width: '25%',  hint: "Let's start with your account details..." },
   2: { label: '2', pct: '50%',  width: '50%',  hint: 'Your personalised plan is taking shape...' },
@@ -10,33 +33,35 @@ const STEPS = {
   4: { label: '4', pct: '100%', width: '100%', hint: 'Check your inbox for a 6-digit code.' },
 }
 
+// ── Activity options — values MUST match Ishaan's backend validator ────────────
 const ACTIVITY_OPTIONS = [
-  { value: 'sedentary',   emoji: '🪑', label: 'Sedentary',         sub: 'Little or no exercise, desk job' },
-  { value: 'light',       emoji: '🚶', label: 'Lightly Active',    sub: 'Light exercise 1–3 days/week' },
-  { value: 'moderate',    emoji: '🏃', label: 'Moderately Active', sub: 'Moderate exercise 3–5 days/week' },
-  { value: 'active',      emoji: '💪', label: 'Very Active',       sub: 'Hard exercise 6–7 days/week' },
-  { value: 'very_active', emoji: '🏋️', label: 'Athlete',           sub: 'Very hard exercise, physical job' },
+  { value: 'sedentary',         emoji: '🪑', label: 'Sedentary',         sub: 'Little or no exercise, desk job' },
+  { value: 'lightly_active',    emoji: '🚶', label: 'Lightly Active',    sub: 'Light exercise 1–3 days/week' },
+  { value: 'moderately_active', emoji: '🏃', label: 'Moderately Active', sub: 'Moderate exercise 3–5 days/week' },
+  { value: 'very_active',       emoji: '💪', label: 'Very Active',       sub: 'Hard exercise 6–7 days/week' },
+  { value: 'athlete',           emoji: '🏋️', label: 'Athlete',           sub: 'Very hard exercise, physical job' },
 ]
 
-const OTP_LENGTH = 6
+const OTP_LENGTH     = 6
 const RESEND_SECONDS = 30
 
-// ── Validation ─────────────────────────────────────────────────────────────────
+// ── Validation ──────────────────────────────────────────────────────────────────
 function validateStep1({ name, email, password }) {
   const errors = {}
-  if (!name.trim())             errors.name     = 'Full name is required'
-  else if (name.trim().length < 2) errors.name  = 'Name must be at least 2 characters'
-  if (!email.trim())            errors.email    = 'Email is required'
+  if (!name.trim())                errors.name     = 'Full name is required'
+  else if (name.trim().length < 2) errors.name     = 'Name must be at least 2 characters'
+  if (!email.trim())               errors.email    = 'Email is required'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address'
-  if (!password)                errors.password = 'Password is required'
-  else if (password.length < 8) errors.password = 'Password must be at least 8 characters'
+  if (!password)                   errors.password = 'Password is required'
+  else if (password.length < 8)   errors.password = 'Password must be at least 8 characters'
+  else if (!/(?=.*[0-9!@#$%^&*])/.test(password)) errors.password = 'Include at least one number or symbol'
   return errors
 }
 
 function validateStep2({ age, height, weight }) {
   const errors = {}
   const a = parseInt(age), h = parseFloat(height), w = parseFloat(weight)
-  if (!age || isNaN(a) || a < 13 || a > 120)     errors.age    = 'Enter a valid age between 13 and 120'
+  if (!age    || isNaN(a) || a < 10 || a > 120)  errors.age    = 'Enter a valid age between 10 and 120'
   if (!height || isNaN(h) || h < 50 || h > 300)  errors.height = 'Enter a valid height (50–300 cm)'
   if (!weight || isNaN(w) || w < 20 || w > 500)  errors.weight = 'Enter a valid weight (20–500 kg)'
   return errors
@@ -46,7 +71,7 @@ function validateStep3({ activity }) {
   return activity ? {} : { activity: 'Please select your activity level' }
 }
 
-// ── Shared components ──────────────────────────────────────────────────────────
+// ── Shared components ───────────────────────────────────────────────────────────
 function FieldError({ message }) {
   if (!message) return null
   return (
@@ -65,7 +90,7 @@ function inputClass(errors, field, extra = '') {
   }`
 }
 
-// ── BMI helpers ────────────────────────────────────────────────────────────────
+// ── BMI helpers ─────────────────────────────────────────────────────────────────
 function calcBMI(weight, height) {
   if (!weight || !height || height < 50 || weight < 20) return null
   return (weight / Math.pow(height / 100, 2)).toFixed(1)
@@ -76,13 +101,12 @@ function getBmiInfo(bmi) {
   if (b < 18.5) return { label: 'Underweight — BMI below 18.5',     color: 'bg-blue-400',   text: 'text-blue-400',   pct: 20 }
   if (b < 25)   return { label: 'Healthy weight — BMI 18.5–24.9 ✓', color: 'bg-green-400',  text: 'text-green-400',  pct: 50 }
   if (b < 30)   return { label: 'Overweight — BMI 25–29.9',         color: 'bg-yellow-400', text: 'text-yellow-400', pct: 70 }
-  return             { label: 'Obese range — BMI 30+',             color: 'bg-red-400',    text: 'text-red-400',    pct: 90 }
+  return             { label: 'Obese range — BMI 30+',              color: 'bg-red-400',    text: 'text-red-400',    pct: 90 }
 }
 
-// ── OTP Box component ──────────────────────────────────────────────────────────
+// ── OTP input component ─────────────────────────────────────────────────────────
 function OtpInput({ digits, onChange, hasError }) {
   const refs = useRef([])
-
   const focus = (i) => refs.current[i]?.focus()
 
   const handleKey = (i, e) => {
@@ -93,11 +117,8 @@ function OtpInput({ digits, onChange, hasError }) {
         const next = [...digits]; next[i - 1] = ''; onChange(next); focus(i - 1)
       }
       e.preventDefault()
-    } else if (e.key === 'ArrowLeft' && i > 0) {
-      focus(i - 1)
-    } else if (e.key === 'ArrowRight' && i < OTP_LENGTH - 1) {
-      focus(i + 1)
-    }
+    } else if (e.key === 'ArrowLeft'  && i > 0)              focus(i - 1)
+      else if (e.key === 'ArrowRight' && i < OTP_LENGTH - 1) focus(i + 1)
   }
 
   const handleInput = (i, e) => {
@@ -142,7 +163,7 @@ function OtpInput({ digits, onChange, hasError }) {
   )
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+// ── Main component ──────────────────────────────────────────────────────────────
 export default function Register() {
   const navigate = useNavigate()
   const [step,        setStep]        = useState(1)
@@ -155,8 +176,12 @@ export default function Register() {
   const [resendTimer, setResendTimer] = useState(0)
   const [resending,   setResending]   = useState(false)
 
+  // JWT stored after step 1 sign-in — needed for steps 2 & 3 Bearer auth
+  const [authToken, setAuthToken] = useState(null)
+
   const [form, setForm] = useState({
     name: '', email: '', password: '',
+    unit_system: 'metric',
     age: '', height: '', weight: '',
     activity: '',
   })
@@ -171,71 +196,124 @@ export default function Register() {
 
   const goTo = (n) => {
     setErrors({})
+    setServerError('')
     setStep(n)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const nextStep = (targetStep, validator) => {
-    const errs = validator(form)
-    if (Object.keys(errs).length > 0) { setErrors(errs); return }
-    goTo(targetStep)
-  }
-
-  // ── Resend countdown timer ──────────────────────────────────────────────────
+  // ── Resend countdown timer ───────────────────────────────────────────────────
   useEffect(() => {
     if (resendTimer <= 0) return
     const t = setTimeout(() => setResendTimer(s => s - 1), 1000)
     return () => clearTimeout(t)
   }, [resendTimer])
 
-  // ── Step 3 submit → call signUp → go to OTP step ───────────────────────────
-  const submit = async () => {
+  // ── Step 1: Create account via Ishaan's API, then sign in for JWT ────────────
+  const submitStep1 = async () => {
+    const errs = validateStep1(form)
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+
+    setLoading(true)
+    setServerError('')
+    try {
+      // 1a. Create user via backend
+      await apiPost('/api/auth/register', {
+        full_name: form.name.trim(),
+        email:     form.email.trim().toLowerCase(),
+        password:  form.password,
+      })
+
+      // 1b. Sign in immediately to get JWT for steps 2 & 3
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email:    form.email.trim().toLowerCase(),
+        password: form.password,
+      })
+      if (error) throw error
+      setAuthToken(data.session.access_token)
+
+      goTo(2)
+    } catch (err) {
+      // Keep error messages generic to avoid leaking account info
+      const msg = err.message?.toLowerCase()
+      if (msg?.includes('already registered') || msg?.includes('already exists')) {
+        setServerError('An account with this email already exists. Try logging in instead.')
+      } else {
+        setServerError(err.message || 'Could not create account. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 2: Save body metrics ────────────────────────────────────────────────
+  const submitStep2 = async () => {
+    const errs = validateStep2(form)
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+
+    setLoading(true)
+    setServerError('')
+    try {
+      await apiPost('/api/auth/register/metrics', {
+        unit_system: form.unit_system,
+        age:         parseInt(form.age),
+        height:      parseFloat(form.height),
+        weight:      parseFloat(form.weight),
+      }, authToken)
+
+      goTo(3)
+    } catch (err) {
+      setServerError(err.message || 'Could not save your metrics. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 3: Save activity level — registration complete ──────────────────────
+  const submitStep3 = async () => {
     const errs = validateStep3(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     setLoading(true)
     setServerError('')
     try {
-      // TODO: replace simulation with real Supabase call:
-      // const { error } = await supabase.auth.signUp({
-      //   email: form.email,
-      //   password: form.password,
-      //   options: { data: { name: form.name } }
-      // })
-      // if (error) throw error
-      // Supabase will send a 6-digit OTP to form.email automatically
-      // (requires "Confirm email" enabled in Supabase Auth → Settings)
-      await new Promise(r => setTimeout(r, 900)) // simulate network
-      goTo(4)
-      setResendTimer(RESEND_SECONDS)
+      const result = await apiPost('/api/auth/register/activity', {
+        activity_level: form.activity,
+      }, authToken)
+
+      // Navigate to profile with the confirmed values from the backend
+      const params = new URLSearchParams({
+        name:               form.name,
+        email:              form.email,
+        age:                form.age,
+        height:             form.height,
+        weight:             form.weight,
+        activity:           form.activity,
+        daily_calorie_goal: result.data?.daily_calorie_goal ?? '',
+      })
+      navigate('/profile?' + params.toString())
     } catch (err) {
-      setServerError(err.message || 'Something went wrong. Please try again.')
+      setServerError(err.message || 'Could not complete registration. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  // ── Step 4 verify OTP ───────────────────────────────────────────────────────
+  // ── Step 4: Verify OTP (used if Ishaan sets email_confirm: false) ─────────────
   const verifyOtp = async () => {
     const code = otpDigits.join('')
     if (code.length < OTP_LENGTH) {
       setOtpError('Enter the full 6-digit code from your email')
       return
     }
-
     setLoading(true)
     setOtpError('')
     try {
-      // TODO: replace simulation with real Supabase OTP verification:
-      // const { error } = await supabase.auth.verifyOtp({
-      //   email: form.email,
-      //   token: code,
-      //   type: 'signup',
-      // })
-      // if (error) throw error
-      // After verification, optionally insert profile row:
-      // await supabase.from('users').insert({ id: session.user.id, name: form.name, ... })
-      await new Promise(r => setTimeout(r, 900)) // simulate network
+      const { error } = await supabase.auth.verifyOtp({
+        email: form.email,
+        token: code,
+        type:  'signup',
+      })
+      if (error) throw error
 
       const params = new URLSearchParams({
         name: form.name, email: form.email,
@@ -250,15 +328,16 @@ export default function Register() {
     }
   }
 
-  // ── Resend code ─────────────────────────────────────────────────────────────
+  // ── Resend OTP ───────────────────────────────────────────────────────────────
   const resendCode = async () => {
     setResending(true)
     setOtpError('')
     setOtpDigits(Array(OTP_LENGTH).fill(''))
     try {
-      // TODO: await supabase.auth.resend({ type: 'signup', email: form.email })
-      await new Promise(r => setTimeout(r, 600))
+      await supabase.auth.resend({ type: 'signup', email: form.email })
       setResendTimer(RESEND_SECONDS)
+    } catch (err) {
+      setOtpError(err.message || 'Could not resend code.')
     } finally {
       setResending(false)
     }
@@ -287,7 +366,7 @@ export default function Register() {
             <p className="text-slate-500 text-sm font-medium italic">{s.hint}</p>
           </div>
 
-          {/* ── STEP 1: Account Details ─────────────────────────────────────── */}
+          {/* ── STEP 1: Account Details ──────────────────────────────────────── */}
           {step === 1 && (
             <div>
               <div className="mb-8">
@@ -308,7 +387,7 @@ export default function Register() {
                     <span className="material-symbols-outlined text-primary text-xl">person</span>Full Name
                   </label>
                   <input type="text" value={form.name} onChange={set('name')}
-                    onKeyDown={e => e.key === 'Enter' && nextStep(2, validateStep1)}
+                    onKeyDown={e => e.key === 'Enter' && submitStep1()}
                     placeholder="e.g. Ayush Sharma" className={inputClass(errors, 'name')} />
                   <FieldError message={errors.name} />
                 </div>
@@ -318,7 +397,7 @@ export default function Register() {
                     <span className="material-symbols-outlined text-primary text-xl">mail</span>Email
                   </label>
                   <input type="email" value={form.email} onChange={set('email')}
-                    onKeyDown={e => e.key === 'Enter' && nextStep(2, validateStep1)}
+                    onKeyDown={e => e.key === 'Enter' && submitStep1()}
                     placeholder="example@email.com" className={inputClass(errors, 'email')} />
                   <FieldError message={errors.email} />
                 </div>
@@ -329,8 +408,8 @@ export default function Register() {
                   </label>
                   <div className="relative">
                     <input type={showPwd ? 'text' : 'password'} value={form.password} onChange={set('password')}
-                      onKeyDown={e => e.key === 'Enter' && nextStep(2, validateStep1)}
-                      placeholder="Minimum 8 characters" className={inputClass(errors, 'password', 'pr-12')} />
+                      onKeyDown={e => e.key === 'Enter' && submitStep1()}
+                      placeholder="Min 8 chars, include a number or symbol" className={inputClass(errors, 'password', 'pr-12')} />
                     <button type="button" onClick={() => setShowPwd(v => !v)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
                       <span className="material-symbols-outlined">{showPwd ? 'visibility_off' : 'visibility'}</span>
@@ -363,10 +442,13 @@ export default function Register() {
                 </button>
               </div>
 
-              <button onClick={() => nextStep(2, validateStep1)}
-                className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
-                Continue
-                <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+              <button onClick={submitStep1} disabled={loading}
+                className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+                {loading ? (
+                  <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Creating account…</>
+                ) : (
+                  <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                )}
               </button>
               <p className="text-center text-slate-500 text-xs mt-6">
                 By continuing, you agree to our{' '}
@@ -376,7 +458,7 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── STEP 2: Body Metrics ────────────────────────────────────────── */}
+          {/* ── STEP 2: Body Metrics ─────────────────────────────────────────── */}
           {step === 2 && (
             <div>
               <div className="mb-8">
@@ -384,13 +466,32 @@ export default function Register() {
                 <p className="text-slate-400 text-lg mt-2">Used to calculate your BMI and personalised daily calorie goal.</p>
               </div>
 
+              {serverError && (
+                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
+                  <span className="material-symbols-outlined text-red-400">warning</span>
+                  <p className="text-red-400 text-sm font-semibold">{serverError}</p>
+                </div>
+              )}
+
+              {/* Unit toggle — wired to form.unit_system */}
               <div className="flex mb-8">
                 <div className="flex h-12 w-full items-center rounded-xl bg-slate-800/50 p-1.5">
-                  {['Metric (kg, cm)', 'Imperial (lb, ft)'].map((label, i) => (
-                    <label key={i} className="flex cursor-pointer h-full grow items-center justify-center rounded-lg px-4 transition-all has-[:checked]:bg-slate-700 has-[:checked]:text-primary text-slate-400 text-base font-semibold">
-                      <span>{label}</span>
-                      <input defaultChecked={i === 0} className="hidden" name="unit-toggle" type="radio" />
-                    </label>
+                  {[
+                    { value: 'metric',   label: 'Metric (kg, cm)' },
+                    { value: 'imperial', label: 'Imperial (lb, ft)' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, unit_system: opt.value }))}
+                      className={`flex cursor-pointer h-full grow items-center justify-center rounded-lg px-4 transition-all text-base font-semibold ${
+                        form.unit_system === opt.value
+                          ? 'bg-slate-700 text-primary'
+                          : 'text-slate-400 hover:text-slate-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -400,7 +501,7 @@ export default function Register() {
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">calendar_today</span>Age
                   </label>
-                  <input type="number" min="13" max="120" value={form.age} onChange={set('age')}
+                  <input type="number" min="10" max="120" value={form.age} onChange={set('age')}
                     placeholder="e.g. 27" className={inputClass(errors, 'age')} />
                   <FieldError message={errors.age} />
                 </div>
@@ -411,8 +512,11 @@ export default function Register() {
                     </label>
                     <div className="relative">
                       <input type="number" value={form.height} onChange={set('height')}
-                        placeholder="175" className={inputClass(errors, 'height', 'pr-12')} />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">cm</span>
+                        placeholder={form.unit_system === 'metric' ? '175' : '69'}
+                        className={inputClass(errors, 'height', 'pr-14')} />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
+                        {form.unit_system === 'metric' ? 'cm' : 'in'}
+                      </span>
                     </div>
                     <FieldError message={errors.height} />
                   </div>
@@ -422,8 +526,11 @@ export default function Register() {
                     </label>
                     <div className="relative">
                       <input type="number" value={form.weight} onChange={set('weight')}
-                        placeholder="70" className={inputClass(errors, 'weight', 'pr-12')} />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">kg</span>
+                        placeholder={form.unit_system === 'metric' ? '70' : '154'}
+                        className={inputClass(errors, 'weight', 'pr-14')} />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
+                        {form.unit_system === 'metric' ? 'kg' : 'lb'}
+                      </span>
                     </div>
                     <FieldError message={errors.weight} />
                   </div>
@@ -447,10 +554,13 @@ export default function Register() {
               )}
 
               <div className="mt-10 flex flex-col gap-3">
-                <button onClick={() => nextStep(3, validateStep2)}
-                  className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
-                  Continue
-                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                <button onClick={submitStep2} disabled={loading}
+                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+                  {loading ? (
+                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
+                  ) : (
+                    <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                  )}
                 </button>
                 <button onClick={() => goTo(1)} className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">Back</button>
               </div>
@@ -461,7 +571,7 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── STEP 3: Activity Level ──────────────────────────────────────── */}
+          {/* ── STEP 3: Activity Level ───────────────────────────────────────── */}
           {step === 3 && (
             <div>
               <div className="mb-8">
@@ -505,10 +615,10 @@ export default function Register() {
               )}
 
               <div className="mt-10 flex flex-col gap-3">
-                <button onClick={submit} disabled={loading}
+                <button onClick={submitStep3} disabled={loading}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
                   {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Creating your account…</>
+                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Finishing up…</>
                   ) : 'Create My Account 🎉'}
                 </button>
                 <button onClick={() => goTo(2)} className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">Back</button>
@@ -516,10 +626,9 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── STEP 4: Email OTP Verification ─────────────────────────────── */}
+          {/* ── STEP 4: Email OTP (active when Ishaan sets email_confirm: false) */}
           {step === 4 && (
             <div>
-              {/* Icon */}
               <div className="flex justify-center mb-6">
                 <div className="w-20 h-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
                   <span className="material-symbols-outlined text-primary text-4xl">mark_email_unread</span>
@@ -528,13 +637,10 @@ export default function Register() {
 
               <div className="mb-8 text-center">
                 <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Check your email</h1>
-                <p className="text-slate-400 text-base mt-3 leading-relaxed">
-                  We sent a 6-digit verification code to
-                </p>
+                <p className="text-slate-400 text-base mt-3 leading-relaxed">We sent a 6-digit verification code to</p>
                 <p className="text-primary font-bold text-base mt-1">{form.email}</p>
               </div>
 
-              {/* OTP input */}
               <div className="mb-4">
                 <OtpInput digits={otpDigits} onChange={d => { setOtpDigits(d); setOtpError('') }} hasError={!!otpError} />
                 {otpError && (
@@ -545,7 +651,6 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Info box */}
               <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3 mb-8">
                 <span className="material-symbols-outlined text-primary flex-shrink-0 text-base mt-0.5">info</span>
                 <p className="text-slate-400 text-xs leading-relaxed">
@@ -553,7 +658,6 @@ export default function Register() {
                 </p>
               </div>
 
-              {/* Verify button */}
               <div className="flex flex-col gap-3">
                 <button onClick={verifyOtp} disabled={loading || otpDigits.join('').length < OTP_LENGTH}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
@@ -564,7 +668,6 @@ export default function Register() {
                   )}
                 </button>
 
-                {/* Resend */}
                 <div className="flex items-center justify-center gap-2 py-2">
                   {resendTimer > 0 ? (
                     <p className="text-slate-500 text-sm">
