@@ -216,7 +216,10 @@ export default function Register() {
     return () => clearTimeout(t)
   }, [resendTimer])
 
-  // ── Step 1: Create account via Ishaan's API, then sign in for JWT ────────────
+  // ── Step 1: Create account directly via Supabase Auth ───────────────────────
+  // NOTE: Ishaan's Express backend (/api/auth/register) does the same thing but
+  // requires a deployed server. We call Supabase directly for now and will
+  // migrate back to the full API flow once the backend is deployed.
   const submitStep1 = async () => {
     const errs = validateStep1(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
@@ -224,26 +227,32 @@ export default function Register() {
     setLoading(true)
     setServerError('')
     try {
-      // 1a. Create user via backend
-      await apiPost('/api/auth/register', {
-        full_name: form.name.trim(),
-        email:     form.email.trim().toLowerCase(),
-        password:  form.password,
-      })
-
-      // 1b. Sign in immediately to get JWT for steps 2 & 3
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email:    form.email.trim().toLowerCase(),
         password: form.password,
+        options:  { data: { full_name: form.name.trim() } },
       })
       if (error) throw error
-      setAuthToken(data.session.access_token)
 
-      goTo(2)
+      if (data.session) {
+        // Email confirmation disabled — session returned immediately
+        setAuthToken(data.session.access_token)
+        // Seed the profiles row with basic info
+        await supabase.from('profiles').upsert({
+          id:                data.user.id,
+          full_name:         form.name.trim(),
+          email:             form.email.trim().toLowerCase(),
+          registration_step: 1,
+          created_at:        new Date().toISOString(),
+        })
+        goTo(2)
+      } else {
+        // Email confirmation enabled — show OTP step
+        goTo(4)
+      }
     } catch (err) {
-      if (err.message === '__backend_offline__') {
-        setServerError("We're still setting up our servers — registration will be live very soon! Check back shortly.")
-      } else if (err.message?.toLowerCase().includes('already registered') || err.message?.toLowerCase().includes('already exists')) {
+      const msg = err.message?.toLowerCase() ?? ''
+      if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already registered')) {
         setServerError('An account with this email already exists. Try logging in instead.')
       } else {
         setServerError(err.message || 'Could not create account. Please try again.')
@@ -253,7 +262,7 @@ export default function Register() {
     }
   }
 
-  // ── Step 2: Save body metrics ────────────────────────────────────────────────
+  // ── Step 2: Save body metrics directly to Supabase ──────────────────────────
   const submitStep2 = async () => {
     const errs = validateStep2(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
@@ -261,18 +270,28 @@ export default function Register() {
     setLoading(true)
     setServerError('')
     try {
-      await apiPost('/api/auth/register/metrics', {
-        unit_system: form.unit_system,
-        age:         parseInt(form.age),
-        height:      parseFloat(form.height),
-        weight:      parseFloat(form.weight),
-      }, authToken)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Session expired. Please go back to step 1.')
 
+      // Convert to metric for storage (matches Ishaan's backend logic)
+      const isImperial = form.unit_system === 'imperial'
+      const weight_kg  = isImperial ? parseFloat((parseFloat(form.weight) * 0.453592).toFixed(2)) : parseFloat(form.weight)
+      const height_cm  = isImperial ? parseFloat((parseFloat(form.height) * 2.54).toFixed(2))    : parseFloat(form.height)
+      const bmi        = parseFloat((weight_kg / Math.pow(height_cm / 100, 2)).toFixed(1))
+
+      const { error } = await supabase.from('profiles').update({
+        unit_system:       form.unit_system,
+        age:               parseInt(form.age),
+        height_cm,
+        weight_kg,
+        bmi,
+        registration_step: 2,
+      }).eq('id', user.id)
+
+      if (error) throw error
       goTo(3)
     } catch (err) {
-      setServerError(err.message === '__backend_offline__'
-        ? "We're still setting up our servers — check back shortly!"
-        : err.message || 'Could not save your metrics. Please try again.')
+      setServerError(err.message || 'Could not save your metrics. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -286,11 +305,26 @@ export default function Register() {
     setLoading(true)
     setServerError('')
     try {
-      const result = await apiPost('/api/auth/register/activity', {
-        activity_level: form.activity,
-      }, authToken)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Session expired. Please go back to step 1.')
 
-      // Navigate to profile with the confirmed values from the backend
+      // Calculate TDEE client-side — same Mifflin-St Jeor formula as Ishaan's backend
+      const isImperial   = form.unit_system === 'imperial'
+      const weight_kg    = isImperial ? parseFloat(form.weight) * 0.453592 : parseFloat(form.weight)
+      const height_cm    = isImperial ? parseFloat(form.height) * 2.54     : parseFloat(form.height)
+      const bmr          = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(form.age)
+      const multipliers  = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
+      const tdee         = Math.round(bmr * multipliers[form.activity])
+
+      const { error } = await supabase.from('profiles').update({
+        activity_level:     form.activity,
+        daily_calorie_goal: tdee,
+        registration_step:  3,
+        is_onboarded:       true,
+      }).eq('id', user.id)
+
+      if (error) throw error
+
       const params = new URLSearchParams({
         name:               form.name,
         email:              form.email,
@@ -298,13 +332,11 @@ export default function Register() {
         height:             form.height,
         weight:             form.weight,
         activity:           form.activity,
-        daily_calorie_goal: result.data?.daily_calorie_goal ?? '',
+        daily_calorie_goal: tdee,
       })
       navigate('/profile?' + params.toString())
     } catch (err) {
-      setServerError(err.message === '__backend_offline__'
-        ? "We're still setting up our servers — check back shortly!"
-        : err.message || 'Could not complete registration. Please try again.')
+      setServerError(err.message || 'Could not complete registration. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -327,12 +359,18 @@ export default function Register() {
       })
       if (error) throw error
 
-      const params = new URLSearchParams({
-        name: form.name, email: form.email,
-        age: form.age, height: form.height,
-        weight: form.weight, activity: form.activity,
-      })
-      navigate('/profile?' + params.toString())
+      // Email confirmed — seed profile row then continue to collect metrics
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('profiles').upsert({
+          id:                user.id,
+          full_name:         form.name.trim(),
+          email:             form.email.trim().toLowerCase(),
+          registration_step: 1,
+          created_at:        new Date().toISOString(),
+        })
+      }
+      goTo(2)
     } catch (err) {
       setOtpError(err.message || 'Invalid or expired code. Please try again.')
     } finally {
