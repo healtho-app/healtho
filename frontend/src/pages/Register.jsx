@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 
@@ -543,6 +543,13 @@ export default function Register() {
                 By continuing, you agree to our{' '}
                 <a href="#" className="text-primary hover:underline">Terms</a> and{' '}
                 <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+              </p>
+
+              <p className="text-center text-slate-500 text-sm mt-5">
+                Already have an account?{' '}
+                <Link to="/login" className="text-primary font-bold hover:underline">
+                  Log in
+                </Link>
               </p>
             </div>
           )}
