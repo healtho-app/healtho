@@ -212,12 +212,17 @@ Base URL: `VITE_API_URL` (default: `http://localhost:3000`)
 - [x] Express backend — 3-step registration API (Ishaan)
 - [x] Frontend wired to backend registration endpoints
 
-**Phase 2 — Live Auth & Data 🔄**
-- [ ] Share Supabase keys → connect frontend auth end-to-end
-- [ ] Login wired to `supabase.auth.signInWithPassword()`
-- [ ] Dashboard loads real user data from Supabase
+**Phase 2 — Live Auth & Data ✅**
+- [x] Supabase keys connected — registration and login live
+- [x] Login wired to `supabase.auth.signInWithPassword()`
+- [x] Dashboard loads real calorie goal, BMI, and weight from Supabase
+- [x] Profile reads and saves to `profiles` table
+- [x] npm audit clean — 0 vulnerabilities (Vite upgraded to 6.4.1)
+
+**Phase 3 — Meal Logging & Food Data 🔄**
 - [ ] Real food search API (USDA FoodData Central)
-- [ ] Save logged meals to Supabase
+- [ ] Save logged meals to Supabase (`meal_logs` table)
+- [ ] Dashboard consumed calories + macros from real meal data
 
 **Phase 3 — Mobile & Growth**
 - [ ] React Native mobile app (Expo)

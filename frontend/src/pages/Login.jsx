@@ -60,8 +60,10 @@ export default function Login() {
       })
       if (error) throw error
       navigate('/dashboard')
-    } catch (err) {
-      setServerError(err.message || 'Invalid email or password. Please try again.')
+    } catch {
+      // Never expose raw Supabase error messages — they can reveal whether
+      // an email exists in the system (e.g. "Email not confirmed")
+      setServerError('Invalid email or password. Please try again.')
     } finally {
       setLoading(false)
     }
