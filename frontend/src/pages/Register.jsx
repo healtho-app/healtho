@@ -248,22 +248,43 @@ export default function Register() {
       if (data.session) {
         // Email confirmation disabled — session returned immediately
         setAuthToken(data.session.access_token)
-        // Seed the profiles row with basic info
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id:                data.user.id,
+
+        // Seed the profiles row. Try upsert first; if RLS blocks the INSERT half
+        // (e.g. a DB trigger already created the row and only UPDATE is granted),
+        // fall back to a plain update so username is always saved.
+        const profilePayload = {
           full_name:         form.name.trim(),
           username:          form.username.toLowerCase(),
           email:             form.email.trim().toLowerCase(),
           registration_step: 1,
-          created_at:        new Date().toISOString(),
-        })
-        if (profileError?.code === '23505') {
+        }
+        const { error: upsertError } = await supabase.from('profiles').upsert(
+          { id: data.user.id, ...profilePayload },
+          { onConflict: 'id' }
+        )
+
+        if (upsertError?.code === '23505') {
           // UNIQUE constraint — username already taken
           await supabase.auth.admin?.deleteUser?.(data.user.id).catch(() => {})
           setErrors(er => ({ ...er, username: 'Username already taken — try another' }))
           goTo(1)
           return
         }
+
+        if (upsertError) {
+          // Upsert failed (likely RLS blocks INSERT) — row may already exist from
+          // a DB trigger, so try a plain update to at least save the username
+          const { error: updateError } = await supabase.from('profiles')
+            .update(profilePayload)
+            .eq('id', data.user.id)
+          if (updateError?.code === '23505') {
+            await supabase.auth.admin?.deleteUser?.(data.user.id).catch(() => {})
+            setErrors(er => ({ ...er, username: 'Username already taken — try another' }))
+            goTo(1)
+            return
+          }
+        }
+
         goTo(2)
       } else {
         // Email confirmation enabled — show OTP step
@@ -385,14 +406,20 @@ export default function Register() {
       // Email confirmed — seed profile row then continue to collect metrics
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        await supabase.from('profiles').upsert({
-          id:                user.id,
+        const profilePayload = {
           full_name:         form.name.trim(),
           username:          form.username.toLowerCase(),
           email:             form.email.trim().toLowerCase(),
           registration_step: 1,
-          created_at:        new Date().toISOString(),
-        })
+        }
+        const { error: upsertError } = await supabase.from('profiles').upsert(
+          { id: user.id, ...profilePayload },
+          { onConflict: 'id' }
+        )
+        // If upsert is blocked by RLS, fall back to update (row likely exists from DB trigger)
+        if (upsertError && upsertError.code !== '23505') {
+          await supabase.from('profiles').update(profilePayload).eq('id', user.id)
+        }
       }
       goTo(2)
     } catch (err) {
