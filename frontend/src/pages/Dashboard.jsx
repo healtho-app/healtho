@@ -34,8 +34,11 @@ const PLACEHOLDER_MACROS = [
   { label: 'Fiber',   amount: 0, pct: 0, color: 'bg-fiber'   },
 ]
 
-function greeting() {
-  const h = new Date().getHours()
+function greeting(timezone) {
+  // Use the user's stored timezone so Papa in India and Ayush in Arizona
+  // both get the correct greeting for their local time
+  const tz   = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+  const h    = parseInt(new Date().toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: tz }))
   if (h < 12) return 'Good morning'
   if (h < 17) return 'Good afternoon'
   return 'Good evening'
@@ -57,7 +60,7 @@ export default function Dashboard() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, username, daily_calorie_goal, weight_kg, bmi, activity_level')
+        .select('full_name, username, timezone, daily_calorie_goal, weight_kg, bmi, activity_level')
         .eq('id', session.user.id)
         .single()
 
@@ -87,7 +90,7 @@ export default function Dashboard() {
               <Skeleton className="h-10 w-64 mt-1" />
             ) : (
               <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight mt-1">
-                {greeting()}, <span className="text-primary">{firstName}</span> 👋
+                {greeting(profile?.timezone)}, <span className="text-primary">{firstName}</span> 👋
               </h1>
             )}
             <p className="text-slate-500 text-base mt-1">

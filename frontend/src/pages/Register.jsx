@@ -336,10 +336,13 @@ export default function Register() {
       const tdee         = Math.round(bmr * multipliers[form.activity])
 
       const { error } = await supabase.from('profiles').update({
-        activity_level:     form.activity,
-        daily_calorie_goal: tdee,
-        registration_step:  3,
-        is_onboarded:       true,
+        activity_level:      form.activity,
+        daily_calorie_goal:  tdee,
+        registration_step:   3,
+        is_onboarded:        true,
+        is_profile_complete: true,
+        // Auto-detect browser timezone — e.g. 'America/Phoenix' or 'Asia/Kolkata'
+        timezone:            Intl.DateTimeFormat().resolvedOptions().timeZone,
       }).eq('id', user.id)
 
       if (error) throw error
