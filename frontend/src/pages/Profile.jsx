@@ -74,6 +74,9 @@ export default function Profile() {
     height:   params.get('height')   || '',
     weight:   params.get('weight')   || '',
     activity: params.get('activity') || 'moderately_active',
+    country:  params.get('country')  || '',
+    phone:    params.get('phone')    || '',
+    avatar:   '',
   }
 
   const [profile,  setProfile]  = useState(fallback)
@@ -92,7 +95,7 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, username, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal')
+        .select('full_name, username, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal, country, phone_number, avatar_url')
         .eq('id', session.user.id)
         .single()
 
@@ -105,6 +108,9 @@ export default function Profile() {
           height:   String(data.height_cm ?? fallback.height),
           weight:   String(data.weight_kg ?? fallback.weight),
           activity: data.activity_level || fallback.activity,
+          country:  data.country        || '',
+          phone:    data.phone_number   || '',
+          avatar:   data.avatar_url     || '',
         }
         setProfile(fetched)
         setDraft(fetched)
@@ -154,6 +160,8 @@ export default function Profile() {
       const age       = parseInt(draft.age)
       const bmi       = calculateBMI(weight_kg, height_cm)
 
+      const newCalories = calcCalories(weight_kg, height_cm, age, draft.activity)
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -161,7 +169,10 @@ export default function Profile() {
           height_cm,
           weight_kg,
           bmi,
-          activity_level: draft.activity,
+          activity_level:     draft.activity,
+          daily_calorie_goal: newCalories,
+          country:            draft.country.trim()  || null,
+          phone_number:       draft.phone.trim()    || null,
         })
         .eq('id', session.user.id)
 
@@ -206,14 +217,46 @@ export default function Profile() {
 
           {/* Avatar + name */}
           <div className="flex flex-col items-center py-4">
-            <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-4xl font-extrabold text-white shadow-xl shadow-primary/30 mb-4">
-              {initials}
+            <div className="relative mb-4">
+              {profile.avatar ? (
+                <img
+                  src={profile.avatar}
+                  alt={profile.name}
+                  className="w-24 h-24 rounded-full object-cover shadow-xl shadow-primary/30 border-2 border-primary/40"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-4xl font-extrabold text-white shadow-xl shadow-primary/30">
+                  {initials}
+                </div>
+              )}
+              {/* Upload photo placeholder */}
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center cursor-not-allowed" title="Photo upload coming soon">
+                <span className="material-symbols-outlined text-slate-500 text-base">photo_camera</span>
+              </div>
             </div>
+            <p className="text-slate-600 text-xs mb-3 italic">Photo upload coming soon</p>
             <h1 className="text-white text-3xl font-extrabold tracking-tight">{profile.name}</h1>
             {profile.username && (
               <p className="text-primary font-mono font-semibold text-base mt-1">@{profile.username}</p>
             )}
             <p className="text-slate-500 text-sm mt-0.5">{profile.email}</p>
+            {/* Country + phone in view mode under email */}
+            {!editing && (profile.country || profile.phone) && (
+              <div className="flex items-center gap-3 mt-1.5 flex-wrap justify-center">
+                {profile.country && (
+                  <span className="text-slate-500 text-xs flex items-center gap-1">
+                    <span className="material-symbols-outlined text-slate-600 text-sm">location_on</span>
+                    {profile.country}
+                  </span>
+                )}
+                {profile.phone && (
+                  <span className="text-slate-500 text-xs flex items-center gap-1">
+                    <span className="material-symbols-outlined text-slate-600 text-sm">phone</span>
+                    {profile.phone}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Edit / Cancel toggle */}
             {!editing ? (
@@ -361,6 +404,47 @@ export default function Profile() {
                     </span>
                   </label>
                 ))}
+              </div>
+
+              {/* Country */}
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-base">location_on</span>
+                  Country <span className="text-slate-600 font-normal text-xs">(optional)</span>
+                </label>
+                <select
+                  value={draft.country}
+                  onChange={setDraftField('country')}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl h-12 px-4 text-base text-slate-100 focus:outline-none focus:ring-2 focus:border-primary focus:ring-primary/20 transition-all appearance-none"
+                >
+                  <option value="">Select country…</option>
+                  <option value="India">India</option>
+                  <option value="United States">United States</option>
+                  <option value="Canada">Canada</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Australia">Australia</option>
+                  <option value="New Zealand">New Zealand</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="UAE">UAE</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {/* Phone number */}
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-base">phone</span>
+                  Phone Number <span className="text-slate-600 font-normal text-xs">(optional)</span>
+                </label>
+                <input
+                  type="tel"
+                  value={draft.phone}
+                  onChange={setDraftField('phone')}
+                  placeholder="+1 555 000 0000"
+                  className={inputCls(false)}
+                />
               </div>
 
               {/* Save button */}
