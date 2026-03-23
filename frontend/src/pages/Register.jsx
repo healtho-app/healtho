@@ -9,39 +9,29 @@ const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 async function apiPost(path, body, token) {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
-
   let res
   try {
-    res = await fetch(`${API}${path}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    })
+    res = await fetch(`${API}${path}`, { method: 'POST', headers, body: JSON.stringify(body) })
   } catch {
-    // Network error — backend is unreachable (not deployed yet, or no internet)
     throw new Error('__backend_offline__')
   }
-
   const json = await res.json()
   if (!res.ok) {
-    // Surface Joi validation array or single message
-    const msg = Array.isArray(json.errors)
-      ? json.errors[0]
-      : json.message || 'Something went wrong. Please try again.'
+    const msg = Array.isArray(json.errors) ? json.errors[0] : json.message || 'Something went wrong.'
     throw new Error(msg)
   }
   return json
 }
 
-// ── Step config ─────────────────────────────────────────────────────────────────
+// ── Step config — 5 steps: details → verify email → verify phone → metrics → activity
 const STEPS = {
-  1: { label: '1', pct: '25%',  width: '25%',  hint: "Let's start with your account details..." },
-  2: { label: '2', pct: '50%',  width: '50%',  hint: 'Your personalised plan is taking shape...' },
-  3: { label: '3', pct: '75%',  width: '75%',  hint: 'Almost done — just one more thing!' },
-  4: { label: '4', pct: '100%', width: '100%', hint: 'Check your inbox for a 6-digit code.' },
+  1: { label: '1', pct: '20%',  width: '20%',  hint: "Let's start with your account details..." },
+  2: { label: '2', pct: '40%',  width: '40%',  hint: 'Check your inbox — enter the 6-digit code.' },
+  3: { label: '3', pct: '60%',  width: '60%',  hint: 'Check your phone — enter the 6-digit SMS code.' },
+  4: { label: '4', pct: '80%',  width: '80%',  hint: 'Your personalised plan is taking shape...' },
+  5: { label: '5', pct: '100%', width: '100%', hint: 'Almost done — just one more thing!' },
 }
 
-// ── Activity options — values MUST match Ishaan's backend validator ────────────
 const ACTIVITY_OPTIONS = [
   { value: 'sedentary',         emoji: '🪑', label: 'Sedentary',         sub: 'Little or no exercise, desk job' },
   { value: 'lightly_active',    emoji: '🚶', label: 'Lightly Active',    sub: 'Light exercise 1–3 days/week' },
@@ -53,8 +43,8 @@ const ACTIVITY_OPTIONS = [
 const OTP_LENGTH     = 6
 const RESEND_SECONDS = 30
 
-// ── Validation ──────────────────────────────────────────────────────────────────
-function validateStep1({ name, username, email, password }) {
+// ── Validation ────────────────────────────────────────────────────────────────
+function validateStep1({ name, username, email, password, phone }) {
   const errors = {}
   if (!name.trim())                errors.name     = 'Full name is required'
   else if (name.trim().length < 2) errors.name     = 'Name must be at least 2 characters'
@@ -67,10 +57,14 @@ function validateStep1({ name, username, email, password }) {
   if (!password)                   errors.password = 'Password is required'
   else if (password.length < 8)    errors.password = 'Password must be at least 8 characters'
   else if (!/(?=.*[0-9!@#$%^&*])/.test(password)) errors.password = 'Include at least one number or symbol'
+  const cleanPhone = phone.replace(/[\s\-()]/g, '')
+  if (!phone.trim())               errors.phone    = 'Phone number is required'
+  else if (!/^\+\d{7,15}$/.test(cleanPhone))
+                                   errors.phone    = 'Include your country code — e.g. +1 555 000 0000'
   return errors
 }
 
-function validateStep2({ age, height, weight }) {
+function validateStep4({ age, height, weight }) {
   const errors = {}
   const a = parseInt(age), h = parseFloat(height), w = parseFloat(weight)
   if (!age    || isNaN(a) || a < 10 || a > 120)  errors.age    = 'Enter a valid age between 10 and 120'
@@ -79,11 +73,11 @@ function validateStep2({ age, height, weight }) {
   return errors
 }
 
-function validateStep3({ activity }) {
+function validateStep5({ activity }) {
   return activity ? {} : { activity: 'Please select your activity level' }
 }
 
-// ── Shared components ───────────────────────────────────────────────────────────
+// ── Shared UI ─────────────────────────────────────────────────────────────────
 function FieldError({ message }) {
   if (!message) return null
   return (
@@ -102,7 +96,7 @@ function inputClass(errors, field, extra = '') {
   }`
 }
 
-// ── BMI helpers ─────────────────────────────────────────────────────────────────
+// ── BMI helpers ───────────────────────────────────────────────────────────────
 function calcBMI(weight, height) {
   if (!weight || !height || height < 50 || weight < 20) return null
   return (weight / Math.pow(height / 100, 2)).toFixed(1)
@@ -116,7 +110,7 @@ function getBmiInfo(bmi) {
   return             { label: 'Obese range — BMI 30+',              color: 'bg-red-400',    text: 'text-red-400',    pct: 90 }
 }
 
-// ── OTP input component ─────────────────────────────────────────────────────────
+// ── OTP input ─────────────────────────────────────────────────────────────────
 function OtpInput({ digits, onChange, hasError }) {
   const refs = useRef([])
   const focus = (i) => refs.current[i]?.focus()
@@ -156,15 +150,12 @@ function OtpInput({ digits, onChange, hasError }) {
         <input
           key={i}
           ref={el => refs.current[i] = el}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
+          type="text" inputMode="numeric" maxLength={1}
           value={d}
           onChange={e => handleInput(i, e)}
           onKeyDown={e => handleKey(i, e)}
           className={`w-12 h-14 text-center text-2xl font-extrabold font-mono rounded-xl border-2 bg-slate-900 text-slate-100 focus:outline-none focus:ring-2 transition-all ${
-            d
-              ? 'border-primary text-primary'
+            d ? 'border-primary text-primary'
               : hasError
                 ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/20'
                 : 'border-slate-700 focus:border-primary focus:ring-primary/20'
@@ -175,24 +166,33 @@ function OtpInput({ digits, onChange, hasError }) {
   )
 }
 
-// ── Main component ──────────────────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 export default function Register() {
   const navigate = useNavigate()
-  const [step,        setStep]        = useState(1)
-  const [showPwd,     setShowPwd]     = useState(false)
-  const [loading,     setLoading]     = useState(false)
-  const [errors,      setErrors]      = useState({})
-  const [serverError, setServerError] = useState('')
-  const [otpDigits,   setOtpDigits]   = useState(Array(OTP_LENGTH).fill(''))
-  const [otpError,    setOtpError]    = useState('')
-  const [resendTimer, setResendTimer] = useState(0)
-  const [resending,   setResending]   = useState(false)
+  const [step,             setStep]            = useState(1)
+  const [showPwd,          setShowPwd]          = useState(false)
+  const [loading,          setLoading]          = useState(false)
+  const [errors,           setErrors]           = useState({})
+  const [serverError,      setServerError]      = useState('')
 
-  // JWT stored after step 1 sign-in — needed for steps 2 & 3 Bearer auth
+  // Email OTP
+  const [otpDigits,        setOtpDigits]        = useState(Array(OTP_LENGTH).fill(''))
+  const [otpError,         setOtpError]         = useState('')
+  const [resendTimer,      setResendTimer]      = useState(0)
+  const [resending,        setResending]        = useState(false)
+
+  // Phone OTP
+  const [phoneOtpDigits,   setPhoneOtpDigits]   = useState(Array(OTP_LENGTH).fill(''))
+  const [phoneOtpError,    setPhoneOtpError]    = useState('')
+  const [phoneResendTimer, setPhoneResendTimer] = useState(0)
+  const [phoneResending,   setPhoneResending]   = useState(false)
+  const [editingPhone,     setEditingPhone]     = useState(false)
+  const [phoneEditVal,     setPhoneEditVal]     = useState('')
+
   const [authToken, setAuthToken] = useState(null)
 
   const [form, setForm] = useState({
-    name: '', username: '', email: '', password: '',
+    name: '', username: '', email: '', password: '', phone: '',
     unit_system: 'metric',
     age: '', height: '', weight: '',
     activity: '',
@@ -203,7 +203,6 @@ export default function Register() {
     if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
   }
 
-  // Username: auto-lowercase, strip invalid chars as the user types
   const setUsername = (e) => {
     const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
     setForm(f => ({ ...f, username: val }))
@@ -220,17 +219,42 @@ export default function Register() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // ── Resend countdown timer ───────────────────────────────────────────────────
+  // Email OTP resend countdown
   useEffect(() => {
     if (resendTimer <= 0) return
     const t = setTimeout(() => setResendTimer(s => s - 1), 1000)
     return () => clearTimeout(t)
   }, [resendTimer])
 
-  // ── Step 1: Create account directly via Supabase Auth ───────────────────────
-  // NOTE: Ishaan's Express backend (/api/auth/register) does the same thing but
-  // requires a deployed server. We call Supabase directly for now and will
-  // migrate back to the full API flow once the backend is deployed.
+  // Phone OTP resend countdown
+  useEffect(() => {
+    if (phoneResendTimer <= 0) return
+    const t = setTimeout(() => setPhoneResendTimer(s => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [phoneResendTimer])
+
+  // ── Helper: seed profile (upsert → fallback to update) ───────────────────
+  const seedProfile = async (userId, payload) => {
+    const { error: upsertError } = await supabase.from('profiles').upsert(
+      { id: userId, ...payload },
+      { onConflict: 'id' }
+    )
+    if (upsertError?.code === '23505') throw upsertError   // username taken — let caller handle
+    if (upsertError) {
+      // RLS may block INSERT half of upsert — row likely exists from DB trigger
+      await supabase.from('profiles').update(payload).eq('id', userId)
+    }
+  }
+
+  // ── Helper: send phone OTP via Supabase ───────────────────────────────────
+  const sendPhoneOtp = async (phoneOverride) => {
+    const phone = (phoneOverride || form.phone).replace(/[\s\-()]/g, '')
+    const { error } = await supabase.auth.updateUser({ phone })
+    if (error) throw error
+    setPhoneResendTimer(RESEND_SECONDS)
+  }
+
+  // ── Step 1: Create account ────────────────────────────────────────────────
   const submitStep1 = async () => {
     const errs = validateStep1(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
@@ -245,50 +269,36 @@ export default function Register() {
       })
       if (error) throw error
 
+      const profilePayload = {
+        full_name:         form.name.trim(),
+        username:          form.username.toLowerCase(),
+        email:             form.email.trim().toLowerCase(),
+        registration_step: 1,
+      }
+
       if (data.session) {
-        // Email confirmation disabled — session returned immediately
+        // Email confirmation disabled in Supabase — session returned immediately
         setAuthToken(data.session.access_token)
-
-        // Seed the profiles row. Try upsert first; if RLS blocks the INSERT half
-        // (e.g. a DB trigger already created the row and only UPDATE is granted),
-        // fall back to a plain update so username is always saved.
-        const profilePayload = {
-          full_name:         form.name.trim(),
-          username:          form.username.toLowerCase(),
-          email:             form.email.trim().toLowerCase(),
-          registration_step: 1,
-        }
-        const { error: upsertError } = await supabase.from('profiles').upsert(
-          { id: data.user.id, ...profilePayload },
-          { onConflict: 'id' }
-        )
-
-        if (upsertError?.code === '23505') {
-          // UNIQUE constraint — username already taken
-          await supabase.auth.admin?.deleteUser?.(data.user.id).catch(() => {})
-          setErrors(er => ({ ...er, username: 'Username already taken — try another' }))
-          goTo(1)
-          return
-        }
-
-        if (upsertError) {
-          // Upsert failed (likely RLS blocks INSERT) — row may already exist from
-          // a DB trigger, so try a plain update to at least save the username
-          const { error: updateError } = await supabase.from('profiles')
-            .update(profilePayload)
-            .eq('id', data.user.id)
-          if (updateError?.code === '23505') {
+        try {
+          await seedProfile(data.user.id, profilePayload)
+        } catch (profileErr) {
+          if (profileErr?.code === '23505') {
             await supabase.auth.admin?.deleteUser?.(data.user.id).catch(() => {})
             setErrors(er => ({ ...er, username: 'Username already taken — try another' }))
-            goTo(1)
             return
           }
         }
-
-        goTo(2)
+        // Send phone OTP then go to phone verification
+        try {
+          await sendPhoneOtp()
+          goTo(3)
+        } catch {
+          // Phone provider not yet configured in Supabase — skip phone step for now
+          goTo(4)
+        }
       } else {
-        // Email confirmation enabled — show OTP step
-        goTo(4)
+        // Email confirmation enabled — go to email OTP step
+        goTo(2)
       }
     } catch (err) {
       const msg = err.message?.toLowerCase() ?? ''
@@ -302,18 +312,85 @@ export default function Register() {
     }
   }
 
-  // ── Step 2: Save body metrics directly to Supabase ──────────────────────────
-  const submitStep2 = async () => {
-    const errs = validateStep2(form)
+  // ── Step 2: Verify email OTP ──────────────────────────────────────────────
+  const verifyEmail = async () => {
+    const code = otpDigits.join('')
+    if (code.length < OTP_LENGTH) { setOtpError('Enter the full 6-digit code from your email'); return }
+
+    setLoading(true)
+    setOtpError('')
+    try {
+      const { error } = await supabase.auth.verifyOtp({ email: form.email, token: code, type: 'signup' })
+      if (error) throw error
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const profilePayload = {
+          full_name:         form.name.trim(),
+          username:          form.username.toLowerCase(),
+          email:             form.email.trim().toLowerCase(),
+          registration_step: 1,
+        }
+        try {
+          await seedProfile(user.id, profilePayload)
+        } catch (profileErr) {
+          if (profileErr?.code === '23505') {
+            setOtpError('Username already taken — go back and choose another.')
+            return
+          }
+        }
+      }
+
+      // Send phone OTP
+      try {
+        await sendPhoneOtp()
+        goTo(3)
+      } catch {
+        goTo(4) // phone provider not configured — skip
+      }
+    } catch (err) {
+      setOtpError(err.message || 'Invalid or expired code. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 3: Verify phone OTP ──────────────────────────────────────────────
+  const verifyPhone = async () => {
+    const code = phoneOtpDigits.join('')
+    if (code.length < OTP_LENGTH) { setPhoneOtpError('Enter the full 6-digit SMS code'); return }
+
+    setLoading(true)
+    setPhoneOtpError('')
+    try {
+      const phone = form.phone.replace(/[\s\-()]/g, '')
+      const { error } = await supabase.auth.verifyOtp({ phone, token: code, type: 'phone_change' })
+      if (error) throw error
+
+      // Save phone number to profiles
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('profiles').update({ phone_number: phone }).eq('id', user.id)
+      }
+      goTo(4)
+    } catch (err) {
+      setPhoneOtpError(err.message || 'Invalid or expired code. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 4: Body metrics ──────────────────────────────────────────────────
+  const submitMetrics = async () => {
+    const errs = validateStep4(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     setLoading(true)
     setServerError('')
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Session expired. Please go back to step 1.')
+      if (!user) throw new Error('Session expired. Please start over.')
 
-      // Convert to metric for storage (matches Ishaan's backend logic)
       const isImperial = form.unit_system === 'imperial'
       const weight_kg  = isImperial ? parseFloat((parseFloat(form.weight) * 0.453592).toFixed(2)) : parseFloat(form.weight)
       const height_cm  = isImperial ? parseFloat((parseFloat(form.height) * 2.54).toFixed(2))    : parseFloat(form.height)
@@ -329,7 +406,7 @@ export default function Register() {
       }).eq('id', user.id)
 
       if (error) throw error
-      goTo(3)
+      goTo(5)
     } catch (err) {
       setServerError(err.message || 'Could not save your metrics. Please try again.')
     } finally {
@@ -337,24 +414,23 @@ export default function Register() {
     }
   }
 
-  // ── Step 3: Save activity level — registration complete ──────────────────────
-  const submitStep3 = async () => {
-    const errs = validateStep3(form)
+  // ── Step 5: Activity level — registration complete ────────────────────────
+  const submitActivity = async () => {
+    const errs = validateStep5(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     setLoading(true)
     setServerError('')
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Session expired. Please go back to step 1.')
+      if (!user) throw new Error('Session expired. Please start over.')
 
-      // Calculate TDEE client-side — same Mifflin-St Jeor formula as Ishaan's backend
-      const isImperial   = form.unit_system === 'imperial'
-      const weight_kg    = isImperial ? parseFloat(form.weight) * 0.453592 : parseFloat(form.weight)
-      const height_cm    = isImperial ? parseFloat(form.height) * 2.54     : parseFloat(form.height)
-      const bmr          = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(form.age)
-      const multipliers  = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
-      const tdee         = Math.round(bmr * multipliers[form.activity])
+      const isImperial  = form.unit_system === 'imperial'
+      const weight_kg   = isImperial ? parseFloat(form.weight) * 0.453592 : parseFloat(form.weight)
+      const height_cm   = isImperial ? parseFloat(form.height) * 2.54     : parseFloat(form.height)
+      const bmr         = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(form.age)
+      const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
+      const tdee        = Math.round(bmr * multipliers[form.activity])
 
       const { error } = await supabase.from('profiles').update({
         activity_level:      form.activity,
@@ -362,21 +438,15 @@ export default function Register() {
         registration_step:   3,
         is_onboarded:        true,
         is_profile_complete: true,
-        // Auto-detect browser timezone — e.g. 'America/Phoenix' or 'Asia/Kolkata'
         timezone:            Intl.DateTimeFormat().resolvedOptions().timeZone,
       }).eq('id', user.id)
 
       if (error) throw error
 
       const params = new URLSearchParams({
-        name:               form.name,
-        username:           form.username,
-        email:              form.email,
-        age:                form.age,
-        height:             form.height,
-        weight:             form.weight,
-        activity:           form.activity,
-        daily_calorie_goal: tdee,
+        name: form.name, username: form.username, email: form.email,
+        age: form.age, height: form.height, weight: form.weight,
+        activity: form.activity, daily_calorie_goal: tdee,
       })
       navigate('/profile?' + params.toString())
     } catch (err) {
@@ -386,51 +456,8 @@ export default function Register() {
     }
   }
 
-  // ── Step 4: Verify OTP (used if Ishaan sets email_confirm: false) ─────────────
-  const verifyOtp = async () => {
-    const code = otpDigits.join('')
-    if (code.length < OTP_LENGTH) {
-      setOtpError('Enter the full 6-digit code from your email')
-      return
-    }
-    setLoading(true)
-    setOtpError('')
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: form.email,
-        token: code,
-        type:  'signup',
-      })
-      if (error) throw error
-
-      // Email confirmed — seed profile row then continue to collect metrics
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const profilePayload = {
-          full_name:         form.name.trim(),
-          username:          form.username.toLowerCase(),
-          email:             form.email.trim().toLowerCase(),
-          registration_step: 1,
-        }
-        const { error: upsertError } = await supabase.from('profiles').upsert(
-          { id: user.id, ...profilePayload },
-          { onConflict: 'id' }
-        )
-        // If upsert is blocked by RLS, fall back to update (row likely exists from DB trigger)
-        if (upsertError && upsertError.code !== '23505') {
-          await supabase.from('profiles').update(profilePayload).eq('id', user.id)
-        }
-      }
-      goTo(2)
-    } catch (err) {
-      setOtpError(err.message || 'Invalid or expired code. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // ── Resend OTP ───────────────────────────────────────────────────────────────
-  const resendCode = async () => {
+  // ── Resend email code ─────────────────────────────────────────────────────
+  const resendEmailCode = async () => {
     setResending(true)
     setOtpError('')
     setOtpDigits(Array(OTP_LENGTH).fill(''))
@@ -441,6 +468,41 @@ export default function Register() {
       setOtpError(err.message || 'Could not resend code.')
     } finally {
       setResending(false)
+    }
+  }
+
+  // ── Resend phone code ─────────────────────────────────────────────────────
+  const resendPhoneCode = async () => {
+    setPhoneResending(true)
+    setPhoneOtpError('')
+    setPhoneOtpDigits(Array(OTP_LENGTH).fill(''))
+    try {
+      await sendPhoneOtp()
+    } catch (err) {
+      setPhoneOtpError(err.message || 'Could not resend code.')
+    } finally {
+      setPhoneResending(false)
+    }
+  }
+
+  // ── Update phone number inline on step 3 ─────────────────────────────────
+  const updatePhone = async () => {
+    const cleanPhone = phoneEditVal.replace(/[\s\-()]/g, '')
+    if (!/^\+\d{7,15}$/.test(cleanPhone)) {
+      setPhoneOtpError('Include your country code — e.g. +1 555 000 0000')
+      return
+    }
+    setLoading(true)
+    setPhoneOtpError('')
+    setPhoneOtpDigits(Array(OTP_LENGTH).fill(''))
+    try {
+      setForm(f => ({ ...f, phone: phoneEditVal }))
+      await sendPhoneOtp(phoneEditVal)
+      setEditingPhone(false)
+    } catch (err) {
+      setPhoneOtpError(err.message || 'Could not send code to this number.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -457,7 +519,7 @@ export default function Register() {
           <div className="flex flex-col gap-3 mb-10">
             <div className="flex items-center justify-between">
               <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">
-                Step {s.label} of 4
+                Step {s.label} of 5
               </p>
               <p className="text-primary text-sm font-bold">{s.pct}</p>
             </div>
@@ -533,6 +595,17 @@ export default function Register() {
                   </div>
                   <FieldError message={errors.password} />
                 </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
+                    <span className="material-symbols-outlined text-primary text-xl">phone</span>Phone Number
+                  </label>
+                  <input type="tel" value={form.phone} onChange={set('phone')}
+                    onKeyDown={e => e.key === 'Enter' && submitStep1()}
+                    placeholder="+1 555 000 0000" className={inputClass(errors, 'phone')} />
+                  <p className="text-slate-600 text-xs mt-0.5">Include your country code (+1 for US, +91 for India). Used to verify your identity via SMS.</p>
+                  <FieldError message={errors.phone} />
+                </div>
               </div>
 
               <div className="relative py-6">
@@ -571,18 +644,156 @@ export default function Register() {
                 <a href="#" className="text-primary hover:underline">Terms</a> and{' '}
                 <a href="#" className="text-primary hover:underline">Privacy Policy</a>
               </p>
-
               <p className="text-center text-slate-500 text-sm mt-5">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary font-bold hover:underline">
-                  Log in
-                </Link>
+                <Link to="/login" className="text-primary font-bold hover:underline">Log in</Link>
               </p>
             </div>
           )}
 
-          {/* ── STEP 2: Body Metrics ─────────────────────────────────────────── */}
+          {/* ── STEP 2: Verify Email ─────────────────────────────────────────── */}
           {step === 2 && (
+            <div>
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-4xl">mark_email_unread</span>
+                </div>
+              </div>
+              <div className="mb-8 text-center">
+                <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Verify your email</h1>
+                <p className="text-slate-400 text-base mt-3">We sent a 6-digit code to</p>
+                <p className="text-primary font-bold text-base mt-1">{form.email}</p>
+              </div>
+
+              <div className="mb-4">
+                <OtpInput digits={otpDigits} onChange={d => { setOtpDigits(d); setOtpError('') }} hasError={!!otpError} />
+                {otpError && (
+                  <p className="flex items-center justify-center gap-1.5 text-red-400 text-xs font-semibold mt-3">
+                    <span className="material-symbols-outlined text-sm">error</span>{otpError}
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3 mb-8">
+                <span className="material-symbols-outlined text-primary flex-shrink-0 text-base mt-0.5">info</span>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  Can't find it? Check your <span className="text-slate-300 font-semibold">spam folder</span>. Code expires in <span className="text-slate-300 font-semibold">10 minutes</span>.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button onClick={verifyEmail} disabled={loading || otpDigits.join('').length < OTP_LENGTH}
+                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                  {loading
+                    ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Verifying…</>
+                    : <><span className="material-symbols-outlined">mark_email_read</span>Verify Email</>
+                  }
+                </button>
+                <div className="flex items-center justify-center py-2">
+                  {resendTimer > 0 ? (
+                    <p className="text-slate-500 text-sm">Resend in <span className="text-slate-300 font-bold font-mono">{resendTimer}s</span></p>
+                  ) : (
+                    <button onClick={resendEmailCode} disabled={resending}
+                      className="flex items-center gap-1.5 text-primary text-sm font-semibold hover:underline disabled:opacity-50">
+                      {resending
+                        ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Resending…</>
+                        : <><span className="material-symbols-outlined text-sm">refresh</span>Resend code</>
+                      }
+                    </button>
+                  )}
+                </div>
+                <button onClick={() => goTo(1)}
+                  className="w-full h-12 text-slate-500 rounded-xl font-semibold text-sm hover:bg-slate-900 transition-colors flex items-center justify-center gap-1.5">
+                  <span className="material-symbols-outlined text-base">edit</span>Wrong email? Start over
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: Verify Phone ─────────────────────────────────────────── */}
+          {step === 3 && (
+            <div>
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-green-400 text-4xl">sms</span>
+                </div>
+              </div>
+              <div className="mb-8 text-center">
+                <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Verify your phone</h1>
+                <p className="text-slate-400 text-base mt-3">We sent a 6-digit SMS code to</p>
+                <p className="text-primary font-bold text-base mt-1">{form.phone}</p>
+              </div>
+
+              <div className="mb-4">
+                <OtpInput digits={phoneOtpDigits} onChange={d => { setPhoneOtpDigits(d); setPhoneOtpError('') }} hasError={!!phoneOtpError} />
+                {phoneOtpError && (
+                  <p className="flex items-center justify-center gap-1.5 text-red-400 text-xs font-semibold mt-3">
+                    <span className="material-symbols-outlined text-sm">error</span>{phoneOtpError}
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3 mb-6">
+                <span className="material-symbols-outlined text-primary flex-shrink-0 text-base mt-0.5">info</span>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  Didn't receive it? It may take up to a minute. Code expires in <span className="text-slate-300 font-semibold">10 minutes</span>.
+                </p>
+              </div>
+
+              {/* Wrong number — inline edit */}
+              {editingPhone ? (
+                <div className="mb-6 p-4 bg-slate-900 border border-primary/30 rounded-xl space-y-3">
+                  <p className="text-slate-300 text-sm font-semibold">Enter your correct phone number:</p>
+                  <input type="tel" value={phoneEditVal} onChange={e => setPhoneEditVal(e.target.value)}
+                    placeholder="+1 555 000 0000"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl h-12 px-4 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:border-primary focus:ring-primary/20 transition-all" />
+                  <div className="flex gap-3">
+                    <button onClick={updatePhone} disabled={loading}
+                      className="flex-1 h-11 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1.5">
+                      {loading ? <span className="material-symbols-outlined animate-spin text-base">progress_activity</span> : <span className="material-symbols-outlined text-base">send</span>}
+                      Send new code
+                    </button>
+                    <button onClick={() => { setEditingPhone(false); setPhoneOtpError('') }}
+                      className="h-11 px-4 text-slate-400 rounded-xl font-semibold text-sm hover:bg-slate-800 transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex flex-col gap-3">
+                <button onClick={verifyPhone} disabled={loading || phoneOtpDigits.join('').length < OTP_LENGTH}
+                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                  {loading
+                    ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Verifying…</>
+                    : <><span className="material-symbols-outlined">verified</span>Verify Phone</>
+                  }
+                </button>
+                <div className="flex items-center justify-center py-2">
+                  {phoneResendTimer > 0 ? (
+                    <p className="text-slate-500 text-sm">Resend in <span className="text-slate-300 font-bold font-mono">{phoneResendTimer}s</span></p>
+                  ) : (
+                    <button onClick={resendPhoneCode} disabled={phoneResending}
+                      className="flex items-center gap-1.5 text-primary text-sm font-semibold hover:underline disabled:opacity-50">
+                      {phoneResending
+                        ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Resending…</>
+                        : <><span className="material-symbols-outlined text-sm">refresh</span>Resend SMS</>
+                      }
+                    </button>
+                  )}
+                </div>
+                {!editingPhone && (
+                  <button onClick={() => { setEditingPhone(true); setPhoneEditVal(form.phone) }}
+                    className="w-full h-12 text-slate-500 rounded-xl font-semibold text-sm hover:bg-slate-900 transition-colors flex items-center justify-center gap-1.5">
+                    <span className="material-symbols-outlined text-base">edit</span>Wrong number? Change it
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 4: Body Metrics ─────────────────────────────────────────── */}
+          {step === 4 && (
             <div>
               <div className="mb-8">
                 <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Your body metrics</h1>
@@ -596,23 +807,14 @@ export default function Register() {
                 </div>
               )}
 
-              {/* Unit toggle — wired to form.unit_system */}
               <div className="flex mb-8">
                 <div className="flex h-12 w-full items-center rounded-xl bg-slate-800/50 p-1.5">
-                  {[
-                    { value: 'metric',   label: 'Metric (kg, cm)' },
-                    { value: 'imperial', label: 'Imperial (lb, ft)' },
-                  ].map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
+                  {[{ value: 'metric', label: 'Metric (kg, cm)' }, { value: 'imperial', label: 'Imperial (lb, ft)' }].map(opt => (
+                    <button key={opt.value} type="button"
                       onClick={() => setForm(f => ({ ...f, unit_system: opt.value }))}
                       className={`flex cursor-pointer h-full grow items-center justify-center rounded-lg px-4 transition-all text-base font-semibold ${
-                        form.unit_system === opt.value
-                          ? 'bg-slate-700 text-primary'
-                          : 'text-slate-400 hover:text-slate-300'
-                      }`}
-                    >
+                        form.unit_system === opt.value ? 'bg-slate-700 text-primary' : 'text-slate-400 hover:text-slate-300'
+                      }`}>
                       {opt.label}
                     </button>
                   ))}
@@ -677,13 +879,12 @@ export default function Register() {
               )}
 
               <div className="mt-10 flex flex-col gap-3">
-                <button onClick={submitStep2} disabled={loading}
+                <button onClick={submitMetrics} disabled={loading}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
-                  {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
-                  ) : (
-                    <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
-                  )}
+                  {loading
+                    ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
+                    : <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                  }
                 </button>
                 <button onClick={() => goTo(1)} className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">Back</button>
               </div>
@@ -694,8 +895,8 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── STEP 3: Activity Level ───────────────────────────────────────── */}
-          {step === 3 && (
+          {/* ── STEP 5: Activity Level ───────────────────────────────────────── */}
+          {step === 5 && (
             <div>
               <div className="mb-8">
                 <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">How active are you?</h1>
@@ -738,80 +939,14 @@ export default function Register() {
               )}
 
               <div className="mt-10 flex flex-col gap-3">
-                <button onClick={submitStep3} disabled={loading}
+                <button onClick={submitActivity} disabled={loading}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-                  {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Finishing up…</>
-                  ) : 'Create My Account 🎉'}
+                  {loading
+                    ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Finishing up…</>
+                    : 'Create My Account 🎉'
+                  }
                 </button>
-                <button onClick={() => goTo(2)} className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">Back</button>
-              </div>
-            </div>
-          )}
-
-          {/* ── STEP 4: Email OTP (active when Ishaan sets email_confirm: false) */}
-          {step === 4 && (
-            <div>
-              <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-4xl">mark_email_unread</span>
-                </div>
-              </div>
-
-              <div className="mb-8 text-center">
-                <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Check your email</h1>
-                <p className="text-slate-400 text-base mt-3 leading-relaxed">We sent a 6-digit verification code to</p>
-                <p className="text-primary font-bold text-base mt-1">{form.email}</p>
-              </div>
-
-              <div className="mb-4">
-                <OtpInput digits={otpDigits} onChange={d => { setOtpDigits(d); setOtpError('') }} hasError={!!otpError} />
-                {otpError && (
-                  <p className="flex items-center justify-center gap-1.5 text-red-400 text-xs font-semibold mt-3">
-                    <span className="material-symbols-outlined text-sm">error</span>
-                    {otpError}
-                  </p>
-                )}
-              </div>
-
-              <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3 mb-8">
-                <span className="material-symbols-outlined text-primary flex-shrink-0 text-base mt-0.5">info</span>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  Can't find it? Check your <span className="text-slate-300 font-semibold">spam folder</span>. The code expires in <span className="text-slate-300 font-semibold">10 minutes</span>.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <button onClick={verifyOtp} disabled={loading || otpDigits.join('').length < OTP_LENGTH}
-                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-                  {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Verifying…</>
-                  ) : (
-                    <><span className="material-symbols-outlined">verified</span>Verify Email</>
-                  )}
-                </button>
-
-                <div className="flex items-center justify-center gap-2 py-2">
-                  {resendTimer > 0 ? (
-                    <p className="text-slate-500 text-sm">
-                      Resend code in <span className="text-slate-300 font-bold font-mono">{resendTimer}s</span>
-                    </p>
-                  ) : (
-                    <button onClick={resendCode} disabled={resending}
-                      className="flex items-center gap-1.5 text-primary text-sm font-semibold hover:underline disabled:opacity-50">
-                      {resending
-                        ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Resending…</>
-                        : <><span className="material-symbols-outlined text-sm">refresh</span>Resend code</>
-                      }
-                    </button>
-                  )}
-                </div>
-
-                <button onClick={() => goTo(1)}
-                  className="w-full h-12 text-slate-500 rounded-xl font-semibold text-sm hover:bg-slate-900 transition-colors flex items-center justify-center gap-1.5">
-                  <span className="material-symbols-outlined text-base">edit</span>
-                  Wrong email? Start over
-                </button>
+                <button onClick={() => goTo(4)} className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">Back</button>
               </div>
             </div>
           )}
