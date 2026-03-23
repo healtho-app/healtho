@@ -54,14 +54,18 @@ const OTP_LENGTH     = 6
 const RESEND_SECONDS = 30
 
 // ── Validation ──────────────────────────────────────────────────────────────────
-function validateStep1({ name, email, password }) {
+function validateStep1({ name, username, email, password }) {
   const errors = {}
   if (!name.trim())                errors.name     = 'Full name is required'
   else if (name.trim().length < 2) errors.name     = 'Name must be at least 2 characters'
+  if (!username.trim())                        errors.username = 'Username is required'
+  else if (username.length < 3)                errors.username = 'Username must be at least 3 characters'
+  else if (username.length > 20)               errors.username = 'Username must be 20 characters or less'
+  else if (!/^[a-z0-9_]+$/.test(username))     errors.username = 'Only letters, numbers, and underscores allowed'
   if (!email.trim())               errors.email    = 'Email is required'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address'
   if (!password)                   errors.password = 'Password is required'
-  else if (password.length < 8)   errors.password = 'Password must be at least 8 characters'
+  else if (password.length < 8)    errors.password = 'Password must be at least 8 characters'
   else if (!/(?=.*[0-9!@#$%^&*])/.test(password)) errors.password = 'Include at least one number or symbol'
   return errors
 }
@@ -188,7 +192,7 @@ export default function Register() {
   const [authToken, setAuthToken] = useState(null)
 
   const [form, setForm] = useState({
-    name: '', email: '', password: '',
+    name: '', username: '', email: '', password: '',
     unit_system: 'metric',
     age: '', height: '', weight: '',
     activity: '',
@@ -197,6 +201,13 @@ export default function Register() {
   const set = (field) => (e) => {
     setForm(f => ({ ...f, [field]: e.target.value }))
     if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
+  }
+
+  // Username: auto-lowercase, strip invalid chars as the user types
+  const setUsername = (e) => {
+    const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
+    setForm(f => ({ ...f, username: val }))
+    if (errors.username) setErrors(er => ({ ...er, username: '' }))
   }
 
   const bmi     = calcBMI(parseFloat(form.weight), parseFloat(form.height))
@@ -238,13 +249,21 @@ export default function Register() {
         // Email confirmation disabled — session returned immediately
         setAuthToken(data.session.access_token)
         // Seed the profiles row with basic info
-        await supabase.from('profiles').upsert({
+        const { error: profileError } = await supabase.from('profiles').upsert({
           id:                data.user.id,
           full_name:         form.name.trim(),
+          username:          form.username.toLowerCase(),
           email:             form.email.trim().toLowerCase(),
           registration_step: 1,
           created_at:        new Date().toISOString(),
         })
+        if (profileError?.code === '23505') {
+          // UNIQUE constraint — username already taken
+          await supabase.auth.admin?.deleteUser?.(data.user.id).catch(() => {})
+          setErrors(er => ({ ...er, username: 'Username already taken — try another' }))
+          goTo(1)
+          return
+        }
         goTo(2)
       } else {
         // Email confirmation enabled — show OTP step
@@ -327,6 +346,7 @@ export default function Register() {
 
       const params = new URLSearchParams({
         name:               form.name,
+        username:           form.username,
         email:              form.email,
         age:                form.age,
         height:             form.height,
@@ -365,6 +385,7 @@ export default function Register() {
         await supabase.from('profiles').upsert({
           id:                user.id,
           full_name:         form.name.trim(),
+          username:          form.username.toLowerCase(),
           email:             form.email.trim().toLowerCase(),
           registration_step: 1,
           created_at:        new Date().toISOString(),
@@ -440,6 +461,21 @@ export default function Register() {
                     onKeyDown={e => e.key === 'Enter' && submitStep1()}
                     placeholder="e.g. Ayush Sharma" className={inputClass(errors, 'name')} />
                   <FieldError message={errors.name} />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
+                    <span className="material-symbols-outlined text-primary text-xl">alternate_email</span>Username
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-base select-none">@</span>
+                    <input type="text" value={form.username} onChange={setUsername}
+                      onKeyDown={e => e.key === 'Enter' && submitStep1()}
+                      placeholder="yourname" maxLength={20}
+                      className={`${inputClass(errors, 'username')} pl-8`} />
+                  </div>
+                  <p className="text-slate-600 text-xs mt-0.5">Letters, numbers and underscores only. e.g. <span className="text-slate-500">@ayush_k</span></p>
+                  <FieldError message={errors.username} />
                 </div>
 
                 <div className="flex flex-col gap-1">

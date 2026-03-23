@@ -57,7 +57,7 @@ export default function Dashboard() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, daily_calorie_goal, weight_kg, bmi, activity_level')
+        .select('full_name, username, daily_calorie_goal, weight_kg, bmi, activity_level')
         .eq('id', session.user.id)
         .single()
 
@@ -68,6 +68,7 @@ export default function Dashboard() {
   }, [])
 
   const firstName   = profile?.full_name?.split(' ')[0] || 'there'
+  const username    = profile?.username ? `@${profile.username}` : null
   const calorieGoal = profile?.daily_calorie_goal ?? 2000
 
   return (
@@ -89,7 +90,10 @@ export default function Dashboard() {
                 {greeting()}, <span className="text-primary">{firstName}</span> 👋
               </h1>
             )}
-            <p className="text-slate-500 text-base mt-1">Here's your nutrition summary for today.</p>
+            <p className="text-slate-500 text-base mt-1">
+              Here's your nutrition summary for today.
+              {username && <span className="ml-2 text-slate-600 font-mono text-sm">{username}</span>}
+            </p>
           </div>
 
           {/* Calorie goal banner — real data from profiles */}

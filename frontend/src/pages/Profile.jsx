@@ -68,6 +68,7 @@ export default function Profile() {
   // Fallback values from URL params (passed by Register flow)
   const fallback = {
     name:     params.get('name')     || '',
+    username: params.get('username') || '',
     email:    params.get('email')    || '',
     age:      params.get('age')      || '',
     height:   params.get('height')   || '',
@@ -91,13 +92,14 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal')
+        .select('full_name, username, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal')
         .eq('id', session.user.id)
         .single()
 
       if (!error && data) {
         const fetched = {
           name:     data.full_name     || fallback.name,
+          username: data.username      || '',
           email:    data.email         || fallback.email,
           age:      String(data.age    ?? fallback.age),
           height:   String(data.height_cm ?? fallback.height),
@@ -208,7 +210,10 @@ export default function Profile() {
               {initials}
             </div>
             <h1 className="text-white text-3xl font-extrabold tracking-tight">{profile.name}</h1>
-            <p className="text-slate-500 text-sm mt-1">{profile.email}</p>
+            {profile.username && (
+              <p className="text-primary font-mono font-semibold text-base mt-1">@{profile.username}</p>
+            )}
+            <p className="text-slate-500 text-sm mt-0.5">{profile.email}</p>
 
             {/* Edit / Cancel toggle */}
             {!editing ? (
