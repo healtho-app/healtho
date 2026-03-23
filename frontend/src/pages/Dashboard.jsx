@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Header       from '../components/Header'
 import CalorieRing  from '../components/CalorieRing'
@@ -8,63 +7,68 @@ import WaterTracker from '../components/WaterTracker'
 import MealSection  from '../components/MealSection'
 import LogFoodModal from '../components/LogFoodModal'
 
-// --- Placeholder data (will come from Supabase API later) ---
-const DAILY_DATA = {
-  consumed: 1309,
-  goal:     2200,
-  burned:   380,
-  macros: [
-    { label: 'Protein', amount: 72,  pct: 57, color: 'bg-protein' },
-    { label: 'Carbs',   amount: 168, pct: 67, color: 'bg-carbs'   },
-    { label: 'Fat',     amount: 38,  pct: 48, color: 'bg-fat'     },
-    { label: 'Fiber',   amount: 18,  pct: 72, color: 'bg-fiber'   },
-  ],
-  meals: [
-    {
-      id: 'breakfast', emoji: '🌅', name: 'Breakfast', calories: 487, defaultOpen: true,
-      items: [
-        { name: 'Masala Oats',  portion: '250g',     calories: 210 },
-        { name: 'Boiled Eggs',  portion: '2 eggs',   calories: 155 },
-        { name: 'Banana',       portion: '1 medium', calories: 122 },
-      ],
-    },
-    {
-      id: 'lunch', emoji: '☀️', name: 'Lunch', calories: 612, defaultOpen: false,
-      items: [
-        { name: 'Dal Rice',    portion: '400g', calories: 450 },
-        { name: 'Mixed Salad', portion: '150g', calories: 162 },
-      ],
-    },
-    {
-      id: 'dinner', emoji: '🌙', name: 'Dinner', calories: 0, defaultOpen: false,
-      items: [],
-    },
-    {
-      id: 'snacks', emoji: '🍎', name: 'Snacks', calories: 210, defaultOpen: false,
-      items: [
-        { name: 'Greek Yogurt', portion: '200g', calories: 210 },
-      ],
-    },
-  ],
+// Placeholder meal/macro data — will be replaced when meal logging is built
+const PLACEHOLDER_MEALS = [
+  {
+    id: 'breakfast', emoji: '🌅', name: 'Breakfast', calories: 0,
+    defaultOpen: true, items: [],
+  },
+  {
+    id: 'lunch', emoji: '☀️', name: 'Lunch', calories: 0,
+    defaultOpen: false, items: [],
+  },
+  {
+    id: 'dinner', emoji: '🌙', name: 'Dinner', calories: 0,
+    defaultOpen: false, items: [],
+  },
+  {
+    id: 'snacks', emoji: '🍎', name: 'Snacks', calories: 0,
+    defaultOpen: false, items: [],
+  },
+]
+
+const PLACEHOLDER_MACROS = [
+  { label: 'Protein', amount: 0, pct: 0, color: 'bg-protein' },
+  { label: 'Carbs',   amount: 0, pct: 0, color: 'bg-carbs'   },
+  { label: 'Fat',     amount: 0, pct: 0, color: 'bg-fat'     },
+  { label: 'Fiber',   amount: 0, pct: 0, color: 'bg-fiber'   },
+]
+
+function greeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function Skeleton({ className = '' }) {
+  return <div className={`animate-pulse bg-slate-800 rounded-lg ${className}`} />
 }
 
 export default function Dashboard() {
-  const [logOpen, setLogOpen] = useState(false)
-  const [userName, setUserName] = useState('')
+  const [logOpen,  setLogOpen]  = useState(false)
+  const [profile,  setProfile]  = useState(null)
+  const [loading,  setLoading]  = useState(true)
 
   useEffect(() => {
-    async function fetchUser() {
+    async function fetchProfile() {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
+      if (!session) { setLoading(false); return }
+
       const { data } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, daily_calorie_goal, weight_kg, bmi, activity_level')
         .eq('id', session.user.id)
         .single()
-      if (data?.full_name) setUserName(data.full_name.split(' ')[0])
+
+      setProfile(data)
+      setLoading(false)
     }
-    fetchUser()
+    fetchProfile()
   }, [])
+
+  const firstName   = profile?.full_name?.split(' ')[0] || 'there'
+  const calorieGoal = profile?.daily_calorie_goal ?? 2000
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -78,28 +82,54 @@ export default function Dashboard() {
             <p className="text-slate-400 text-sm font-medium">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
-            <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight mt-1">
-              Good morning, <span className="text-primary">{userName || 'there'}</span> 👋
-            </h1>
+            {loading ? (
+              <Skeleton className="h-10 w-64 mt-1" />
+            ) : (
+              <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight mt-1">
+                {greeting()}, <span className="text-primary">{firstName}</span> 👋
+              </h1>
+            )}
             <p className="text-slate-500 text-base mt-1">Here's your nutrition summary for today.</p>
           </div>
 
-          {/* Calorie ring */}
+          {/* Calorie goal banner — real data from profiles */}
+          {loading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : (
+            <div className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Daily Calorie Goal</p>
+                <p className="text-white text-2xl font-extrabold mt-0.5">
+                  {calorieGoal.toLocaleString()} <span className="text-slate-400 text-sm font-medium">kcal</span>
+                </p>
+              </div>
+              <div className="text-right">
+                {profile?.bmi && (
+                  <p className="text-slate-400 text-xs">BMI <span className="text-white font-bold">{profile.bmi}</span></p>
+                )}
+                {profile?.weight_kg && (
+                  <p className="text-slate-400 text-xs mt-0.5">{profile.weight_kg} kg</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Calorie ring — consumed is 0 until meal logging is live */}
           <CalorieRing
-            consumed={DAILY_DATA.consumed}
-            goal={DAILY_DATA.goal}
-            burned={DAILY_DATA.burned}
+            consumed={0}
+            goal={calorieGoal}
+            burned={0}
           />
 
           {/* Macro strip */}
           <div className="grid grid-cols-4 gap-3">
-            {DAILY_DATA.macros.map(m => (
+            {PLACEHOLDER_MACROS.map(m => (
               <MacroCard key={m.label} {...m} />
             ))}
           </div>
 
           {/* Water */}
-          <WaterTracker initialFilled={5} />
+          <WaterTracker initialFilled={0} />
 
           {/* Meals header */}
           <div className="flex items-center justify-between pt-2">
@@ -112,8 +142,16 @@ export default function Dashboard() {
             </button>
           </div>
 
+          {/* Coming soon banner */}
+          <div className="bg-slate-900 border border-dashed border-slate-700 rounded-xl p-4 flex items-center gap-3">
+            <span className="material-symbols-outlined text-slate-500">restaurant</span>
+            <p className="text-slate-500 text-sm">
+              Meal logging coming soon — tap <span className="text-primary font-semibold">+ Log food</span> to get notified.
+            </p>
+          </div>
+
           {/* Meal sections */}
-          {DAILY_DATA.meals.map(meal => (
+          {PLACEHOLDER_MEALS.map(meal => (
             <MealSection
               key={meal.id}
               emoji={meal.emoji}
@@ -129,8 +167,8 @@ export default function Dashboard() {
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl flex-shrink-0">🔥</div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-white">12 day streak</p>
-              <p className="text-xs text-green-400 font-semibold mt-0.5">Best streak this month — keep going!</p>
+              <p className="text-sm font-bold text-white">Day 1 streak</p>
+              <p className="text-xs text-green-400 font-semibold mt-0.5">Welcome to Healtho — let's build that streak!</p>
             </div>
             <span className="material-symbols-outlined text-primary">emoji_events</span>
           </div>
