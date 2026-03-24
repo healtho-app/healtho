@@ -2,7 +2,9 @@
  * Healtho — Weekly Social Media Content Brief Generator
  *
  * Runs every Monday via GitHub Actions.
- * Calls Claude API → generates a full post brief → saves to automation/output/
+ * Produces two files:
+ *   1. latest-brief.md        — human-readable post brief with captions
+ *   2. canva-bulk-create.csv  — upload directly to Canva Bulk Create
  *
  * Usage:  node generate-content.js
  * Env:    ANTHROPIC_API_KEY
@@ -13,11 +15,11 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ---------------------------------------------------------------------------
+// Topic rotation (10 weeks)
+// ---------------------------------------------------------------------------
 
 const TOPICS = [
   {
@@ -126,10 +128,6 @@ const TOPICS = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Returns which topic (0–9) to use based on ISO week number.
- * Rotates through the 10 topics in a perpetual cycle.
- */
 function getWeeklyTopic() {
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
@@ -151,47 +149,106 @@ function ensureOutputDir() {
 }
 
 // ---------------------------------------------------------------------------
-// Prompt
+// Prompt 1: Human-readable brief (markdown)
 // ---------------------------------------------------------------------------
 
-function buildPrompt(topic) {
+function buildBriefPrompt(topic) {
   return `You are a social media content strategist for Healtho — a data-driven health and nutrition app for families.
 
-HEALTHO'S BRAND VOICE:
-- Data first: every food mentioned MUST include real calorie and macro numbers (kcal per 100g, protein grams, etc.)
-- No vague wellness speak: be specific and factual
-- Practical: foods anyone can find at a grocery store
-- CTA always ties back to tracking on the Healtho app
+BRAND VOICE: Data first. Every food MUST have real calorie + macro numbers. No vague wellness speak. Practical grocery-store foods only. Every CTA ties back to tracking on Healtho.
 
-THE POST FORMAT (carousel, proven to get 100K+ likes):
-- Slide 1: Title card — bold all-caps headline + full-bleed food photo
-- Slides 2–N: 2×2 food photo grid per slide, each with a category name + benefit subtitle + 4 specific foods with calorie/macro data
-- Last line of every slide: include the food name AND its data (e.g., "Chicken Breast · 165 kcal · 31g protein per 100g")
+POST FORMAT: Carousel — Slide 1 is a title card. Slides 2–5 are 2×2 food photo grids (4 foods per slide, one category per slide).
 
 PLATFORMS: Instagram @healtho_10k · TikTok @healtho_10k · X @HealthO_10k
 
 ---
 
-Generate a COMPLETE social media post brief for this week's topic:
+Generate a COMPLETE post brief for:
 
 TITLE: ${topic.title}
 HOOK: ${topic.hook}
 
-CATEGORIES TO COVER (one category per content slide):
+CATEGORIES (one per content slide):
 ${topic.categories.map((c, i) => `${i + 1}. ${c.name} — ${c.benefit}`).join("\n")}
 
-For EACH category slide, provide:
-- Category name
-- Benefit subtitle (short, in parentheses, 1 line)
-- Exactly 4 foods, each with: food name + calories per 100g + key macro (protein, fiber, or fat depending on topic)
+For EACH category slide provide:
+- Category name + benefit subtitle
+- Exactly 4 foods each with: name · kcal per 100g · key macro
 
-Also generate:
-1. INSTAGRAM CAPTION (hook sentence + 2–3 sentence educational context + CTA mentioning Healtho + 9 hashtags)
-2. TIKTOK CAPTION (hook-first, shorter, 3–5 hashtags only)
-3. X (TWITTER) CAPTION (hook stat → "Here's the breakdown 🧵" + note to attach 4 slides + "Save this." + 3–4 hashtags)
-4. CANVA NOTES (1–2 sentences on what type of food photos to search for each slide — colour palette, mood)
+Then generate:
+1. INSTAGRAM CAPTION (hook + 2–3 sentence context + Healtho CTA + 9 hashtags)
+2. TIKTOK CAPTION (shorter, hook-first, 3–5 hashtags)
+3. X CAPTION (hook stat → "Here's the breakdown 🧵" → "Save this." → 3–4 hashtags)
+4. CANVA PHOTO NOTES (what food photos to search per slide — colour, mood, style)
 
-Format your response as clean markdown so it's easy to copy into Canva.`;
+Format as clean markdown.`;
+}
+
+// ---------------------------------------------------------------------------
+// Prompt 2: Structured data for Canva Bulk Create (JSON)
+// ---------------------------------------------------------------------------
+
+function buildCSVPrompt(topic) {
+  return `You are generating structured slide data for a Canva Bulk Create CSV upload.
+
+Topic: ${topic.title}
+Categories:
+${topic.categories.map((c, i) => `${i + 1}. ${c.name} — ${c.benefit}`).join("\n")}
+
+Return ONLY a valid JSON object — no markdown, no explanation, no code fences. Just raw JSON.
+
+The JSON must match this exact structure:
+{
+  "post_title": "${topic.title}",
+  "slides": [
+    {
+      "category_name": "CATEGORY NAME IN CAPS",
+      "category_benefit": "short benefit in lowercase",
+      "food1_name": "Food Name",
+      "food1_data": "000 kcal · 00g protein",
+      "food2_name": "Food Name",
+      "food2_data": "000 kcal · 00g protein",
+      "food3_name": "Food Name",
+      "food3_data": "000 kcal · 00g protein",
+      "food4_name": "Food Name",
+      "food4_data": "000 kcal · 00g protein"
+    }
+  ]
+}
+
+Rules:
+- Exactly ${topic.categories.length} slides, one per category
+- food_data format: "165 kcal · 31g protein" (use the most relevant macro for the topic)
+- All numbers must be accurate and real
+- No trailing commas, valid JSON only`;
+}
+
+// ---------------------------------------------------------------------------
+// CSV generator
+// ---------------------------------------------------------------------------
+
+function jsonToCSV(slideData) {
+  const headers = [
+    "post_title",
+    "category_name",
+    "category_benefit",
+    "food1_name",
+    "food1_data",
+    "food2_name",
+    "food2_data",
+    "food3_name",
+    "food3_data",
+    "food4_name",
+    "food4_data",
+  ];
+
+  const escape = (val) => `"${String(val).replace(/"/g, '""')}"`;
+
+  const rows = slideData.slides.map((slide) =>
+    headers.map((h) => escape(h === "post_title" ? slideData.post_title : slide[h] ?? "")).join(",")
+  );
+
+  return [headers.join(","), ...rows].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -212,63 +269,89 @@ async function main() {
   console.log(`\n🚀 Healtho Content Generator`);
   console.log(`📅 Date: ${today} (ISO week ${weekNumber})`);
   console.log(`📌 Topic ${topicIndex}/10: ${topic.title}\n`);
-  console.log("⏳ Calling Claude API...\n");
 
-  // Stream the response so we can see it generate in the Actions log
-  let fullText = "";
+  // ── Call 1: Human-readable brief ──────────────────────────────────────────
+  console.log("⏳ Generating post brief...\n");
+  let briefText = "";
 
   const stream = client.messages.stream({
     model: "claude-opus-4-6",
     max_tokens: 4096,
-    system:
-      "You are an expert social media content strategist specialising in health and nutrition brands. You produce precise, data-rich content briefs in clean markdown. Always include real nutritional numbers — never approximate.",
-    messages: [{ role: "user", content: buildPrompt(topic) }],
+    system: "You are an expert social media content strategist for health and nutrition brands. Always include accurate nutritional numbers — never approximate or fabricate.",
+    messages: [{ role: "user", content: buildBriefPrompt(topic) }],
   });
 
   for await (const event of stream) {
-    if (
-      event.type === "content_block_delta" &&
-      event.delta.type === "text_delta"
-    ) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
       process.stdout.write(event.delta.text);
-      fullText += event.delta.text;
+      briefText += event.delta.text;
     }
   }
+  const briefFinal = await stream.finalMessage();
+  console.log(`\n\n✅ Brief done — ${briefFinal.usage.output_tokens} tokens`);
 
-  const finalMessage = await stream.finalMessage();
-  console.log(
-    `\n\n✅ Done — ${finalMessage.usage.input_tokens} in / ${finalMessage.usage.output_tokens} out tokens`
-  );
+  // ── Call 2: Structured JSON for Canva CSV ─────────────────────────────────
+  console.log("\n⏳ Generating Canva CSV data...\n");
 
-  // ---------------------------------------------------------------------------
-  // Save output
-  // ---------------------------------------------------------------------------
+  const jsonResponse = await client.messages.create({
+    model: "claude-opus-4-6",
+    max_tokens: 1024,
+    system: "You output only raw valid JSON. No markdown. No explanation. No code fences. Just the JSON object.",
+    messages: [{ role: "user", content: buildCSVPrompt(topic) }],
+  });
 
+  const rawJSON = jsonResponse.content[0].text.trim();
+  console.log("Raw JSON received:\n", rawJSON.slice(0, 200), "...");
+
+  let slideData;
+  try {
+    slideData = JSON.parse(rawJSON);
+  } catch (e) {
+    console.error("❌ JSON parse failed:", e.message);
+    console.error("Raw output was:", rawJSON);
+    process.exit(1);
+  }
+
+  const csv = jsonToCSV(slideData);
+  console.log(`✅ CSV ready — ${slideData.slides.length} slides`);
+
+  // ── Save files ────────────────────────────────────────────────────────────
   const outputDir = ensureOutputDir();
-  const filename = `${today}-week${weekNumber}-topic${topicIndex}-brief.md`;
-  const filepath = path.join(outputDir, filename);
+  const datePrefix = `${today}-week${weekNumber}-topic${topicIndex}`;
 
-  const fileContent = `# Healtho Content Brief
+  // 1. Dated brief
+  const briefContent = `# Healtho Content Brief
 > Generated: ${today} · Week ${weekNumber} · Topic ${topicIndex} of 10
-> Model: claude-opus-4-6
 
 ---
 
 ## Topic: ${topic.title}
 
-${fullText}
+${briefText}
 
 ---
-*Generated by Healtho Content Automation — automation/generate-content.js*
+*Generated by Healtho Content Automation*
 `;
+  fs.writeFileSync(path.join(outputDir, `${datePrefix}-brief.md`), briefContent, "utf8");
 
-  fs.writeFileSync(filepath, fileContent, "utf8");
-  console.log(`\n💾 Saved to: automation/output/${filename}`);
+  // 2. Latest brief (always overwritten)
+  fs.writeFileSync(path.join(outputDir, "latest-brief.md"), briefContent, "utf8");
 
-  // Write a "latest" symlink-style file for easy access
-  const latestPath = path.join(outputDir, "latest-brief.md");
-  fs.writeFileSync(latestPath, fileContent, "utf8");
-  console.log(`📎 Also saved as: automation/output/latest-brief.md`);
+  // 3. Canva Bulk Create CSV (always overwritten — ready to upload)
+  const csvPath = path.join(outputDir, "canva-bulk-create.csv");
+  fs.writeFileSync(csvPath, csv, "utf8");
+
+  // 4. Dated CSV backup
+  fs.writeFileSync(path.join(outputDir, `${datePrefix}-canva.csv`), csv, "utf8");
+
+  console.log(`\n💾 Brief  → automation/output/latest-brief.md`);
+  console.log(`📊 CSV    → automation/output/canva-bulk-create.csv`);
+  console.log(`\n📋 Canva Bulk Create instructions:`);
+  console.log(`   1. Open your Canva template`);
+  console.log(`   2. Click Apps → Bulk Create → Upload CSV`);
+  console.log(`   3. Upload canva-bulk-create.csv`);
+  console.log(`   4. Map columns to template fields`);
+  console.log(`   5. Generate — all slides auto-fill ✅`);
 }
 
 main().catch((err) => {
