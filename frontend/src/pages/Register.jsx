@@ -200,8 +200,11 @@ export default function Register() {
     )
     if (upsertError?.code === '23505') throw upsertError   // username taken — let caller handle
     if (upsertError) {
-      // RLS may block INSERT half of upsert — row likely exists from DB trigger
-      await supabase.from('profiles').update(payload).eq('id', userId)
+      // RLS may block INSERT half of upsert — row likely exists from DB trigger, try UPDATE
+      console.error('[seedProfile] upsert failed, trying update fallback:', upsertError)
+      const { error: updateError } = await supabase.from('profiles').update(payload).eq('id', userId)
+      if (updateError?.code === '23505') throw updateError
+      if (updateError) console.error('[seedProfile] update fallback also failed:', updateError)
     }
   }
 
@@ -261,12 +264,13 @@ export default function Register() {
     setLoading(true)
     setOtpError('')
     try {
-      const { error } = await supabase.auth.verifyOtp({ email: form.email, token: code, type: 'signup' })
+      // verifyOtp returns the user directly — use it to avoid a separate getUser() call
+      const { data: otpData, error } = await supabase.auth.verifyOtp({ email: form.email, token: code, type: 'signup' })
       if (error) throw error
 
       // Seed profile now that email is confirmed
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
+      const userId = otpData?.user?.id
+      if (userId) {
         const profilePayload = {
           full_name:         form.name.trim(),
           username:          form.username.toLowerCase(),
@@ -274,13 +278,15 @@ export default function Register() {
           registration_step: 1,
         }
         try {
-          await seedProfile(user.id, profilePayload)
+          await seedProfile(userId, profilePayload)
         } catch (profileErr) {
           if (profileErr?.code === '23505') {
             setOtpError('Username already taken — go back and choose another.')
             return
           }
         }
+      } else {
+        console.error('[verifyEmail] verifyOtp succeeded but returned no user:', otpData)
       }
 
       goTo(3) // proceed to body metrics
