@@ -22,6 +22,22 @@ const ACTIVITY_OPTIONS = [
 const OTP_LENGTH     = 8
 const RESEND_SECONDS = 30
 
+// ── Allowed email domains ─────────────────────────────────────────────────────
+const ALLOWED_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com',
+  'yahoo.com', 'yahoo.in', 'yahoo.co.uk', 'yahoo.co.in', 'yahoo.ca', 'yahoo.com.au',
+  'ymail.com',
+  'outlook.com', 'outlook.in', 'outlook.co.uk',
+  'hotmail.com', 'hotmail.in', 'hotmail.co.uk',
+  'live.com', 'live.in', 'live.co.uk',
+  'msn.com',
+  'icloud.com', 'me.com', 'mac.com',
+  'aol.com',
+  'protonmail.com', 'proton.me',
+  'rediffmail.com',
+  'zoho.com',
+])
+
 // ── Validation ────────────────────────────────────────────────────────────────
 function validateStep1({ name, username, email, password }) {
   const errors = {}
@@ -31,8 +47,16 @@ function validateStep1({ name, username, email, password }) {
   else if (username.length < 3)                errors.username = 'Username must be at least 3 characters'
   else if (username.length > 20)               errors.username = 'Username must be 20 characters or less'
   else if (!/^[a-z0-9_]+$/.test(username))     errors.username = 'Only letters, numbers, and underscores allowed'
-  if (!email.trim())               errors.email    = 'Email is required'
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address'
+  if (!email.trim()) {
+    errors.email = 'Email is required'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = 'Enter a valid email address'
+  } else {
+    const domain = email.trim().toLowerCase().split('@')[1]
+    if (!ALLOWED_DOMAINS.has(domain)) {
+      errors.email = 'Please use a real email provider (Gmail, Yahoo, Outlook, iCloud, etc.)'
+    }
+  }
   if (!password)                   errors.password = 'Password is required'
   else if (password.length < 8)    errors.password = 'Password must be at least 8 characters'
   else if (!/(?=.*[0-9!@#$%^&*])/.test(password)) errors.password = 'Include at least one number or symbol'
