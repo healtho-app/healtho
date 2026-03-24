@@ -35,6 +35,7 @@ jobs:
         working-directory: automation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: node generate-content.js
 
       - name: Commit and push brief

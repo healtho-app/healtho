@@ -17,8 +17,70 @@ import PptxGenJS from "pptxgenjs";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import https from "https";
+import http from "http";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ---------------------------------------------------------------------------
+// Photo helpers (Pexels API — free tier, no cost)
+// ---------------------------------------------------------------------------
+
+/** Download an image URL and return a base64 data URI. Follows one redirect. */
+function downloadImageAsBase64(imageUrl) {
+  return new Promise((resolve) => {
+    const mod = imageUrl.startsWith("https") ? https : http;
+    const req = mod.get(imageUrl, (res) => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        downloadImageAsBase64(res.headers.location).then(resolve);
+        return;
+      }
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => {
+        const buffer = Buffer.concat(chunks);
+        const b64 = buffer.toString("base64");
+        const mime = res.headers["content-type"] || "image/jpeg";
+        resolve(`data:${mime};base64,${b64}`);
+      });
+      res.on("error", () => resolve(null));
+    });
+    req.on("error", () => resolve(null));
+    req.setTimeout(12000, () => { req.destroy(); resolve(null); });
+  });
+}
+
+/**
+ * Search Pexels for a food photo and return a base64 data URI.
+ * Returns null if the API key is missing, quota exceeded, or network fails.
+ */
+async function fetchFoodPhoto(foodName, pexelsApiKey) {
+  if (!pexelsApiKey) return null;
+  const query = encodeURIComponent(foodName.toLowerCase());
+  const apiUrl = `https://api.pexels.com/v1/search?query=${query}&per_page=3&size=small&orientation=square`;
+
+  const photoUrl = await new Promise((resolve) => {
+    const req = https.request(apiUrl, { headers: { Authorization: pexelsApiKey } }, (res) => {
+      let raw = "";
+      res.on("data", (c) => (raw += c));
+      res.on("end", () => {
+        try {
+          const json = JSON.parse(raw);
+          // Pick the most-liked photo with a square-ish crop
+          const photo = json.photos?.[0];
+          resolve(photo?.src?.medium || null);
+        } catch { resolve(null); }
+      });
+      res.on("error", () => resolve(null));
+    });
+    req.on("error", () => resolve(null));
+    req.setTimeout(10000, () => { req.destroy(); resolve(null); });
+    req.end();
+  });
+
+  if (!photoUrl) return null;
+  return downloadImageAsBase64(photoUrl);
+}
 
 // ---------------------------------------------------------------------------
 // Topic rotation (10 weeks)
@@ -380,21 +442,31 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
     const ROWS = [2.0, 4.38];
 
     const foods = [
-      { name: cat.food1_name, data: cat.food1_data },
-      { name: cat.food2_name, data: cat.food2_data },
-      { name: cat.food3_name, data: cat.food3_data },
-      { name: cat.food4_name, data: cat.food4_data },
+      { name: cat.food1_name, data: cat.food1_data, photo: cat.food1_photo },
+      { name: cat.food2_name, data: cat.food2_data, photo: cat.food2_photo },
+      { name: cat.food3_name, data: cat.food3_data, photo: cat.food3_photo },
+      { name: cat.food4_name, data: cat.food4_data, photo: cat.food4_photo },
     ];
 
     foods.forEach((food, fi) => {
       const bx = COLS[fi % 2];
       const by = ROWS[Math.floor(fi / 2)];
 
-      // Olive box background
-      s.addShape(prs.ShapeType.rect, {
-        x: bx, y: by, w: BW, h: BH,
-        fill: { color: C.olive }, line: noLine,
-      });
+      if (food.photo) {
+        // ── Photo background ────────────────────────────────────────────────
+        s.addImage({ data: food.photo, x: bx, y: by, w: BW, h: BH });
+        // Semi-transparent dark scrim so text stays readable
+        s.addShape(prs.ShapeType.rect, {
+          x: bx, y: by, w: BW, h: BH,
+          fill: { color: "000000", transparency: 35 }, line: noLine,
+        });
+      } else {
+        // ── Fallback: solid olive box ────────────────────────────────────────
+        s.addShape(prs.ShapeType.rect, {
+          x: bx, y: by, w: BW, h: BH,
+          fill: { color: C.olive }, line: noLine,
+        });
+      }
 
       // Food name
       s.addText(food.name, {
@@ -492,6 +564,27 @@ async function main() {
 
   const csv = jsonToCSV(slideData);
   console.log(`✅ CSV ready — ${slideData.slides.length} slides`);
+
+  // ── Fetch food photos (Pexels) ────────────────────────────────────────────
+  const pexelsKey = process.env.PEXELS_API_KEY;
+  if (pexelsKey) {
+    console.log("\n📸 Fetching food photos from Pexels...");
+    let hits = 0;
+    for (const slide of slideData.slides) {
+      for (let fi = 1; fi <= 4; fi++) {
+        const foodName = slide[`food${fi}_name`];
+        process.stdout.write(`   ${foodName.padEnd(22)}`);
+        const photo = await fetchFoodPhoto(foodName, pexelsKey);
+        slide[`food${fi}_photo`] = photo;
+        if (photo) { hits++; process.stdout.write("✅\n"); }
+        else        {          process.stdout.write("⬜ (using fallback)\n"); }
+      }
+    }
+    console.log(`✅ Photos ready — ${hits}/16 loaded`);
+  } else {
+    console.log("\nℹ️  PEXELS_API_KEY not set — building PPTX with solid colour boxes.");
+    console.log("   Add PEXELS_API_KEY to your .env (free at pexels.com/api) for food photos.");
+  }
 
   // ── Build PPTX carousel ───────────────────────────────────────────────────
   console.log("\n⏳ Building PPTX carousel...");
