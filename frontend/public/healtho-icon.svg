@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#e879f9"/>
+      <stop offset="50%"  stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="pulse" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#e879f9"/>
+      <stop offset="50%"  stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="200" height="200" rx="44" ry="44" fill="url(#bg)"/>
+
+  <!-- White heart -->
+  <path
+    d="M100 152
+       C100 152 42 116 42 74
+       C42 52 58 40 74 40
+       C84 40 93 45 100 54
+       C107 45 116 40 126 40
+       C142 40 158 52 158 74
+       C158 116 100 152 100 152Z"
+    fill="white"
+  />
+
+  <!-- Heartbeat / pulse line in gradient -->
+  <polyline
+    points="48,76 68,76 78,54 88,98 96,76 104,76 114,54 124,100 134,76 152,76"
+    fill="none"
+    stroke="url(#pulse)"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
