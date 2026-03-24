@@ -11,7 +11,7 @@
 |----------|--------|
 | 𝕏 / Twitter | [@HealthO_10k](https://x.com/HealthO_10k) |
 | Instagram | [@healtho_10k](https://www.instagram.com/healtho_10k/) |
-| TikTok | @healthoapp *(coming soon)* |
+| TikTok | [@healtho_10k](https://www.tiktok.com/@healtho_10k) |
 
 ---
 
