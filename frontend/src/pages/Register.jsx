@@ -19,7 +19,7 @@ const ACTIVITY_OPTIONS = [
   { value: 'athlete',           emoji: '🏋️', label: 'Athlete',           sub: 'Very hard exercise, physical job' },
 ]
 
-const OTP_LENGTH     = 6
+const OTP_LENGTH     = 8
 const RESEND_SECONDS = 30
 
 // ── Validation ────────────────────────────────────────────────────────────────
