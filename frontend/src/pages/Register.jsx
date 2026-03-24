@@ -120,7 +120,7 @@ function OtpInput({ digits, onChange, hasError }) {
   }
 
   return (
-    <div className="flex gap-3 justify-center" onPaste={handlePaste}>
+    <div className="flex gap-1.5 sm:gap-3 justify-center" onPaste={handlePaste}>
       {digits.map((d, i) => (
         <input
           key={i}
@@ -129,7 +129,7 @@ function OtpInput({ digits, onChange, hasError }) {
           value={d}
           onChange={e => handleInput(i, e)}
           onKeyDown={e => handleKey(i, e)}
-          className={`w-12 h-14 text-center text-2xl font-extrabold font-mono rounded-xl border-2 bg-slate-900 text-slate-100 focus:outline-none focus:ring-2 transition-all ${
+          className={`w-8 h-10 sm:w-12 sm:h-14 text-center text-lg sm:text-2xl font-extrabold font-mono rounded-lg sm:rounded-xl border-2 bg-slate-900 text-slate-100 focus:outline-none focus:ring-2 transition-all ${
             d ? 'border-primary text-primary'
               : hasError
                 ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/20'
