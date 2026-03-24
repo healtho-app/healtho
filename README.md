@@ -1,10 +1,17 @@
-# Healtho 🍎
+# Healtho
 **Family Health & Nutrition Companion**
 
 > Track meals, log calories, monitor macros, and hit your daily goals — built for the whole family.
 
 🔗 **Live App:** https://healtho-git-main-ayushkapoor11s-projects.vercel.app
 📐 **UI Demos (GitHub Pages):** https://healtho-app.github.io/healtho/frontend/ui-demos/healtho-dashboard.html
+
+### Follow us
+| Platform | Handle |
+|----------|--------|
+| 𝕏 / Twitter | [@HealthO_10k](https://x.com/HealthO_10k) |
+| Instagram | @healthoapp *(coming soon)* |
+| TikTok | @healthoapp *(coming soon)* |
 
 ---
 
@@ -100,9 +107,11 @@ healtho/
 
 | Token | Value |
 |-------|-------|
-| Background | `#121212` |
-| Primary blue | `#137fec` |
-| Surface card | `#1e1e1e` (slate-900) |
+| Background | `#030213` (deep navy) |
+| Primary purple | `#8b5cf6` (Pulse Purple) |
+| Brand gradient | `#e879f9` → `#8b5cf6` → `#22d3ee` (Pink → Purple → Cyan) |
+| Surface card | `#0e0b1e` |
+| Surface 2 | `#1a1640` |
 | Border | `#1e293b` (slate-800) |
 | Protein | `#5b8def` |
 | Carbs | `#e8b84b` |

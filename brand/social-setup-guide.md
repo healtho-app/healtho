@@ -73,13 +73,13 @@ TikTok now supports photo carousels — no video needed.
 
 ---
 
-## X (TWITTER) — @healthoapp
+## X (TWITTER) — @HealthO_10k ✅ LIVE
 
 ### Account Setup
 | Field              | Value |
 |--------------------|-------|
 | Name               | Healtho 📊 |
-| Username           | @healthoapp |
+| Username           | @HealthO_10k |
 | Bio                | Data-driven health & nutrition. Calories, macros, BMI — made simple. Building the health app for your whole family. 🔗 |
 | Website            | https://healtho-git-main-ayushkapoor11s-projects.vercel.app |
 | Location           | Mesa, AZ |
