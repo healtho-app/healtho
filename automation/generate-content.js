@@ -338,6 +338,9 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
     muted:  "8B7A3A",  // subtitles / labels
   };
 
+  // Content font — modern calligraphy style (natively available in Canva)
+  const FC = "Dancing Script";
+
   const noLine = { color: "FFFFFF", width: 0 };
 
   // ── Shared helpers ─────────────────────────────────────────────────────────
@@ -382,7 +385,7 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
   s1.addText(topic.title, {
     x: 0.35, y: 0.72, w: 5.3, h: 3.1,
     fontSize: 36, color: C.black, bold: true,
-    fontFace: "Arial Black", wrap: true, valign: "middle",
+    fontFace: FC, wrap: true, valign: "middle",
   });
 
   // Orange divider line
@@ -395,13 +398,13 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
   s1.addText(`"${topic.hook}"`, {
     x: 0.35, y: 4.08, w: 5.3, h: 1.8,
     fontSize: 19, color: C.olive, italic: true,
-    fontFace: "Arial", wrap: true, valign: "top",
+    fontFace: FC, wrap: true, valign: "top",
   });
 
   // Save reminder
   s1.addText("Save this for your next grocery run →", {
     x: 0.35, y: 6.78, w: 5.3, h: 0.3,
-    fontSize: 9, color: C.muted, align: "left", fontFace: "Arial",
+    fontSize: 9, color: C.muted, align: "left", fontFace: FC,
   });
 
   addBottomStrip(s1);
@@ -419,7 +422,7 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
     s.addText(cat.category_name, {
       x: 0.3, y: 0.2, w: 5.4, h: 1.1,
       fontSize: 26, color: C.black, bold: true,
-      fontFace: "Arial Black", wrap: true,
+      fontFace: FC, wrap: true,
     });
 
     // Orange underline
@@ -432,7 +435,7 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
     s.addText(cat.category_benefit, {
       x: 0.3, y: 1.44, w: 5.4, h: 0.4,
       fontSize: 12, color: C.muted, italic: true,
-      fontFace: "Arial",
+      fontFace: FC,
     });
 
     // ── 2 × 2 food grid ──────────────────────────────────────────────────────
@@ -472,7 +475,7 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
       s.addText(food.name, {
         x: bx + 0.15, y: by + 0.18, w: BW - 0.3, h: 0.65,
         fontSize: 14, color: C.white, bold: true,
-        fontFace: "Arial", wrap: true,
+        fontFace: FC, wrap: true,
       });
 
       // Thin orange rule
@@ -485,7 +488,7 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
       s.addText(food.data, {
         x: bx + 0.15, y: by + 1.0, w: BW - 0.3, h: 1.05,
         fontSize: 11, color: C.white,
-        fontFace: "Arial", wrap: true,
+        fontFace: FC, wrap: true,
       });
     });
 
