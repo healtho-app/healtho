@@ -120,9 +120,18 @@ Save this. Your future self will thank you.
 
 ---
 
+## Buffer Account ✅ LIVE
+
+| Field    | Value |
+|----------|-------|
+| Email    | gomarines2009@gmail.com |
+| Channels | X (@HealthO_10k) · Instagram (@healtho_10k) · TikTok (@healtho_10k) |
+| Status   | All 3 connected |
+
+---
+
 ## Posting Schedule (Buffer)
 
-Connect all 3 accounts to Buffer (free — supports 3 channels).
 Recommended schedule:
 
 | Day       | Platform   | Content |
