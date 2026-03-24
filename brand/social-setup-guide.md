@@ -1,18 +1,18 @@
 # Healtho Social Media Setup Guide
-> Handle: @healthoapp across all platforms
+> X: @HealthO_10k · Instagram: @healtho_10k · TikTok: coming soon
 > Logo: Use profile-placeholder.svg until final logo confirmed
-> Brand colors: #8b5cf6 (blue) · #030213 (dark bg) · #ffffff (white)
+> Brand colors: #8b5cf6 (Pulse Purple) · #030213 (dark bg) · Gradient: #e879f9→#8b5cf6→#22d3ee
 > Font: Montserrat Bold (closest Canva match to app font Lexend)
 
 ---
 
-## INSTAGRAM — @healthoapp
+## INSTAGRAM — @healtho_10k ✅ LIVE
 
 ### Account Setup
 | Field              | Value |
 |--------------------|-------|
 | Name               | Healtho |
-| Username           | @healthoapp |
+| Username           | @healtho_10k |
 | Account type       | Creator → Health/Beauty |
 | Bio                | Data-driven health & nutrition 📊\nCalories · Macros · BMI — made simple.\n🔗 Track your health → link below |
 | Website            | https://healtho-git-main-ayushkapoor11s-projects.vercel.app |
