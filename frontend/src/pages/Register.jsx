@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 
@@ -168,6 +168,7 @@ function OtpInput({ digits, onChange, hasError }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Register() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [step,        setStep]       = useState(1)
   const [showPwd,     setShowPwd]    = useState(false)
   const [loading,     setLoading]    = useState(false)
@@ -198,6 +199,11 @@ export default function Register() {
     setForm(f => ({ ...f, username: val }))
     if (errors.username) setErrors(er => ({ ...er, username: '' }))
   }
+
+  // Google OAuth users land here at ?google=1 — skip account + OTP steps
+  useEffect(() => {
+    if (searchParams.get('google') === '1') setStep(3)
+  }, [searchParams])
 
   const bmi     = calcBMI(parseFloat(form.weight), parseFloat(form.height))
   const bmiInfo = bmi ? getBmiInfo(bmi) : null
@@ -399,8 +405,12 @@ export default function Register() {
 
       if (error) throw error
 
+      // For Google OAuth users form.name/email may be empty — fall back to Google metadata
+      const displayName = form.name.trim() || user.user_metadata?.full_name || ''
+      const displayEmail = form.email.trim() || user.email || ''
+
       const params = new URLSearchParams({
-        name: form.name, username: form.username, email: form.email,
+        name: displayName, username: form.username, email: displayEmail,
         age: form.age, height: form.height, weight: form.weight,
         activity: form.activity, daily_calorie_goal: tdee,
       })

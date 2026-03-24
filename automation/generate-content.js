@@ -368,13 +368,8 @@ function buildPPTX(topic, slideData, weekNumber, topicIndex) {
   const s1 = prs.addSlide();
   addBg(s1);
 
-  // Left orange accent strip
-  s1.addShape(prs.ShapeType.rect, {
-    x: 0, y: 0, w: 0.14, h: 7.5,
-    fill: { color: C.orange }, line: noLine,
-  });
-
   // Week label (top-right)
+  // Note: Slide 1 background illustration is added manually in Canva after import.
   s1.addText(`WEEK ${weekNumber}  ·  TOPIC ${topicIndex}/10`, {
     x: 0.35, y: 0.3, w: 5.3, h: 0.28,
     fontSize: 8, color: C.muted, bold: true,
