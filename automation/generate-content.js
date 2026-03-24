@@ -2,15 +2,18 @@
  * Healtho — Weekly Social Media Content Brief Generator
  *
  * Runs every Monday via GitHub Actions.
- * Produces two files:
+ * Produces four files:
  *   1. latest-brief.md        — human-readable post brief with captions
  *   2. canva-bulk-create.csv  — upload directly to Canva Bulk Create
+ *   3. latest-carousel.pptx  — ready-to-use 5-slide portrait carousel
+ *   4. Dated backups of all three
  *
  * Usage:  node generate-content.js
  * Env:    ANTHROPIC_API_KEY
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import PptxGenJS from "pptxgenjs";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -185,7 +188,7 @@ Format as clean markdown.`;
 }
 
 // ---------------------------------------------------------------------------
-// Prompt 2: Structured data for Canva Bulk Create (JSON)
+// Prompt 2: Structured data for Canva Bulk Create + PPTX (JSON)
 // ---------------------------------------------------------------------------
 
 function buildCSVPrompt(topic) {
@@ -252,6 +255,181 @@ function jsonToCSV(slideData) {
 }
 
 // ---------------------------------------------------------------------------
+// PPTX carousel builder
+// Portrait 4:5 (6" × 7.5") — matches Instagram native ratio
+// ---------------------------------------------------------------------------
+
+function buildPPTX(topic, slideData, weekNumber, topicIndex) {
+  const prs = new PptxGenJS();
+
+  // Portrait 4:5 layout
+  prs.defineLayout({ name: "PORTRAIT_45", width: 6, height: 7.5 });
+  prs.layout = "PORTRAIT_45";
+
+  // ── Brand palette ──────────────────────────────────────────────────────────
+  const C = {
+    bg:     "F5EDD0",  // warm cream
+    olive:  "5C5915",  // dark olive (food boxes + strip)
+    orange: "E87D3E",  // accent orange
+    black:  "1A1A1A",  // title text
+    white:  "FFFFFF",  // box text
+    muted:  "8B7A3A",  // subtitles / labels
+  };
+
+  const noLine = { color: "FFFFFF", width: 0 };
+
+  // ── Shared helpers ─────────────────────────────────────────────────────────
+  const addBg = (slide) =>
+    slide.addShape(prs.ShapeType.rect, {
+      x: 0, y: 0, w: 6, h: 7.5,
+      fill: { color: C.bg }, line: noLine,
+    });
+
+  const addBottomStrip = (slide) => {
+    slide.addShape(prs.ShapeType.rect, {
+      x: 0, y: 7.22, w: 6, h: 0.28,
+      fill: { color: C.olive }, line: noLine,
+    });
+    slide.addText("healtho  ·  @healtho_10k", {
+      x: 0, y: 7.24, w: 6, h: 0.24,
+      fontSize: 9, color: C.white, bold: true,
+      align: "center", fontFace: "Arial",
+    });
+  };
+
+  // ==========================================================================
+  // SLIDE 1 — Title / Hook card
+  // ==========================================================================
+  const s1 = prs.addSlide();
+  addBg(s1);
+
+  // Left orange accent strip
+  s1.addShape(prs.ShapeType.rect, {
+    x: 0, y: 0, w: 0.14, h: 7.5,
+    fill: { color: C.orange }, line: noLine,
+  });
+
+  // Week label (top-right)
+  s1.addText(`WEEK ${weekNumber}  ·  TOPIC ${topicIndex}/10`, {
+    x: 0.35, y: 0.3, w: 5.3, h: 0.28,
+    fontSize: 8, color: C.muted, bold: true,
+    align: "left", fontFace: "Arial",
+  });
+
+  // Big topic title
+  s1.addText(topic.title, {
+    x: 0.35, y: 0.72, w: 5.3, h: 3.1,
+    fontSize: 36, color: C.black, bold: true,
+    fontFace: "Arial Black", wrap: true, valign: "middle",
+  });
+
+  // Orange divider line
+  s1.addShape(prs.ShapeType.rect, {
+    x: 0.35, y: 3.9, w: 2.6, h: 0.08,
+    fill: { color: C.orange }, line: noLine,
+  });
+
+  // Hook quote
+  s1.addText(`"${topic.hook}"`, {
+    x: 0.35, y: 4.08, w: 5.3, h: 1.8,
+    fontSize: 19, color: C.olive, italic: true,
+    fontFace: "Arial", wrap: true, valign: "top",
+  });
+
+  // Save reminder
+  s1.addText("Save this for your next grocery run →", {
+    x: 0.35, y: 6.78, w: 5.3, h: 0.3,
+    fontSize: 9, color: C.muted, align: "left", fontFace: "Arial",
+  });
+
+  addBottomStrip(s1);
+
+  // ==========================================================================
+  // SLIDES 2–5 — One per food category
+  // ==========================================================================
+  const TOTAL_SLIDES = slideData.slides.length + 1; // +1 for title
+
+  slideData.slides.forEach((cat, i) => {
+    const s = prs.addSlide();
+    addBg(s);
+
+    // Category name
+    s.addText(cat.category_name, {
+      x: 0.3, y: 0.2, w: 5.4, h: 1.1,
+      fontSize: 26, color: C.black, bold: true,
+      fontFace: "Arial Black", wrap: true,
+    });
+
+    // Orange underline
+    s.addShape(prs.ShapeType.rect, {
+      x: 0.3, y: 1.32, w: 5.4, h: 0.07,
+      fill: { color: C.orange }, line: noLine,
+    });
+
+    // Benefit subtitle
+    s.addText(cat.category_benefit, {
+      x: 0.3, y: 1.44, w: 5.4, h: 0.4,
+      fontSize: 12, color: C.muted, italic: true,
+      fontFace: "Arial",
+    });
+
+    // ── 2 × 2 food grid ──────────────────────────────────────────────────────
+    const BW = 2.62;  // box width
+    const BH = 2.2;   // box height
+    const COLS = [0.2, 3.18];
+    const ROWS = [2.0, 4.38];
+
+    const foods = [
+      { name: cat.food1_name, data: cat.food1_data },
+      { name: cat.food2_name, data: cat.food2_data },
+      { name: cat.food3_name, data: cat.food3_data },
+      { name: cat.food4_name, data: cat.food4_data },
+    ];
+
+    foods.forEach((food, fi) => {
+      const bx = COLS[fi % 2];
+      const by = ROWS[Math.floor(fi / 2)];
+
+      // Olive box background
+      s.addShape(prs.ShapeType.rect, {
+        x: bx, y: by, w: BW, h: BH,
+        fill: { color: C.olive }, line: noLine,
+      });
+
+      // Food name
+      s.addText(food.name, {
+        x: bx + 0.15, y: by + 0.18, w: BW - 0.3, h: 0.65,
+        fontSize: 14, color: C.white, bold: true,
+        fontFace: "Arial", wrap: true,
+      });
+
+      // Thin orange rule
+      s.addShape(prs.ShapeType.rect, {
+        x: bx + 0.15, y: by + 0.9, w: BW - 0.3, h: 0.04,
+        fill: { color: C.orange }, line: noLine,
+      });
+
+      // Macro / calorie data
+      s.addText(food.data, {
+        x: bx + 0.15, y: by + 1.0, w: BW - 0.3, h: 1.05,
+        fontSize: 11, color: C.white,
+        fontFace: "Arial", wrap: true,
+      });
+    });
+
+    // Slide counter (e.g. "2 / 5")
+    s.addText(`${i + 2} / ${TOTAL_SLIDES}`, {
+      x: 4.5, y: 6.86, w: 1.25, h: 0.22,
+      fontSize: 8, color: C.muted, align: "right", fontFace: "Arial",
+    });
+
+    addBottomStrip(s);
+  });
+
+  return prs;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -290,8 +468,8 @@ async function main() {
   const briefFinal = await stream.finalMessage();
   console.log(`\n\n✅ Brief done — ${briefFinal.usage.output_tokens} tokens`);
 
-  // ── Call 2: Structured JSON for Canva CSV ─────────────────────────────────
-  console.log("\n⏳ Generating Canva CSV data...\n");
+  // ── Call 2: Structured JSON for CSV + PPTX ────────────────────────────────
+  console.log("\n⏳ Generating slide data (CSV + PPTX)...\n");
 
   const jsonResponse = await client.messages.create({
     model: "claude-opus-4-6",
@@ -315,7 +493,11 @@ async function main() {
   const csv = jsonToCSV(slideData);
   console.log(`✅ CSV ready — ${slideData.slides.length} slides`);
 
-  // ── Save files ────────────────────────────────────────────────────────────
+  // ── Build PPTX carousel ───────────────────────────────────────────────────
+  console.log("\n⏳ Building PPTX carousel...");
+  const prs = buildPPTX(topic, slideData, weekNumber, topicIndex);
+
+  // ── Save all files ────────────────────────────────────────────────────────
   const outputDir = ensureOutputDir();
   const datePrefix = `${today}-week${weekNumber}-topic${topicIndex}`;
 
@@ -337,21 +519,34 @@ ${briefText}
   // 2. Latest brief (always overwritten)
   fs.writeFileSync(path.join(outputDir, "latest-brief.md"), briefContent, "utf8");
 
-  // 3. Canva Bulk Create CSV (always overwritten — ready to upload)
-  const csvPath = path.join(outputDir, "canva-bulk-create.csv");
-  fs.writeFileSync(csvPath, csv, "utf8");
+  // 3. Canva Bulk Create CSV
+  fs.writeFileSync(path.join(outputDir, "canva-bulk-create.csv"), csv, "utf8");
 
   // 4. Dated CSV backup
   fs.writeFileSync(path.join(outputDir, `${datePrefix}-canva.csv`), csv, "utf8");
 
-  console.log(`\n💾 Brief  → automation/output/latest-brief.md`);
-  console.log(`📊 CSV    → automation/output/canva-bulk-create.csv`);
-  console.log(`\n📋 Canva Bulk Create instructions:`);
-  console.log(`   1. Open your Canva template`);
-  console.log(`   2. Click Apps → Bulk Create → Upload CSV`);
-  console.log(`   3. Upload canva-bulk-create.csv`);
-  console.log(`   4. Map columns to template fields`);
-  console.log(`   5. Generate — all slides auto-fill ✅`);
+  // 5. PPTX carousel (latest + dated)
+  await prs.writeFile({ fileName: path.join(outputDir, "latest-carousel.pptx") });
+  await prs.writeFile({ fileName: path.join(outputDir, `${datePrefix}-carousel.pptx`) });
+  console.log(`✅ PPTX ready — ${slideData.slides.length + 1} slides`);
+
+  // ── Summary ───────────────────────────────────────────────────────────────
+  console.log(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 Output files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💾 Brief    → automation/output/latest-brief.md
+📊 CSV      → automation/output/canva-bulk-create.csv
+🎨 Carousel → automation/output/latest-carousel.pptx
+
+📐 Carousel format: 5 slides · Portrait 4:5 (1080×1350)
+   Slide 1  — Title / hook card
+   Slides 2–5 — One food category per slide (2×2 grid)
+
+📋 To use:
+   Open latest-carousel.pptx in Canva, Google Slides,
+   or PowerPoint — all data is pre-filled. Done. ✅
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 }
 
 main().catch((err) => {
