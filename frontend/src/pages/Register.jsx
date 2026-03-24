@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 // ── Step config — 4 steps: details → verify email → metrics → activity ────────
 const STEPS = {
   1: { label: '1', pct: '25%',  width: '25%',  hint: "Let's start with your account details..." },
-  2: { label: '2', pct: '50%',  width: '50%',  hint: 'Check your inbox — enter the 6-digit code.' },
+  2: { label: '2', pct: '50%',  width: '50%',  hint: 'Check your inbox — enter the 8-digit code.' },
   3: { label: '3', pct: '75%',  width: '75%',  hint: 'Your personalised plan is taking shape...' },
   4: { label: '4', pct: '100%', width: '100%', hint: 'Almost done — just one more thing!' },
 }
@@ -256,7 +256,7 @@ export default function Register() {
   // ── Step 2: Verify email OTP ──────────────────────────────────────────────
   const verifyEmail = async () => {
     const code = otpDigits.join('')
-    if (code.length < OTP_LENGTH) { setOtpError('Enter the full 6-digit code from your email'); return }
+    if (code.length < OTP_LENGTH) { setOtpError('Enter the full 8-digit code from your email'); return }
 
     setLoading(true)
     setOtpError('')
@@ -535,7 +535,7 @@ export default function Register() {
               <div className="mb-8 text-center">
                 <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Verify your email</h1>
                 <p className="text-slate-400 text-base mt-3 leading-relaxed">
-                  We sent a 6-digit verification code to
+                  We sent an 8-digit verification code to
                 </p>
                 <p className="text-primary font-bold text-base mt-1">{form.email}</p>
               </div>
