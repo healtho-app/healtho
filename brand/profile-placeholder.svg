@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <!-- Main brand gradient: pink → purple → cyan -->
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#e879f9"/>
+      <stop offset="50%"  stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <!-- Text gradient for "Healtho" wordmark -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#e879f9"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <!-- Rounded rect clip -->
+    <clipPath id="roundClip">
+      <rect width="500" height="500" rx="110" ry="110"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background: deep navy -->
+  <rect width="500" height="500" fill="#030213" rx="110" ry="110"/>
+
+  <!-- Gradient icon background (soft circle) -->
+  <circle cx="250" cy="220" r="170" fill="url(#brandGrad)" opacity="0.15"/>
+
+  <!-- Icon square with gradient -->
+  <rect x="140" y="100" width="220" height="220" rx="48" ry="48" fill="url(#brandGrad)"/>
+
+  <!-- Heart shape (white) -->
+  <path
+    d="M250 290
+       C250 290 175 245 175 195
+       C175 170 195 155 215 155
+       C228 155 240 162 250 172
+       C260 162 272 155 285 155
+       C305 155 325 170 325 195
+       C325 245 250 290 250 290Z"
+    fill="white"
+  />
+
+  <!-- Pulse / heartbeat line through heart -->
+  <polyline
+    points="185,198 210,198 222,175 234,220 244,198 258,198 270,175 282,222 294,198 315,198"
+    fill="none"
+    stroke="url(#brandGrad)"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- "Healtho" wordmark -->
+  <text
+    x="250"
+    y="390"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="68"
+    font-weight="900"
+    fill="url(#textGrad)"
+    text-anchor="middle"
+    letter-spacing="-1"
+  >Healtho</text>
+
+  <!-- "NUTRITION &amp; FITNESS" subtitle -->
+  <text
+    x="250"
+    y="430"
+    font-family="Arial, sans-serif"
+    font-size="22"
+    font-weight="600"
+    fill="#8b5cf6"
+    text-anchor="middle"
+    letter-spacing="4"
+    opacity="0.7"
+  >NUTRITION &amp; FITNESS</text>
+</svg>

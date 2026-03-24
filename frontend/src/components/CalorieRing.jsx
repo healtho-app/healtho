@@ -15,18 +15,25 @@ export default function CalorieRing({ consumed = 1309, goal = 2200, burned = 380
         {/* Ring */}
         <div className="relative flex-shrink-0">
           <svg width="130" height="130" viewBox="0 0 130 130" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="65" cy="65" r="54" fill="none" stroke="#2a2a2a" strokeWidth="11" />
+            <circle cx="65" cy="65" r="54" fill="none" stroke="#1a1640" strokeWidth="11" />
             <circle
               cx="65" cy="65" r="54"
               fill="none"
-              stroke="#137fec"
+              stroke="url(#ringGradient)"
               strokeWidth="11"
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={offset}
               className="ring-animate"
-              style={{ filter: 'drop-shadow(0 0 8px rgba(19,127,236,0.5))' }}
+              style={{ filter: 'drop-shadow(0 0 8px rgba(139,92,246,0.5))' }}
             />
+            <defs>
+              <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stopColor="#e879f9" />
+                <stop offset="50%"  stopColor="#8b5cf6" />
+                <stop offset="100%" stopColor="#22d3ee" />
+              </linearGradient>
+            </defs>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
             <span className="font-mono text-3xl font-bold text-white leading-none">{remaining.toLocaleString()}</span>

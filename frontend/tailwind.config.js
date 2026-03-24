@@ -5,16 +5,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary:          '#137fec',
-        'primary-dark':   '#0e63be',
-        'background-dark':'#121212',
-        surface:          '#1e1e1e',
-        'surface-2':      '#2a2a2a',
-        protein:          '#5b8def',
-        carbs:            '#e8b84b',
-        fat:              '#e07b5b',
-        fiber:            '#4caf7d',
-        water:            '#60b8d4',
+        // ── Brand (new identity) ───────────────────────────────
+        primary:           '#8b5cf6',   // Pulse Purple
+        'primary-dark':    '#7c3aed',   // Deeper purple
+        'brand-pink':      '#e879f9',   // Gradient start
+        'brand-cyan':      '#22d3ee',   // Gradient end
+        // ── Backgrounds ───────────────────────────────────────
+        'background-dark': '#030213',   // Deep navy-black
+        surface:           '#0e0b1e',   // Dark card surface
+        'surface-2':       '#1a1640',   // Slightly lighter surface
+        // ── Nutrition macros (unchanged) ──────────────────────
+        protein:           '#5b8def',
+        carbs:             '#e8b84b',
+        fat:               '#e07b5b',
+        fiber:             '#4caf7d',
+        water:             '#60b8d4',
+      },
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(135deg, #e879f9 0%, #8b5cf6 50%, #22d3ee 100%)',
       },
       fontFamily: {
         display: ['Lexend', 'sans-serif'],
