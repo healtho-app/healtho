@@ -10,12 +10,12 @@ export default function Header({ rightLabel, rightTo, rightIcon = 'arrow_forward
   useEffect(() => {
     // Check session on mount to decide where the logo links
     supabase.auth.getSession().then(({ data }) => {
-      setLogoTo(data?.session ? '/dashboard' : '/register')
+      setLogoTo(data?.session ? '/dashboard' : '/login')
     })
 
     // Update instantly if the user logs in or out in this tab
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLogoTo(session ? '/dashboard' : '/register')
+      setLogoTo(session ? '/dashboard' : '/login')
     })
 
     return () => subscription.unsubscribe()
