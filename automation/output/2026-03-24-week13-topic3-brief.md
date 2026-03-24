@@ -1,6 +1,5 @@
 # Healtho Content Brief
 > Generated: 2026-03-24 · Week 13 · Topic 3 of 10
-> Model: claude-opus-4-6
 
 ---
 
@@ -8,210 +7,174 @@
 
 
 
-# HEALTHO WEEKLY CONTENT BRIEF
+# 📋 POST BRIEF: BEST FOODS FOR FAT LOSS
 
-## 📌 Post Topic: BEST FOODS FOR FAT LOSS
-
-**Publish Date:** This week
-**Platforms:** Instagram @healtho_10k · TikTok @healtho_10k · X @HealthO_10k
-**Format:** Carousel (5 slides total)
+**Campaign:** Healtho Fat Loss Series
+**Format:** Carousel (6 slides total)
+**Platforms:** Instagram · TikTok · X
 
 ---
 
-## 🖼️ SLIDE 1 — TITLE CARD
+## 🎨 SLIDE 1 — TITLE CARD
 
-> **BEST FOODS FOR FAT LOSS**
->
-> Fat loss isn't about eating less — it's about eating smarter.
->
-> *Swipe to see the data →*
-
-**Visual:** Full-bleed hero shot — overhead flat-lay of colourful whole foods on a clean white marble surface (grilled chicken, cucumber slices, berries, leafy greens). Bold white all-caps headline overlaid.
+**Title:** BEST FOODS FOR FAT LOSS
+**Hook subtitle:** Fat loss isn't about eating less — it's about eating smarter.
+**Design note:** Bold sans-serif type, dark background, Healtho logo bottom-right, subtle gradient overlay.
 
 ---
 
-## 🖼️ SLIDE 2 — HIGH-VOLUME LOW-CAL FOODS
+## 📊 SLIDE 2 — HIGH-VOLUME LOW-CAL FOODS
 
-**Category:** HIGH-VOLUME LOW-CAL FOODS
-**Subtitle:** *(Fills you up on fewer calories — eat more, weigh less)*
+**Subtitle:** Fills you up on fewer calories
 
-| # | Food | Calories (per 100g) | Key Macro |
-|---|------|---------------------|-----------|
-| 1 | Raw Spinach | 23 kcal | 2.2g fiber |
-| 2 | Air-Popped Popcorn | 387 kcal (but ~31 kcal per cup / 8g) | 14.5g fiber per 100g |
-| 3 | Zucchini (courgette) | 17 kcal | 1.0g fiber |
-| 4 | Raw Celery | 14 kcal | 1.6g fiber |
+| # | Food | kcal / 100 g | Key Macro |
+|---|------|-------------|-----------|
+| 1 | Zucchini | 17 kcal | 1.2 g fiber |
+| 2 | Popcorn (air-popped) | 387 kcal* | 13 g fiber |
+| 3 | Strawberries | 32 kcal | 2.0 g fiber |
+| 4 | Egg Whites | 52 kcal | 10.9 g protein |
 
-**Slide Text (formatted for Canva — bottom of each quadrant):**
+> *Popcorn is high kcal by weight but extremely low-density by volume — 1 large bowl (~30 g) = ~116 kcal. Call this out on the slide graphic.
 
-```
-🥬 Spinach · 23 kcal · 2.2g fiber per 100g
-🍿 Air-Popped Popcorn · 31 kcal per cup · 14.5g fiber per 100g
-🥒 Zucchini · 17 kcal · 1.0g fiber per 100g
-🥬 Celery · 14 kcal · 1.6g fiber per 100g
-```
+**Sources:** USDA FoodData Central (SR Legacy)
 
 ---
 
-## 🖼️ SLIDE 3 — PROTEIN SOURCES
+## 📊 SLIDE 3 — PROTEIN SOURCES
 
-**Category:** PROTEIN SOURCES
-**Subtitle:** *(Preserves muscle during a calorie deficit)*
+**Subtitle:** Preserves muscle during a deficit
 
-| # | Food | Calories (per 100g) | Key Macro |
-|---|------|---------------------|-----------|
-| 1 | Chicken Breast (skinless, cooked) | 165 kcal | 31g protein |
-| 2 | Egg Whites (raw) | 52 kcal | 10.9g protein |
-| 3 | Greek Yogurt (non-fat, plain) | 59 kcal | 10.2g protein |
-| 4 | Cod (cooked) | 105 kcal | 23g protein |
+| # | Food | kcal / 100 g | Key Macro |
+|---|------|-------------|-----------|
+| 1 | Chicken Breast (skinless, cooked) | 165 kcal | 31.0 g protein |
+| 2 | Greek Yogurt (nonfat, plain) | 59 kcal | 10.2 g protein |
+| 3 | Canned Tuna (in water, drained) | 116 kcal | 25.5 g protein |
+| 4 | Lentils (cooked) | 116 kcal | 9.0 g protein |
 
-**Slide Text:**
-
-```
-🍗 Chicken Breast · 165 kcal · 31g protein per 100g
-🥚 Egg Whites · 52 kcal · 10.9g protein per 100g
-🥛 Non-Fat Greek Yogurt · 59 kcal · 10.2g protein per 100g
-🐟 Cod · 105 kcal · 23g protein per 100g
-```
+**Sources:** USDA FoodData Central (SR Legacy)
 
 ---
 
-## 🖼️ SLIDE 4 — FAT-BURNING FOODS
+## 📊 SLIDE 4 — FAT-BURNING SUPPORT FOODS
 
-**Category:** FAT-BURNING FOODS
-**Subtitle:** *(Thermogenic compounds that directly support fat oxidation)*
+**Subtitle:** Contains compounds linked to increased fat oxidation
 
-| # | Food | Calories (per 100g) | Key Macro / Active Compound |
-|---|------|---------------------|-----------------------------|
-| 1 | Green Tea (brewed, unsweetened) | 1 kcal | EGCG — shown to increase fat oxidation by up to 17%¹ |
-| 2 | Chili Peppers (red, raw) | 40 kcal | Capsaicin — boosts metabolic rate; 0.9g fat per 100g |
-| 3 | Coffee (black, brewed) | 2 kcal | Caffeine ~40mg per 100ml — raises resting metabolic rate 3–11%² |
-| 4 | Apple Cider Vinegar | 22 kcal | Acetic acid — supports fat oxidation; 0g fat per 100g |
+| # | Food | kcal / 100 g | Key Macro / Active Compound |
+|---|------|-------------|----------------------------|
+| 1 | Green Tea (brewed, unsweetened) | 1 kcal | EGCG — linked to increased thermogenesis¹ |
+| 2 | Chili Peppers (red, raw) | 40 kcal | Capsaicin — may boost metabolic rate by ~50 kcal/day² |
+| 3 | Coffee (black) | 1 kcal | Caffeine — shown to increase fat oxidation by 10–29 %³ |
+| 4 | Apple Cider Vinegar (1 tbsp ≈ 15 ml) | 22 kcal | Acetic acid — associated with reduced belly fat storage⁴ |
 
-> ¹ Dulloo et al., *Am J Clin Nutr*, 1999
-> ² Koot & Deurenberg, *Int J Obes*, 1995
+> ¹ Hursel et al., *Int J Obesity*, 2009
+> ² Ludy et al., *Physiol Behav*, 2011
+> ³ Acheson et al., *Am J Clin Nutr*, 1980; Dulloo et al., 1989
+> ⁴ Kondo et al., *Biosci Biotechnol Biochem*, 2009
 
-**Slide Text:**
+**Slide disclaimer line (small text):** "Effects are modest and complement — not replace — a calorie deficit."
 
-```
-🍵 Green Tea · 1 kcal · EGCG boosts fat oxidation up to 17%
-🌶️ Chili Peppers · 40 kcal · Capsaicin raises metabolic rate
-☕ Black Coffee · 2 kcal · ~40mg caffeine per 100ml
-🍎 Apple Cider Vinegar · 22 kcal · Acetic acid supports fat oxidation
-```
+**Sources:** USDA FoodData Central + cited studies
 
 ---
 
-## 🖼️ SLIDE 5 — WATER-DENSE FOODS
+## 📊 SLIDE 5 — WATER-DENSE FOODS
 
-**Category:** WATER-DENSE FOODS
-**Subtitle:** *(Suppresses appetite naturally — 85–96% water content)*
+**Subtitle:** Suppresses appetite naturally (90 %+ water)
 
-| # | Food | Calories (per 100g) | Key Macro |
-|---|------|---------------------|-----------|
-| 1 | Cucumber (raw, with peel) | 15 kcal | 0.5g fiber · 96% water |
-| 2 | Watermelon (raw) | 30 kcal | 0.4g fiber · 91% water |
-| 3 | Strawberries (raw) | 32 kcal | 2.0g fiber · 91% water |
-| 4 | Iceberg Lettuce (raw) | 14 kcal | 1.2g fiber · 96% water |
+| # | Food | kcal / 100 g | Water Content |
+|---|------|-------------|--------------|
+| 1 | Cucumber | 15 kcal | 95.2 % water |
+| 2 | Watermelon | 30 kcal | 91.4 % water |
+| 3 | Celery | 14 kcal | 95.4 % water |
+| 4 | Iceberg Lettuce | 14 kcal | 95.6 % water |
 
-**Slide Text:**
+**Sources:** USDA FoodData Central (SR Legacy)
 
-```
-🥒 Cucumber · 15 kcal · 96% water per 100g
-🍉 Watermelon · 30 kcal · 91% water per 100g
-🍓 Strawberries · 32 kcal · 2.0g fiber per 100g
-🥬 Iceberg Lettuce · 14 kcal · 96% water per 100g
-```
+---
+
+## 📸 CANVA PHOTO NOTES
+
+| Slide | Search Keywords | Mood / Style |
+|-------|----------------|--------------|
+| **Slide 1** | — | No photo. Clean typography on dark (#1A1A2E) background, Healtho green accent, subtle fork/plate icon or abstract food silhouette. |
+| **Slide 2 (Volume)** | "sliced zucchini on cutting board," "bowl of air-popped popcorn overhead," "fresh strawberries white background," "egg whites in glass bowl" | Bright, airy, white/light-wood surface, top-down flat lay. Emphasize *large portions* in frame. |
+| **Slide 3 (Protein)** | "grilled chicken breast plate," "greek yogurt bowl overhead," "canned tuna in bowl," "cooked lentils in bowl" | Warm tones, meal-prep aesthetic, neutral linen or slate backdrop. Show plated/prepped — not raw. |
+| **Slide 4 (Fat-Burning)** | "green tea in glass cup top down," "red chili peppers on dark background," "black coffee mug overhead," "apple cider vinegar bottle with apples" | Moody, slightly darker palette to differentiate. Deep greens, reds, amber tones. Dramatic lighting. |
+| **Slide 5 (Water-Dense)** | "sliced cucumber white background," "watermelon cubes on plate," "celery sticks overhead," "iceberg lettuce head cut" | Ultra-fresh, dewy, water droplets visible. Cool blues/greens, white background, high saturation. |
+
+**Grid layout per slide:** 2×2 with thin white or dark divider lines. Each quadrant: food photo + food name + bold kcal number overlaid bottom-left. Healtho watermark bottom-right of full slide.
 
 ---
 
 ## ✍️ PLATFORM CAPTIONS
 
----
-
-### 📸 INSTAGRAM CAPTION
+### 1. INSTAGRAM CAPTION — @healtho_10k
 
 ```
-Fat loss isn't about eating less — it's about eating smarter. 🔥
+Fat loss isn't about eating less — it's about eating smarter. 🧠
 
-Most people slash calories and lose muscle. The data says otherwise:
-a skinless chicken breast packs 31g of protein at just 165 kcal per 100g,
-while a cup of air-popped popcorn is only 31 kcal and loaded with fiber
-to keep you full for hours. The trick is choosing foods that are
-high-volume, protein-rich, and water-dense so your body stays fueled
-while burning fat.
+Most people cut calories and lose muscle. The real strategy? Load up on
+high-volume foods that keep you full, prioritize protein to protect lean
+mass, and add water-dense picks that naturally crush cravings — all
+without ever feeling deprived.
 
-Track every one of these foods in the Healtho app — scan, log, and
-watch your macros line up with your fat-loss goals. Link in bio 👆
+We broke down 16 grocery-store foods with the exact calories and macros
+per 100 g so you can build your next shopping list in minutes.
 
-#FatLoss #HighProtein #CalorieDeficit #WeightLossJourney
-#NutritionFacts #HealthyEating #MacroTracking #HealthoApp
-#EatSmarter
+📲 Track every one of these inside the Healtho app — scan, log, and
+watch your weekly trends update in real time. Link in bio.
+
+#FatLoss #CalorieDeficit #HighProtein #NutritionFacts #HealthyEating
+#MealPrep #WeightLossJourney #Healtho #MacroTracking
 ```
 
 ---
 
-### 🎵 TIKTOK CAPTION
+### 2. TIKTOK CAPTION — @healtho_10k
 
 ```
-Fat loss isn't about eating less — it's about eating smarter 🔥
-Chicken breast: 165 kcal, 31g protein.
-Cucumber: 15 kcal, 96% water.
-These are the receipts. Track them all on Healtho (link in bio).
+Fat loss isn't about eating less — it's about eating smarter 🧠🔥
+16 foods with REAL calorie + macro numbers. Save this for your next
+grocery run & track them all on Healtho 📲
 
-#FatLoss #HighProtein #NutritionFacts #HealthoApp #EatSmarter
+#FatLoss #HighProtein #NutritionTok #HealthyEating #Healtho
 ```
 
 ---
 
-### 🐦 X (TWITTER) CAPTION
+### 3. X (TWITTER) CAPTION — @HealthO_10k
 
 ```
-A cup of air-popped popcorn is just 31 kcal.
-A skinless chicken breast has 31g protein at 165 kcal per 100g.
-Green tea's EGCG boosts fat oxidation up to 17%.
+Cucumber: 15 kcal/100 g.
+Chicken breast: 31 g protein/100 g.
+Black coffee: 1 kcal.
 
-Here's the breakdown 🧵
+Fat loss isn't magic — it's math.
 
-[Attach all 5 carousel slides as images]
+Here's the breakdown 🧵👇
+
+[carousel attached]
 
 Save this.
 
-#FatLoss #NutritionData #HealthoApp #EatSmarter
+#FatLoss #NutritionFacts #MacroTracking #Healtho
 ```
-
----
-
-## 🎨 CANVA NOTES
-
-### Colour Palette & Mood
-Use Healtho's brand palette: **clean white (#FFFFFF) background, bold dark navy (#1A1A2E) headline text, accent green (#00C853) for data callouts and macro numbers.** Overall mood: bright, clinical-clean, trustworthy. Sans-serif font (Montserrat Bold for headlines, Inter or DM Sans for body/data).
-
-### Photo Direction by Slide
-
-| Slide | Canva Search Terms | Notes |
-|-------|--------------------|-------|
-| **Slide 1 (Title)** | "healthy food flat lay white background", "colourful meal prep overhead" | Hero shot — bright, abundant, aspirational. Include chicken, greens, berries visible. |
-| **Slide 2 (High-Volume)** | "spinach leaves close up", "popcorn bowl top down", "sliced zucchini cutting board", "celery sticks white plate" | 2×2 grid — each photo tightly cropped, consistent soft natural lighting. |
-| **Slide 3 (Protein)** | "grilled chicken breast plate", "egg whites bowl", "greek yogurt spoon", "baked cod fillet" | Warm tones, slightly steamy/fresh-from-the-kitchen feel. Protein should look satisfying. |
-| **Slide 4 (Fat-Burning)** | "green tea cup overhead", "red chili peppers dark background", "black coffee mug minimal", "apple cider vinegar bottle" | Allow one dramatic dark-background shot (chili peppers) for contrast; rest stay bright. |
-| **Slide 5 (Water-Dense)** | "cucumber slices water splash", "watermelon wedge fresh", "strawberries white bowl", "iceberg lettuce head" | Ultra-fresh, dewy, hydrated look — water droplets on produce if possible. |
 
 ---
 
 ## ✅ PRE-PUBLISH CHECKLIST
 
-- [ ] All calorie/macro numbers verified against USDA FoodData Central
-- [ ] Each slide has exactly 4 foods with data on the slide itself
-- [ ] CTA mentions Healtho app on Instagram + TikTok captions
-- [ ] Alt text added for accessibility on Instagram
-- [ ] Slides exported at 1080×1080px (IG), 1080×1920px (TikTok static), 1600×900px (X)
-- [ ] Hashtags do not exceed 9 (IG), 5 (TikTok), 4 (X)
-- [ ] Brand watermark / @healtho_10k handle visible on every slide
+- [ ] All kcal/macro values verified against USDA FoodData Central (SR Legacy)
+- [ ] Slide 4 disclaimer text included ("effects are modest…")
+- [ ] Popcorn volume callout included on Slide 2
+- [ ] Healtho logo on every slide
+- [ ] Link in bio updated to Healtho app download / tracking page
+- [ ] Alt-text written for Instagram accessibility
+- [ ] Scheduled across all three platforms with native aspect ratios (1080×1080 IG, 1080×1920 TikTok, 1600×900 X)
 
 ---
 
-*Brief prepared by Healtho Content Strategy · Source: USDA FoodData Central (fdc.nal.usda.gov)*
+*Brief prepared for the Healtho content team. All nutritional data sourced from the USDA FoodData Central database (SR Legacy reference). Study citations included for Slide 4 claims.*
 
 ---
-*Generated by Healtho Content Automation — automation/generate-content.js*
+*Generated by Healtho Content Automation*
