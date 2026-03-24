@@ -1,0 +1,12 @@
+{
+  "name": "healtho-content-automation",
+  "version": "1.0.0",
+  "description": "Weekly social media content brief generator for Healtho",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate-content.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  }
+}

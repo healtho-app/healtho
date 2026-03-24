@@ -1,0 +1,48 @@
+name: Weekly Content Brief Generator
+
+on:
+  # Runs every Monday at 9:00 AM MST (Mesa, AZ = UTC-7)
+  schedule:
+    - cron: "0 16 * * 1"
+
+  # Also lets you trigger it manually from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  generate-content:
+    name: Generate Weekly Post Brief
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: automation/package.json
+
+      - name: Install dependencies
+        working-directory: automation
+        run: npm install
+
+      - name: Generate content brief
+        working-directory: automation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node generate-content.js
+
+      - name: Commit and push brief
+        run: |
+          git config user.name  "Healtho Bot"
+          git config user.email "bot@healtho.app"
+          git add automation/output/
+          # Only commit if there's actually a new file
+          git diff --cached --quiet && echo "No changes to commit" || \
+            git commit -m "🤖 Weekly content brief — $(date +'%Y-%m-%d')"
+          git push
