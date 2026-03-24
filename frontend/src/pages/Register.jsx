@@ -3,33 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 
-// ── API base URL (Ishaan's Express backend) ────────────────────────────────────
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
-async function apiPost(path, body, token) {
-  const headers = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  let res
-  try {
-    res = await fetch(`${API}${path}`, { method: 'POST', headers, body: JSON.stringify(body) })
-  } catch {
-    throw new Error('__backend_offline__')
-  }
-  const json = await res.json()
-  if (!res.ok) {
-    const msg = Array.isArray(json.errors) ? json.errors[0] : json.message || 'Something went wrong.'
-    throw new Error(msg)
-  }
-  return json
-}
-
-// ── Step config — 5 steps: details → verify email → verify phone → metrics → activity
+// ── Step config — 4 steps: details → verify email → metrics → activity ────────
 const STEPS = {
-  1: { label: '1', pct: '20%',  width: '20%',  hint: "Let's start with your account details..." },
-  2: { label: '2', pct: '40%',  width: '40%',  hint: 'Check your inbox — enter the 6-digit code.' },
-  3: { label: '3', pct: '60%',  width: '60%',  hint: 'Check your phone — enter the 6-digit SMS code.' },
-  4: { label: '4', pct: '80%',  width: '80%',  hint: 'Your personalised plan is taking shape...' },
-  5: { label: '5', pct: '100%', width: '100%', hint: 'Almost done — just one more thing!' },
+  1: { label: '1', pct: '25%',  width: '25%',  hint: "Let's start with your account details..." },
+  2: { label: '2', pct: '50%',  width: '50%',  hint: 'Check your inbox — enter the 6-digit code.' },
+  3: { label: '3', pct: '75%',  width: '75%',  hint: 'Your personalised plan is taking shape...' },
+  4: { label: '4', pct: '100%', width: '100%', hint: 'Almost done — just one more thing!' },
 }
 
 const ACTIVITY_OPTIONS = [
@@ -44,7 +23,7 @@ const OTP_LENGTH     = 6
 const RESEND_SECONDS = 30
 
 // ── Validation ────────────────────────────────────────────────────────────────
-function validateStep1({ name, username, email, password, phone }) {
+function validateStep1({ name, username, email, password }) {
   const errors = {}
   if (!name.trim())                errors.name     = 'Full name is required'
   else if (name.trim().length < 2) errors.name     = 'Name must be at least 2 characters'
@@ -57,14 +36,10 @@ function validateStep1({ name, username, email, password, phone }) {
   if (!password)                   errors.password = 'Password is required'
   else if (password.length < 8)    errors.password = 'Password must be at least 8 characters'
   else if (!/(?=.*[0-9!@#$%^&*])/.test(password)) errors.password = 'Include at least one number or symbol'
-  const cleanPhone = phone.replace(/[\s\-()]/g, '')
-  if (!phone.trim())               errors.phone    = 'Phone number is required'
-  else if (!/^\+\d{7,15}$/.test(cleanPhone))
-                                   errors.phone    = 'Include your country code — e.g. +1 555 000 0000'
   return errors
 }
 
-function validateStep4({ age, height, weight }) {
+function validateStep3({ age, height, weight }) {
   const errors = {}
   const a = parseInt(age), h = parseFloat(height), w = parseFloat(weight)
   if (!age    || isNaN(a) || a < 10 || a > 120)  errors.age    = 'Enter a valid age between 10 and 120'
@@ -73,7 +48,7 @@ function validateStep4({ age, height, weight }) {
   return errors
 }
 
-function validateStep5({ activity }) {
+function validateStep4({ activity }) {
   return activity ? {} : { activity: 'Please select your activity level' }
 }
 
@@ -169,30 +144,20 @@ function OtpInput({ digits, onChange, hasError }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Register() {
   const navigate = useNavigate()
-  const [step,             setStep]            = useState(1)
-  const [showPwd,          setShowPwd]          = useState(false)
-  const [loading,          setLoading]          = useState(false)
-  const [errors,           setErrors]           = useState({})
-  const [serverError,      setServerError]      = useState('')
+  const [step,        setStep]       = useState(1)
+  const [showPwd,     setShowPwd]    = useState(false)
+  const [loading,     setLoading]    = useState(false)
+  const [errors,      setErrors]     = useState({})
+  const [serverError, setServerError] = useState('')
 
-  // Email OTP
-  const [otpDigits,        setOtpDigits]        = useState(Array(OTP_LENGTH).fill(''))
-  const [otpError,         setOtpError]         = useState('')
-  const [resendTimer,      setResendTimer]      = useState(0)
-  const [resending,        setResending]        = useState(false)
-
-  // Phone OTP
-  const [phoneOtpDigits,   setPhoneOtpDigits]   = useState(Array(OTP_LENGTH).fill(''))
-  const [phoneOtpError,    setPhoneOtpError]    = useState('')
-  const [phoneResendTimer, setPhoneResendTimer] = useState(0)
-  const [phoneResending,   setPhoneResending]   = useState(false)
-  const [editingPhone,     setEditingPhone]     = useState(false)
-  const [phoneEditVal,     setPhoneEditVal]     = useState('')
-
-  const [authToken, setAuthToken] = useState(null)
+  // Email OTP state
+  const [otpDigits,   setOtpDigits]  = useState(Array(OTP_LENGTH).fill(''))
+  const [otpError,    setOtpError]   = useState('')
+  const [resendTimer, setResendTimer] = useState(0)
+  const [resending,   setResending]  = useState(false)
 
   const [form, setForm] = useState({
-    name: '', username: '', email: '', password: '', phone: '',
+    name: '', username: '', email: '', password: '',
     unit_system: 'metric',
     age: '', height: '', weight: '',
     activity: '',
@@ -203,6 +168,7 @@ export default function Register() {
     if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
   }
 
+  // Username: auto-lowercase, strip invalid chars
   const setUsername = (e) => {
     const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
     setForm(f => ({ ...f, username: val }))
@@ -219,19 +185,12 @@ export default function Register() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Email OTP resend countdown
+  // Resend countdown
   useEffect(() => {
     if (resendTimer <= 0) return
     const t = setTimeout(() => setResendTimer(s => s - 1), 1000)
     return () => clearTimeout(t)
   }, [resendTimer])
-
-  // Phone OTP resend countdown
-  useEffect(() => {
-    if (phoneResendTimer <= 0) return
-    const t = setTimeout(() => setPhoneResendTimer(s => s - 1), 1000)
-    return () => clearTimeout(t)
-  }, [phoneResendTimer])
 
   // ── Helper: seed profile (upsert → fallback to update) ───────────────────
   const seedProfile = async (userId, payload) => {
@@ -244,14 +203,6 @@ export default function Register() {
       // RLS may block INSERT half of upsert — row likely exists from DB trigger
       await supabase.from('profiles').update(payload).eq('id', userId)
     }
-  }
-
-  // ── Helper: send phone OTP via Supabase ───────────────────────────────────
-  const sendPhoneOtp = async (phoneOverride) => {
-    const phone = (phoneOverride || form.phone).replace(/[\s\-()]/g, '')
-    const { error } = await supabase.auth.updateUser({ phone })
-    if (error) throw error
-    setPhoneResendTimer(RESEND_SECONDS)
   }
 
   // ── Step 1: Create account ────────────────────────────────────────────────
@@ -269,35 +220,25 @@ export default function Register() {
       })
       if (error) throw error
 
-      const profilePayload = {
-        full_name:         form.name.trim(),
-        username:          form.username.toLowerCase(),
-        email:             form.email.trim().toLowerCase(),
-        registration_step: 1,
-      }
-
       if (data.session) {
-        // Email confirmation disabled in Supabase — session returned immediately
-        setAuthToken(data.session.access_token)
+        // Confirm email is OFF — session returned immediately, seed profile and skip OTP
+        const profilePayload = {
+          full_name:         form.name.trim(),
+          username:          form.username.toLowerCase(),
+          email:             form.email.trim().toLowerCase(),
+          registration_step: 1,
+        }
         try {
           await seedProfile(data.user.id, profilePayload)
         } catch (profileErr) {
           if (profileErr?.code === '23505') {
-            await supabase.auth.admin?.deleteUser?.(data.user.id).catch(() => {})
             setErrors(er => ({ ...er, username: 'Username already taken — try another' }))
             return
           }
         }
-        // Send phone OTP then go to phone verification
-        try {
-          await sendPhoneOtp()
-          goTo(3)
-        } catch {
-          // Phone provider not yet configured in Supabase — skip phone step for now
-          goTo(4)
-        }
+        goTo(3) // skip email OTP, go straight to metrics
       } else {
-        // Email confirmation enabled — go to email OTP step
+        // Confirm email is ON — go to email OTP step
         goTo(2)
       }
     } catch (err) {
@@ -323,6 +264,7 @@ export default function Register() {
       const { error } = await supabase.auth.verifyOtp({ email: form.email, token: code, type: 'signup' })
       if (error) throw error
 
+      // Seed profile now that email is confirmed
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const profilePayload = {
@@ -341,13 +283,7 @@ export default function Register() {
         }
       }
 
-      // Send phone OTP
-      try {
-        await sendPhoneOtp()
-        goTo(3)
-      } catch {
-        goTo(4) // phone provider not configured — skip
-      }
+      goTo(3) // proceed to body metrics
     } catch (err) {
       setOtpError(err.message || 'Invalid or expired code. Please try again.')
     } finally {
@@ -355,34 +291,24 @@ export default function Register() {
     }
   }
 
-  // ── Step 3: Verify phone OTP ──────────────────────────────────────────────
-  const verifyPhone = async () => {
-    const code = phoneOtpDigits.join('')
-    if (code.length < OTP_LENGTH) { setPhoneOtpError('Enter the full 6-digit SMS code'); return }
-
-    setLoading(true)
-    setPhoneOtpError('')
+  // ── Resend email code ─────────────────────────────────────────────────────
+  const resendEmailCode = async () => {
+    setResending(true)
+    setOtpError('')
+    setOtpDigits(Array(OTP_LENGTH).fill(''))
     try {
-      const phone = form.phone.replace(/[\s\-()]/g, '')
-      const { error } = await supabase.auth.verifyOtp({ phone, token: code, type: 'phone_change' })
-      if (error) throw error
-
-      // Save phone number to profiles
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase.from('profiles').update({ phone_number: phone }).eq('id', user.id)
-      }
-      goTo(4)
+      await supabase.auth.resend({ type: 'signup', email: form.email })
+      setResendTimer(RESEND_SECONDS)
     } catch (err) {
-      setPhoneOtpError(err.message || 'Invalid or expired code. Please try again.')
+      setOtpError(err.message || 'Could not resend code.')
     } finally {
-      setLoading(false)
+      setResending(false)
     }
   }
 
-  // ── Step 4: Body metrics ──────────────────────────────────────────────────
+  // ── Step 3: Body metrics ──────────────────────────────────────────────────
   const submitMetrics = async () => {
-    const errs = validateStep4(form)
+    const errs = validateStep3(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     setLoading(true)
@@ -394,19 +320,19 @@ export default function Register() {
       const isImperial = form.unit_system === 'imperial'
       const weight_kg  = isImperial ? parseFloat((parseFloat(form.weight) * 0.453592).toFixed(2)) : parseFloat(form.weight)
       const height_cm  = isImperial ? parseFloat((parseFloat(form.height) * 2.54).toFixed(2))    : parseFloat(form.height)
-      const bmi        = parseFloat((weight_kg / Math.pow(height_cm / 100, 2)).toFixed(1))
+      const bmiVal     = parseFloat((weight_kg / Math.pow(height_cm / 100, 2)).toFixed(1))
 
       const { error } = await supabase.from('profiles').update({
         unit_system:       form.unit_system,
         age:               parseInt(form.age),
         height_cm,
         weight_kg,
-        bmi,
+        bmi:               bmiVal,
         registration_step: 2,
       }).eq('id', user.id)
 
       if (error) throw error
-      goTo(5)
+      goTo(4)
     } catch (err) {
       setServerError(err.message || 'Could not save your metrics. Please try again.')
     } finally {
@@ -414,9 +340,9 @@ export default function Register() {
     }
   }
 
-  // ── Step 5: Activity level — registration complete ────────────────────────
+  // ── Step 4: Activity level — registration complete ────────────────────────
   const submitActivity = async () => {
-    const errs = validateStep5(form)
+    const errs = validateStep4(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     setLoading(true)
@@ -456,56 +382,6 @@ export default function Register() {
     }
   }
 
-  // ── Resend email code ─────────────────────────────────────────────────────
-  const resendEmailCode = async () => {
-    setResending(true)
-    setOtpError('')
-    setOtpDigits(Array(OTP_LENGTH).fill(''))
-    try {
-      await supabase.auth.resend({ type: 'signup', email: form.email })
-      setResendTimer(RESEND_SECONDS)
-    } catch (err) {
-      setOtpError(err.message || 'Could not resend code.')
-    } finally {
-      setResending(false)
-    }
-  }
-
-  // ── Resend phone code ─────────────────────────────────────────────────────
-  const resendPhoneCode = async () => {
-    setPhoneResending(true)
-    setPhoneOtpError('')
-    setPhoneOtpDigits(Array(OTP_LENGTH).fill(''))
-    try {
-      await sendPhoneOtp()
-    } catch (err) {
-      setPhoneOtpError(err.message || 'Could not resend code.')
-    } finally {
-      setPhoneResending(false)
-    }
-  }
-
-  // ── Update phone number inline on step 3 ─────────────────────────────────
-  const updatePhone = async () => {
-    const cleanPhone = phoneEditVal.replace(/[\s\-()]/g, '')
-    if (!/^\+\d{7,15}$/.test(cleanPhone)) {
-      setPhoneOtpError('Include your country code — e.g. +1 555 000 0000')
-      return
-    }
-    setLoading(true)
-    setPhoneOtpError('')
-    setPhoneOtpDigits(Array(OTP_LENGTH).fill(''))
-    try {
-      setForm(f => ({ ...f, phone: phoneEditVal }))
-      await sendPhoneOtp(phoneEditVal)
-      setEditingPhone(false)
-    } catch (err) {
-      setPhoneOtpError(err.message || 'Could not send code to this number.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const s = STEPS[step]
 
   return (
@@ -519,7 +395,7 @@ export default function Register() {
           <div className="flex flex-col gap-3 mb-10">
             <div className="flex items-center justify-between">
               <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">
-                Step {s.label} of 5
+                Step {s.label} of 4
               </p>
               <p className="text-primary text-sm font-bold">{s.pct}</p>
             </div>
@@ -545,6 +421,7 @@ export default function Register() {
               )}
 
               <div className="space-y-5">
+                {/* Full Name */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">person</span>Full Name
@@ -555,6 +432,7 @@ export default function Register() {
                   <FieldError message={errors.name} />
                 </div>
 
+                {/* Username */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">alternate_email</span>Username
@@ -566,10 +444,11 @@ export default function Register() {
                       placeholder="yourname" maxLength={20}
                       className={`${inputClass(errors, 'username')} pl-8`} />
                   </div>
-                  <p className="text-slate-600 text-xs mt-0.5">Letters, numbers and underscores only. e.g. <span className="text-slate-500">@ayush_k</span></p>
+                  <p className="text-slate-600 text-xs mt-0.5">Letters, numbers and underscores only.</p>
                   <FieldError message={errors.username} />
                 </div>
 
+                {/* Email */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">mail</span>Email
@@ -580,6 +459,7 @@ export default function Register() {
                   <FieldError message={errors.email} />
                 </div>
 
+                {/* Password */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">lock</span>Password
@@ -587,7 +467,8 @@ export default function Register() {
                   <div className="relative">
                     <input type={showPwd ? 'text' : 'password'} value={form.password} onChange={set('password')}
                       onKeyDown={e => e.key === 'Enter' && submitStep1()}
-                      placeholder="Min 8 chars, include a number or symbol" className={inputClass(errors, 'password', 'pr-12')} />
+                      placeholder="Min 8 chars, include a number or symbol"
+                      className={inputClass(errors, 'password', 'pr-12')} />
                     <button type="button" onClick={() => setShowPwd(v => !v)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
                       <span className="material-symbols-outlined">{showPwd ? 'visibility_off' : 'visibility'}</span>
@@ -595,23 +476,12 @@ export default function Register() {
                   </div>
                   <FieldError message={errors.password} />
                 </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">phone</span>Phone Number
-                  </label>
-                  <input type="tel" value={form.phone} onChange={set('phone')}
-                    onKeyDown={e => e.key === 'Enter' && submitStep1()}
-                    placeholder="+1 555 000 0000" className={inputClass(errors, 'phone')} />
-                  <p className="text-slate-600 text-xs mt-0.5">Include your country code (+1 for US, +91 for India). Used to verify your identity via SMS.</p>
-                  <FieldError message={errors.phone} />
-                </div>
               </div>
 
               <div className="relative py-6">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800" /></div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background-dark px-4 text-slate-500 font-medium">Or sign up with</span>
+                  <span className="bg-[#0f172a] px-4 text-slate-500 font-medium">Or sign up with</span>
                 </div>
               </div>
 
@@ -639,11 +509,13 @@ export default function Register() {
                   <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
                 )}
               </button>
-              <p className="text-center text-slate-500 text-xs mt-6">
+
+              <p className="text-center text-slate-500 text-xs mt-4">
                 By continuing, you agree to our{' '}
                 <a href="#" className="text-primary hover:underline">Terms</a> and{' '}
                 <a href="#" className="text-primary hover:underline">Privacy Policy</a>
               </p>
+
               <p className="text-center text-slate-500 text-sm mt-5">
                 Already have an account?{' '}
                 <Link to="/login" className="text-primary font-bold hover:underline">Log in</Link>
@@ -651,7 +523,7 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── STEP 2: Verify Email ─────────────────────────────────────────── */}
+          {/* ── STEP 2: Verify Email OTP ─────────────────────────────────────── */}
           {step === 2 && (
             <div>
               <div className="flex justify-center mb-6">
@@ -659,17 +531,25 @@ export default function Register() {
                   <span className="material-symbols-outlined text-primary text-4xl">mark_email_unread</span>
                 </div>
               </div>
+
               <div className="mb-8 text-center">
                 <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Verify your email</h1>
-                <p className="text-slate-400 text-base mt-3">We sent a 6-digit code to</p>
+                <p className="text-slate-400 text-base mt-3 leading-relaxed">
+                  We sent a 6-digit verification code to
+                </p>
                 <p className="text-primary font-bold text-base mt-1">{form.email}</p>
               </div>
 
               <div className="mb-4">
-                <OtpInput digits={otpDigits} onChange={d => { setOtpDigits(d); setOtpError('') }} hasError={!!otpError} />
+                <OtpInput
+                  digits={otpDigits}
+                  onChange={d => { setOtpDigits(d); setOtpError('') }}
+                  hasError={!!otpError}
+                />
                 {otpError && (
                   <p className="flex items-center justify-center gap-1.5 text-red-400 text-xs font-semibold mt-3">
-                    <span className="material-symbols-outlined text-sm">error</span>{otpError}
+                    <span className="material-symbols-outlined text-sm">error</span>
+                    {otpError}
                   </p>
                 )}
               </div>
@@ -677,21 +557,25 @@ export default function Register() {
               <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3 mb-8">
                 <span className="material-symbols-outlined text-primary flex-shrink-0 text-base mt-0.5">info</span>
                 <p className="text-slate-400 text-xs leading-relaxed">
-                  Can't find it? Check your <span className="text-slate-300 font-semibold">spam folder</span>. Code expires in <span className="text-slate-300 font-semibold">10 minutes</span>.
+                  Can't find it? Check your <span className="text-slate-300 font-semibold">spam or junk folder</span>. The code expires in <span className="text-slate-300 font-semibold">10 minutes</span>.
                 </p>
               </div>
 
               <div className="flex flex-col gap-3">
                 <button onClick={verifyEmail} disabled={loading || otpDigits.join('').length < OTP_LENGTH}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-                  {loading
-                    ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Verifying…</>
-                    : <><span className="material-symbols-outlined">mark_email_read</span>Verify Email</>
-                  }
+                  {loading ? (
+                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Verifying…</>
+                  ) : (
+                    <><span className="material-symbols-outlined">mark_email_read</span>Verify Email</>
+                  )}
                 </button>
-                <div className="flex items-center justify-center py-2">
+
+                <div className="flex items-center justify-center gap-2 py-2">
                   {resendTimer > 0 ? (
-                    <p className="text-slate-500 text-sm">Resend in <span className="text-slate-300 font-bold font-mono">{resendTimer}s</span></p>
+                    <p className="text-slate-500 text-sm">
+                      Resend in <span className="text-slate-300 font-bold font-mono">{resendTimer}s</span>
+                    </p>
                   ) : (
                     <button onClick={resendEmailCode} disabled={resending}
                       className="flex items-center gap-1.5 text-primary text-sm font-semibold hover:underline disabled:opacity-50">
@@ -702,98 +586,18 @@ export default function Register() {
                     </button>
                   )}
                 </div>
+
                 <button onClick={() => goTo(1)}
                   className="w-full h-12 text-slate-500 rounded-xl font-semibold text-sm hover:bg-slate-900 transition-colors flex items-center justify-center gap-1.5">
-                  <span className="material-symbols-outlined text-base">edit</span>Wrong email? Start over
+                  <span className="material-symbols-outlined text-base">edit</span>
+                  Wrong email? Go back
                 </button>
               </div>
             </div>
           )}
 
-          {/* ── STEP 3: Verify Phone ─────────────────────────────────────────── */}
+          {/* ── STEP 3: Body Metrics ─────────────────────────────────────────── */}
           {step === 3 && (
-            <div>
-              <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-green-400 text-4xl">sms</span>
-                </div>
-              </div>
-              <div className="mb-8 text-center">
-                <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Verify your phone</h1>
-                <p className="text-slate-400 text-base mt-3">We sent a 6-digit SMS code to</p>
-                <p className="text-primary font-bold text-base mt-1">{form.phone}</p>
-              </div>
-
-              <div className="mb-4">
-                <OtpInput digits={phoneOtpDigits} onChange={d => { setPhoneOtpDigits(d); setPhoneOtpError('') }} hasError={!!phoneOtpError} />
-                {phoneOtpError && (
-                  <p className="flex items-center justify-center gap-1.5 text-red-400 text-xs font-semibold mt-3">
-                    <span className="material-symbols-outlined text-sm">error</span>{phoneOtpError}
-                  </p>
-                )}
-              </div>
-
-              <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3 mb-6">
-                <span className="material-symbols-outlined text-primary flex-shrink-0 text-base mt-0.5">info</span>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  Didn't receive it? It may take up to a minute. Code expires in <span className="text-slate-300 font-semibold">10 minutes</span>.
-                </p>
-              </div>
-
-              {/* Wrong number — inline edit */}
-              {editingPhone ? (
-                <div className="mb-6 p-4 bg-slate-900 border border-primary/30 rounded-xl space-y-3">
-                  <p className="text-slate-300 text-sm font-semibold">Enter your correct phone number:</p>
-                  <input type="tel" value={phoneEditVal} onChange={e => setPhoneEditVal(e.target.value)}
-                    placeholder="+1 555 000 0000"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl h-12 px-4 text-base text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:border-primary focus:ring-primary/20 transition-all" />
-                  <div className="flex gap-3">
-                    <button onClick={updatePhone} disabled={loading}
-                      className="flex-1 h-11 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1.5">
-                      {loading ? <span className="material-symbols-outlined animate-spin text-base">progress_activity</span> : <span className="material-symbols-outlined text-base">send</span>}
-                      Send new code
-                    </button>
-                    <button onClick={() => { setEditingPhone(false); setPhoneOtpError('') }}
-                      className="h-11 px-4 text-slate-400 rounded-xl font-semibold text-sm hover:bg-slate-800 transition-colors">
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="flex flex-col gap-3">
-                <button onClick={verifyPhone} disabled={loading || phoneOtpDigits.join('').length < OTP_LENGTH}
-                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-                  {loading
-                    ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Verifying…</>
-                    : <><span className="material-symbols-outlined">verified</span>Verify Phone</>
-                  }
-                </button>
-                <div className="flex items-center justify-center py-2">
-                  {phoneResendTimer > 0 ? (
-                    <p className="text-slate-500 text-sm">Resend in <span className="text-slate-300 font-bold font-mono">{phoneResendTimer}s</span></p>
-                  ) : (
-                    <button onClick={resendPhoneCode} disabled={phoneResending}
-                      className="flex items-center gap-1.5 text-primary text-sm font-semibold hover:underline disabled:opacity-50">
-                      {phoneResending
-                        ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Resending…</>
-                        : <><span className="material-symbols-outlined text-sm">refresh</span>Resend SMS</>
-                      }
-                    </button>
-                  )}
-                </div>
-                {!editingPhone && (
-                  <button onClick={() => { setEditingPhone(true); setPhoneEditVal(form.phone) }}
-                    className="w-full h-12 text-slate-500 rounded-xl font-semibold text-sm hover:bg-slate-900 transition-colors flex items-center justify-center gap-1.5">
-                    <span className="material-symbols-outlined text-base">edit</span>Wrong number? Change it
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── STEP 4: Body Metrics ─────────────────────────────────────────── */}
-          {step === 4 && (
             <div>
               <div className="mb-8">
                 <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Your body metrics</h1>
@@ -807,13 +611,19 @@ export default function Register() {
                 </div>
               )}
 
+              {/* Unit toggle */}
               <div className="flex mb-8">
                 <div className="flex h-12 w-full items-center rounded-xl bg-slate-800/50 p-1.5">
-                  {[{ value: 'metric', label: 'Metric (kg, cm)' }, { value: 'imperial', label: 'Imperial (lb, ft)' }].map(opt => (
+                  {[
+                    { value: 'metric',   label: 'Metric (kg, cm)' },
+                    { value: 'imperial', label: 'Imperial (lb, in)' },
+                  ].map(opt => (
                     <button key={opt.value} type="button"
                       onClick={() => setForm(f => ({ ...f, unit_system: opt.value }))}
                       className={`flex cursor-pointer h-full grow items-center justify-center rounded-lg px-4 transition-all text-base font-semibold ${
-                        form.unit_system === opt.value ? 'bg-slate-700 text-primary' : 'text-slate-400 hover:text-slate-300'
+                        form.unit_system === opt.value
+                          ? 'bg-slate-700 text-primary'
+                          : 'text-slate-400 hover:text-slate-300'
                       }`}>
                       {opt.label}
                     </button>
@@ -822,6 +632,7 @@ export default function Register() {
               </div>
 
               <div className="space-y-5">
+                {/* Age */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">calendar_today</span>Age
@@ -830,6 +641,8 @@ export default function Register() {
                     placeholder="e.g. 27" className={inputClass(errors, 'age')} />
                   <FieldError message={errors.age} />
                 </div>
+
+                {/* Height + Weight */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
                     <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
@@ -862,6 +675,7 @@ export default function Register() {
                 </div>
               </div>
 
+              {/* Live BMI preview */}
               {bmi && bmiInfo && (
                 <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-xl">
                   <div className="flex items-center justify-between">
@@ -881,22 +695,29 @@ export default function Register() {
               <div className="mt-10 flex flex-col gap-3">
                 <button onClick={submitMetrics} disabled={loading}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
-                  {loading
-                    ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
-                    : <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
-                  }
+                  {loading ? (
+                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
+                  ) : (
+                    <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                  )}
                 </button>
-                <button onClick={() => goTo(1)} className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">Back</button>
+                <button onClick={() => goTo(1)}
+                  className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">
+                  Back
+                </button>
               </div>
+
               <div className="mt-6 p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3">
                 <span className="material-symbols-outlined text-primary flex-shrink-0">info</span>
-                <p className="text-sm text-slate-400 leading-relaxed">Your data is stored securely and only used to personalise your nutrition and health goals.</p>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  Your data is stored securely and only used to personalise your nutrition and health goals.
+                </p>
               </div>
             </div>
           )}
 
-          {/* ── STEP 5: Activity Level ───────────────────────────────────────── */}
-          {step === 5 && (
+          {/* ── STEP 4: Activity Level ───────────────────────────────────────── */}
+          {step === 4 && (
             <div>
               <div className="mb-8">
                 <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">How active are you?</h1>
@@ -913,13 +734,20 @@ export default function Register() {
                           ? 'border-red-500/50 bg-slate-900 hover:border-red-500/70'
                           : 'border-slate-800 bg-slate-900 hover:border-primary/50'
                     }`}
-                    onClick={() => { setForm(f => ({ ...f, activity: opt.value })); if (errors.activity) setErrors(er => ({ ...er, activity: '' })) }}>
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">{opt.emoji}</div>
+                    onClick={() => {
+                      setForm(f => ({ ...f, activity: opt.value }))
+                      if (errors.activity) setErrors(er => ({ ...er, activity: '' }))
+                    }}>
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">
+                      {opt.emoji}
+                    </div>
                     <div className="flex-1">
                       <p className="font-bold text-slate-100">{opt.label}</p>
                       <p className="text-slate-500 text-sm">{opt.sub}</p>
                     </div>
-                    <span className={`material-symbols-outlined text-primary transition-opacity ${form.activity === opt.value ? 'opacity-100' : 'opacity-0'}`}>check_circle</span>
+                    <span className={`material-symbols-outlined text-primary transition-opacity ${form.activity === opt.value ? 'opacity-100' : 'opacity-0'}`}>
+                      check_circle
+                    </span>
                   </label>
                 ))}
               </div>
@@ -941,12 +769,14 @@ export default function Register() {
               <div className="mt-10 flex flex-col gap-3">
                 <button onClick={submitActivity} disabled={loading}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-                  {loading
-                    ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Finishing up…</>
-                    : 'Create My Account 🎉'
-                  }
+                  {loading ? (
+                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Finishing up…</>
+                  ) : 'Create My Account 🎉'}
                 </button>
-                <button onClick={() => goTo(4)} className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">Back</button>
+                <button onClick={() => goTo(3)}
+                  className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">
+                  Back
+                </button>
               </div>
             </div>
           )}
