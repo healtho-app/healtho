@@ -17,12 +17,13 @@ export default function WaterTracker({ waterLevel = 0 }) {
   const liters = ((totalLevel * ML_PER_DOT) / 1000).toFixed(1)
 
   const handleDot = (idx) => {
-    if (idx < totalLevel) {
-      // Tapping inside the filled area → unfill, but never below what's logged
-      setManualDots(Math.max(idx, Math.ceil(waterLevel)))
+    const desired = idx < totalLevel ? idx : idx + 1  // toggle: unfill to idx, or fill to idx+1
+    if (desired <= waterLevel) {
+      // Can't go below logged level — reset manual so waterLevel takes over naturally
+      setManualDots(0)
     } else {
-      // Tapping an empty dot → fill up to and including it
-      setManualDots(idx + 1)
+      // Desired level is above logged water — store as manual override
+      setManualDots(desired)
     }
   }
 
