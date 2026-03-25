@@ -98,10 +98,20 @@ export default function Dashboard() {
   const calorieGoal = profile?.daily_calorie_goal ?? computeTDEE(profile) ?? 0
 
   // Water dots — 8 dots, each = 312.5 ml (2500 ml / 8)
-  const totalWaterMl = logs
-    .filter(l => WATER_SERVING_ML[l.food_name] != null)
-    .reduce((s, l) => s + WATER_SERVING_ML[l.food_name] * (l.quantity || 1), 0)
-  const waterDots = Math.min(8, Math.round(totalWaterMl / (2500 / 8)))
+  // Case-insensitive name lookup so minor DB variations don't break matching
+  const waterLogs = logs.filter(l => {
+    const name = l.food_name?.trim() ?? ''
+    return Object.keys(WATER_SERVING_ML).some(k => k.toLowerCase() === name.toLowerCase())
+  })
+  const totalWaterMl = waterLogs.reduce((s, l) => {
+    const name  = l.food_name?.trim() ?? ''
+    const key   = Object.keys(WATER_SERVING_ML).find(k => k.toLowerCase() === name.toLowerCase())
+    const mlPer = WATER_SERVING_ML[key] ?? 0
+    const qty   = parseFloat(l.quantity) || 1
+    return s + mlPer * qty
+  }, 0)
+  const waterDots = Math.min(8, Math.ceil(totalWaterMl / (2500 / 8)))
+  console.log('[Water] logs:', waterLogs, 'totalMl:', totalWaterMl, 'dots:', waterDots)
 
   // Macro % of total calories (protein/carbs = 4 kcal/g, fat = 9 kcal/g)
   const totalMacroKcal = totalProtein * 4 + totalCarbs * 4 + totalFat * 9 || 1
