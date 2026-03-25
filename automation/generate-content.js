@@ -194,6 +194,12 @@ const TOPICS = [
 // ---------------------------------------------------------------------------
 
 function getWeeklyTopic() {
+  // Allow manual override via FORCE_TOPIC_INDEX env var (1-based, e.g. "4" = Topic 4)
+  if (process.env.FORCE_TOPIC_INDEX) {
+    const forced = parseInt(process.env.FORCE_TOPIC_INDEX, 10);
+    const idx = Math.max(1, Math.min(forced, TOPICS.length));
+    return { topic: TOPICS[idx - 1], weekNumber: null, topicIndex: idx };
+  }
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const weekNumber = Math.ceil(

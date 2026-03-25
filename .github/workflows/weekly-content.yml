@@ -5,8 +5,13 @@ on:
   schedule:
     - cron: "0 16 * * 1"
 
-  # Also lets you trigger it manually from the GitHub Actions tab
+  # Manually trigger from GitHub Actions tab — optionally force a specific topic
   workflow_dispatch:
+    inputs:
+      force_topic:
+        description: "Force a specific topic number (1–10). Leave blank for auto."
+        required: false
+        default: ""
 
 jobs:
   generate-content:
@@ -36,6 +41,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          FORCE_TOPIC_INDEX: ${{ github.event.inputs.force_topic }}
         run: node generate-content.js
 
       - name: Commit and push brief
