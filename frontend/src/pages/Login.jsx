@@ -145,9 +145,9 @@ export default function Login() {
                   <span className="material-symbols-outlined text-primary text-xl">lock</span>
                   Password
                 </label>
-                <a href="#" className="text-primary text-xs font-semibold hover:underline">
+                <Link to="/forgot-password" className="text-primary text-xs font-semibold hover:underline">
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <input

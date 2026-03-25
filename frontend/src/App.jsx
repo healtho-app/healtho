@@ -4,7 +4,8 @@ import Login          from './pages/Login'
 import Register       from './pages/Register'
 import Profile        from './pages/Profile'
 import NotFound       from './pages/NotFound'
-import AuthCallback   from './pages/AuthCallback'
+import AuthCallback    from './pages/AuthCallback'
+import ForgotPassword  from './pages/ForgotPassword'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
@@ -14,7 +15,8 @@ export default function App() {
       <Route path="/"              element={<Navigate to="/login" replace />} />
       <Route path="/login"         element={<Login />} />
       <Route path="/register"      element={<Register />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/auth/callback"    element={<AuthCallback />} />
+      <Route path="/forgot-password"  element={<ForgotPassword />} />
 
       {/* Profile — unprotected until Supabase auth is live (reads from URL params for now) */}
       <Route path="/profile"   element={<Profile />} />
