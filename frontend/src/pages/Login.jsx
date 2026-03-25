@@ -95,7 +95,7 @@ export default function Login() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header rightLabel="Create account" rightTo="/register" rightIcon="person_add" />
+      <Header />
 
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[520px]">
