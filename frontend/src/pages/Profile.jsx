@@ -19,6 +19,7 @@ function calcBMI(weight, height) {
 }
 
 function calcCalories(weight, height, age, activity) {
+  if (!weight || !height || !age || isNaN(weight) || isNaN(height) || isNaN(age)) return null
   const bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5
   const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
   return Math.round(bmr * (multipliers[activity] || 1.55))
@@ -99,14 +100,19 @@ export default function Profile() {
         .eq('id', session.user.id)
         .single()
 
-      if (!error && data) {
+      if (error) {
+        console.error('[Profile] Supabase fetch error:', error.message, error)
+        setLoading(false)
+        return
+      }
+      if (data) {
         const fetched = {
           name:     data.full_name     || fallback.name,
           username: data.username      || '',
           email:    data.email         || fallback.email,
-          age:      String(data.age    ?? fallback.age),
-          height:   String(data.height_cm ?? fallback.height),
-          weight:   String(data.weight_kg ?? fallback.weight),
+          age:      data.age != null   ? String(data.age)        : fallback.age,
+          height:   data.height_cm != null ? String(data.height_cm) : fallback.height,
+          weight:   data.weight_kg != null ? String(data.weight_kg) : fallback.weight,
           activity: data.activity_level || fallback.activity,
           country:  data.country        || '',
           phone:    data.phone_number   || '',
@@ -476,7 +482,7 @@ export default function Profile() {
                 Daily Calorie Goal
                 {editing && <span className="text-primary text-xs normal-case font-normal italic">— updating live</span>}
               </div>
-              <p className="text-white text-4xl font-extrabold font-mono">{calories.toLocaleString()}</p>
+              <p className="text-white text-4xl font-extrabold font-mono">{calories != null ? calories.toLocaleString() : '—'}</p>
               <p className="text-slate-500 text-xs mt-1">kcal / day · calculated for your profile</p>
             </div>
             <div className="w-16 h-16 rounded-full border-4 border-primary/30 flex items-center justify-center">
