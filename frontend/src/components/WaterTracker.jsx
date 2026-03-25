@@ -1,25 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const TOTAL_DOTS = 8
 const ML_PER_DOT = 2500 / 8   // 312.5 ml per dot
 
 export default function WaterTracker({ waterLevel = 0 }) {
-  // waterLevel is a float 0–8 from logged water (e.g. 0.8 for one 250ml glass)
-  // manualDots lets the user tap to set whole-dot additions above the logged amount
+  // waterLevel  — float 0–8 driven by food_logs (logged drinks)
+  // manualDots  — integer 0–8 set by tapping; fully independent of waterLevel
+  // The two sources are combined at render: totalLevel = max(waterLevel, manualDots)
+  // This means:
+  //   • Logging water raises the tracker automatically
+  //   • Deleting a water log brings it back down to the logged level
+  //   • Manual taps are always preserved through any log add/delete
   const [manualDots, setManualDots] = useState(0)
-
-  // Any time logged water changes (up or down), reset manual taps so the
-  // tracker always accurately reflects what was actually logged
-  useEffect(() => {
-    setManualDots(0)
-  }, [waterLevel])
 
   const totalLevel = Math.min(TOTAL_DOTS, Math.max(waterLevel, manualDots))
   const liters = ((totalLevel * ML_PER_DOT) / 1000).toFixed(1)
 
   const handleDot = (idx) => {
     if (idx < totalLevel) {
-      // Tapping inside the filled region → unfill to this dot, but never below logged amount
+      // Tapping inside the filled area → unfill, but never below what's logged
       setManualDots(Math.max(idx, Math.ceil(waterLevel)))
     } else {
       // Tapping an empty dot → fill up to and including it
@@ -38,7 +37,6 @@ export default function WaterTracker({ waterLevel = 0 }) {
       </div>
       <div className="flex gap-1.5">
         {Array.from({ length: TOTAL_DOTS }).map((_, i) => {
-          // How much of this dot is filled: 0 = empty, 1 = full, 0.5 = half, etc.
           const fillFrac = Math.min(1, Math.max(0, totalLevel - i))
           const fillPct  = Math.round(fillFrac * 100)
           const isEmpty  = fillPct === 0
