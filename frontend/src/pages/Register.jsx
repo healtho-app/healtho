@@ -374,14 +374,15 @@ export default function Register() {
       const height_cm  = isImperial ? parseFloat((parseFloat(form.height) * 2.54).toFixed(2))    : parseFloat(form.height)
       const bmiVal     = parseFloat((weight_kg / Math.pow(height_cm / 100, 2)).toFixed(1))
 
-      const { error } = await supabase.from('profiles').update({
+      const { error } = await supabase.from('profiles').upsert({
+        id:                user.id,
         unit_system:       form.unit_system,
         age:               parseInt(form.age),
         height_cm,
         weight_kg,
         bmi:               bmiVal,
         registration_step: 2,
-      }).eq('id', user.id)
+      }, { onConflict: 'id' })
 
       if (error) throw error
       goTo(4)
@@ -410,14 +411,17 @@ export default function Register() {
       const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
       const tdee        = Math.round(bmr * multipliers[form.activity])
 
-      const { error } = await supabase.from('profiles').update({
+      const { error } = await supabase.from('profiles').upsert({
+        id:                  user.id,
+        full_name:           form.name.trim() || user.user_metadata?.full_name || '',
+        email:               form.email.trim() || user.email || '',
         activity_level:      form.activity,
         daily_calorie_goal:  tdee,
         registration_step:   3,
         is_onboarded:        true,
         is_profile_complete: true,
         timezone:            Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }).eq('id', user.id)
+      }, { onConflict: 'id' })
 
       if (error) throw error
 
