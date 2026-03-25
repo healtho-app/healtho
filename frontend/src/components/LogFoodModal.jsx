@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { searchFoods, POPULAR_FOODS } from '../data/foods'
+import { searchFoods, searchDrinks, POPULAR_FOODS, POPULAR_DRINKS } from '../data/foods'
 
 const MEAL_TYPES = [
   { id: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -11,6 +11,7 @@ const MEAL_TYPES = [
 
 export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogged }) {
   const searchRef  = useRef(null)
+  const [itemType, setItemType] = useState('food')   // 'food' | 'drink'
   const [query,    setQuery]    = useState('')
   const [results,  setResults]  = useState([])
   const [selected, setSelected] = useState(null)
@@ -21,19 +22,33 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
 
   useEffect(() => {
     if (open) {
+      setItemType('food')
       setMeal(defaultMeal || '')
       setTimeout(() => searchRef.current?.focus(), 350)
     } else {
       setTimeout(() => {
         setQuery(''); setResults([]); setSelected(null)
-        setMeal(''); setQty(1); setError('')
+        setItemType('food'); setMeal(''); setQty(1); setError('')
       }, 300)
     }
   }, [open, defaultMeal])
 
+  // Re-run search when switching food ↔ drink
   useEffect(() => {
-    setResults(query.trim() ? searchFoods(query) : [])
-  }, [query])
+    if (query.trim()) {
+      setResults(itemType === 'food' ? searchFoods(query) : searchDrinks(query))
+    } else {
+      setResults([])
+    }
+    // Clear selection when toggling type
+    setSelected(null)
+    setQuery('')
+  }, [itemType])
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return }
+    setResults(itemType === 'food' ? searchFoods(query) : searchDrinks(query))
+  }, [query, itemType])
 
   const scaled = (val) => Math.round(val * qty * 10) / 10
 
@@ -46,7 +61,7 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
   }
 
   const handleLog = async () => {
-    if (!selected) { setError('Please select a food item.'); return }
+    if (!selected) { setError(`Please select a ${itemType}.`); return }
     if (!meal)     { setError('Please select a meal.'); return }
     if (qty <= 0)  { setError('Quantity must be greater than 0.'); return }
 
@@ -84,6 +99,8 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
 
   const handleOverlay = (e) => { if (e.target === e.currentTarget) onClose() }
 
+  const popularList = itemType === 'food' ? POPULAR_FOODS : POPULAR_DRINKS
+
   return (
     <div
       className={`fixed inset-0 bg-black/60 z-50 flex items-end justify-center transition-opacity duration-200 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
@@ -93,7 +110,23 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
 
         <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mb-5" />
         <h2 className="text-white text-2xl font-extrabold mb-1">Log Food</h2>
-        <p className="text-slate-500 text-sm mb-5">Search a food, set quantity, then pick a meal.</p>
+        <p className="text-slate-500 text-sm mb-5">Search an item, set quantity, then pick a meal.</p>
+
+        {/* Food / Drink toggle */}
+        <div className="flex gap-2 mb-5 p-1 bg-slate-900 border border-slate-800 rounded-xl">
+          <button
+            onClick={() => setItemType('food')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${itemType === 'food' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            <span className="text-base">🍽️</span> Food
+          </button>
+          <button
+            onClick={() => setItemType('drink')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${itemType === 'drink' ? 'bg-primary text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            <span className="text-base">🥤</span> Drinks
+          </button>
+        </div>
 
         {/* Search */}
         <div className="relative mb-1">
@@ -103,7 +136,7 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
             value={query}
             onChange={e => { setQuery(e.target.value); setSelected(null) }}
             className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-10 h-14 text-slate-100 text-base placeholder:text-slate-600 focus:outline-none focus:border-primary transition-colors"
-            placeholder="Search food, e.g. dal, banana, roti…"
+            placeholder={itemType === 'food' ? 'Search food, e.g. dal, banana, roti…' : 'Search drink, e.g. chai, lassi, coffee…'}
           />
           {query.length > 0 && (
             <button className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300" onClick={() => { setQuery(''); setSelected(null); setResults([]) }}>
@@ -132,7 +165,7 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
           <p className="text-slate-600 text-sm mb-4 px-1">No results for "{query}" — try a different term.</p>
         )}
 
-        {/* Selected food card */}
+        {/* Selected item card */}
         {selected && (
           <div className="bg-slate-900 border border-primary/30 rounded-xl p-4 mb-5">
             <div className="flex items-center gap-3 mb-4">
@@ -190,9 +223,11 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
         {/* Popular */}
         {!query && !selected && (
           <>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Popular</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">
+              {itemType === 'food' ? 'Popular Foods' : 'Popular Drinks'}
+            </p>
             <div className="space-y-1">
-              {POPULAR_FOODS.map(food => (
+              {popularList.map(food => (
                 <div key={food.id} onClick={() => handleSelect(food)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-slate-700">
                   <span className="text-xl w-10 text-center">{food.emoji}</span>
                   <div className="flex-1">
@@ -217,7 +252,7 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
           className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-bold text-base shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 mt-5">
           {saving
             ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
-            : <><span className="material-symbols-outlined text-xl">add_circle</span>Log Food</>
+            : <><span className="material-symbols-outlined text-xl">add_circle</span>Log {itemType === 'food' ? 'Food' : 'Drink'}</>
           }
         </button>
       </div>
