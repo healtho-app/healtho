@@ -138,3 +138,12 @@ export function getFoodById(id) {
 
 export const POPULAR_FOODS  = FOODS.slice(0, 8)
 export const POPULAR_DRINKS = DRINKS.slice(0, 8)
+
+// Drinks that count toward the water tracker, mapped to ml per serving
+// Key must match the `name` field in DRINKS exactly
+export const WATER_SERVING_ML = {
+  'Water':           250,
+  'Sparkling Water': 355,
+  'Coconut Water':   240,
+  'Nimbu Pani':      250,
+}

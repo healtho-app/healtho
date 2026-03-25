@@ -1,14 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const TOTAL_DOTS  = 8
 const LITERS_EACH = 0.3125  // 2.5L / 8 dots
 
-export default function WaterTracker({ initialFilled = 5 }) {
-  const [filled, setFilled] = useState(initialFilled)
+export default function WaterTracker({ filledFromLogs = 0 }) {
+  const [filled, setFilled] = useState(filledFromLogs)
+
+  // Sync whenever logged water changes (e.g. after logging Water through the modal)
+  useEffect(() => {
+    setFilled(filledFromLogs)
+  }, [filledFromLogs])
 
   const handleDot = (idx) => {
     // Tap a filled dot → unfill from there; tap empty → fill up to there
-    setFilled(idx < filled ? idx : idx + 1)
+    // Can't go below what's already logged
+    const next = idx < filled ? idx : idx + 1
+    setFilled(Math.max(next, filledFromLogs))
   }
 
   const liters = (filled * LITERS_EACH).toFixed(1)

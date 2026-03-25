@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { WATER_SERVING_ML } from '../data/foods'
 import Header       from '../components/Header'
 import CalorieRing  from '../components/CalorieRing'
 import MacroCard    from '../components/MacroCard'
@@ -96,6 +97,12 @@ export default function Dashboard() {
 
   const calorieGoal = profile?.daily_calorie_goal ?? computeTDEE(profile) ?? 0
 
+  // Water dots — 8 dots, each = 312.5 ml (2500 ml / 8)
+  const totalWaterMl = logs
+    .filter(l => WATER_SERVING_ML[l.food_name] != null)
+    .reduce((s, l) => s + WATER_SERVING_ML[l.food_name] * (l.quantity || 1), 0)
+  const waterDots = Math.min(8, Math.round(totalWaterMl / (2500 / 8)))
+
   // Macro % of total calories (protein/carbs = 4 kcal/g, fat = 9 kcal/g)
   const totalMacroKcal = totalProtein * 4 + totalCarbs * 4 + totalFat * 9 || 1
   const macros = [
@@ -165,7 +172,7 @@ export default function Dashboard() {
           </div>
 
           {/* Water */}
-          <WaterTracker initialFilled={0} />
+          <WaterTracker filledFromLogs={waterDots} />
 
           {/* Meals header */}
           <div className="flex items-center justify-between pt-2">
