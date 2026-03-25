@@ -576,8 +576,8 @@ export default function Register() {
 
               <p className="text-center text-slate-500 text-xs mt-4">
                 By continuing, you agree to our{' '}
-                <a href="#" className="text-primary hover:underline">Terms</a> and{' '}
-                <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+                <Link to="/terms" className="text-primary hover:underline">Terms</Link> and{' '}
+                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
               </p>
 
               <p className="text-center text-slate-500 text-sm mt-5">
