@@ -110,8 +110,8 @@ export default function Dashboard() {
     const qty   = parseFloat(l.quantity) || 1
     return s + mlPer * qty
   }, 0)
-  const waterDots = Math.min(8, Math.ceil(totalWaterMl / (2500 / 8)))
-  console.log('[Water] logs:', waterLogs, 'totalMl:', totalWaterMl, 'dots:', waterDots)
+  // Float level 0–8 (e.g. 0.8 for 1 glass of water = 250ml out of 312.5ml/dot)
+  const waterLevel = Math.min(8, totalWaterMl / (2500 / 8))
 
   // Macro % of total calories (protein/carbs = 4 kcal/g, fat = 9 kcal/g)
   const totalMacroKcal = totalProtein * 4 + totalCarbs * 4 + totalFat * 9 || 1
@@ -182,7 +182,7 @@ export default function Dashboard() {
           </div>
 
           {/* Water */}
-          <WaterTracker filledFromLogs={waterDots} />
+          <WaterTracker waterLevel={waterLevel} />
 
           {/* Meals header */}
           <div className="flex items-center justify-between pt-2">
