@@ -8,9 +8,10 @@ export default function WaterTracker({ waterLevel = 0 }) {
   // manualDots lets the user tap to set whole-dot additions above the logged amount
   const [manualDots, setManualDots] = useState(0)
 
-  // When logged water changes, drop any manual additions that are now below it
+  // Any time logged water changes (up or down), reset manual taps so the
+  // tracker always accurately reflects what was actually logged
   useEffect(() => {
-    setManualDots(prev => (prev < Math.ceil(waterLevel) ? 0 : prev))
+    setManualDots(0)
   }, [waterLevel])
 
   const totalLevel = Math.min(TOTAL_DOTS, Math.max(waterLevel, manualDots))
