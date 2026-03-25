@@ -1,6 +1,6 @@
 // CalorieRing — animated SVG donut showing calorie progress
 // Props: consumed, goal, burned
-export default function CalorieRing({ consumed = 1309, goal = 2200, burned = 380 }) {
+export default function CalorieRing({ consumed = 0, goal = 0, burned = 0 }) {
   const remaining  = Math.max(goal - consumed + burned, 0)
   const pct        = Math.min(consumed / goal, 1)
   const circumference = 339.3

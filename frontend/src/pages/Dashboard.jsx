@@ -7,32 +7,36 @@ import WaterTracker from '../components/WaterTracker'
 import MealSection  from '../components/MealSection'
 import LogFoodModal from '../components/LogFoodModal'
 
-// Placeholder meal/macro data — will be replaced when meal logging is built
-const PLACEHOLDER_MEALS = [
-  {
-    id: 'breakfast', emoji: '🌅', name: 'Breakfast', calories: 0,
-    defaultOpen: true, items: [],
-  },
-  {
-    id: 'lunch', emoji: '☀️', name: 'Lunch', calories: 0,
-    defaultOpen: false, items: [],
-  },
-  {
-    id: 'dinner', emoji: '🌙', name: 'Dinner', calories: 0,
-    defaultOpen: false, items: [],
-  },
-  {
-    id: 'snacks', emoji: '🍎', name: 'Snacks', calories: 0,
-    defaultOpen: false, items: [],
-  },
+const MEALS = [
+  { id: 'breakfast', emoji: '🌅', name: 'Breakfast', calories: 0, defaultOpen: true,  items: [] },
+  { id: 'lunch',     emoji: '☀️', name: 'Lunch',     calories: 0, defaultOpen: false, items: [] },
+  { id: 'dinner',    emoji: '🌙', name: 'Dinner',    calories: 0, defaultOpen: false, items: [] },
+  { id: 'snacks',    emoji: '🍎', name: 'Snacks',    calories: 0, defaultOpen: false, items: [] },
 ]
 
-const PLACEHOLDER_MACROS = [
+const MACROS = [
   { label: 'Protein', amount: 0, pct: 0, color: 'bg-protein' },
   { label: 'Carbs',   amount: 0, pct: 0, color: 'bg-carbs'   },
   { label: 'Fat',     amount: 0, pct: 0, color: 'bg-fat'     },
   { label: 'Fiber',   amount: 0, pct: 0, color: 'bg-fiber'   },
 ]
+
+const ACTIVITY_MULTIPLIERS = {
+  sedentary:         1.2,
+  lightly_active:    1.375,
+  moderately_active: 1.55,
+  very_active:       1.725,
+  athlete:           1.9,
+}
+
+// Mifflin-St Jeor (unisex) — mirrors the formula used in Register.jsx
+function computeTDEE(profile) {
+  const { weight_kg, height_cm, age, activity_level } = profile || {}
+  if (!weight_kg || !height_cm || !age || !activity_level) return null
+  const bmr  = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(age)
+  const mult = ACTIVITY_MULTIPLIERS[activity_level] ?? 1.2
+  return Math.round(bmr * mult)
+}
 
 function greeting(timezone) {
   // Use the user's stored timezone so Papa in India and Ayush in Arizona
@@ -60,7 +64,7 @@ export default function Dashboard() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, username, timezone, daily_calorie_goal, weight_kg, bmi, activity_level')
+        .select('full_name, username, timezone, daily_calorie_goal, weight_kg, height_cm, age, bmi, activity_level')
         .eq('id', session.user.id)
         .single()
 
@@ -72,7 +76,7 @@ export default function Dashboard() {
 
   const firstName   = profile?.full_name?.split(' ')[0] || 'there'
   const username    = profile?.username ? `@${profile.username}` : null
-  const calorieGoal = profile?.daily_calorie_goal ?? 2000
+  const calorieGoal = profile?.daily_calorie_goal ?? computeTDEE(profile) ?? 0
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -130,7 +134,7 @@ export default function Dashboard() {
 
           {/* Macro strip */}
           <div className="grid grid-cols-4 gap-3">
-            {PLACEHOLDER_MACROS.map(m => (
+            {MACROS.map(m => (
               <MacroCard key={m.label} {...m} />
             ))}
           </div>
@@ -158,7 +162,7 @@ export default function Dashboard() {
           </div>
 
           {/* Meal sections */}
-          {PLACEHOLDER_MEALS.map(meal => (
+          {MEALS.map(meal => (
             <MealSection
               key={meal.id}
               emoji={meal.emoji}
