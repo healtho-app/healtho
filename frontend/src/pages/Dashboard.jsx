@@ -41,6 +41,7 @@ function Skeleton({ className = '' }) {
 
 export default function Dashboard() {
   const [logOpen,  setLogOpen]  = useState(false)
+  const [logMeal,  setLogMeal]  = useState(null)   // pre-selected meal when opening from a section
   const [profile,  setProfile]  = useState(null)
   const [loading,  setLoading]  = useState(true)
   const [logs,     setLogs]     = useState([])      // today's food_logs rows
@@ -169,7 +170,7 @@ export default function Dashboard() {
           {/* Meals header */}
           <div className="flex items-center justify-between pt-2">
             <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Today's Meals</p>
-            <button onClick={() => setLogOpen(true)} className="text-primary text-xs font-semibold hover:underline">
+            <button onClick={() => { setLogMeal(null); setLogOpen(true) }} className="text-primary text-xs font-semibold hover:underline">
               + Log food
             </button>
           </div>
@@ -183,7 +184,7 @@ export default function Dashboard() {
               calories={meal.calories}
               items={meal.items}
               defaultOpen={meal.defaultOpen}
-              onAdd={() => setLogOpen(true)}
+              onAdd={() => { setLogMeal(meal.id); setLogOpen(true) }}
               onDelete={handleDelete}
             />
           ))}
@@ -199,7 +200,7 @@ export default function Dashboard() {
           </div>
 
           {/* Log Food CTA */}
-          <button onClick={() => setLogOpen(true)}
+          <button onClick={() => { setLogMeal(null); setLogOpen(true) }}
             className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
             <span className="material-symbols-outlined">add_circle</span>
             Log Food
@@ -212,7 +213,7 @@ export default function Dashboard() {
         <p className="text-slate-700 text-xs">© 2025 Healtho. All rights reserved.</p>
       </footer>
 
-      <LogFoodModal open={logOpen} onClose={() => setLogOpen(false)} onLogged={fetchLogs} />
+      <LogFoodModal open={logOpen} defaultMeal={logMeal} onClose={() => { setLogOpen(false); setLogMeal(null) }} onLogged={fetchLogs} />
     </div>
   )
 }

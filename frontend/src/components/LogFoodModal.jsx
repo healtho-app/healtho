@@ -9,18 +9,19 @@ const MEAL_TYPES = [
   { id: 'snacks',    label: 'Snacks',    emoji: '🍎' },
 ]
 
-export default function LogFoodModal({ open, onClose, onLogged }) {
+export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogged }) {
   const searchRef  = useRef(null)
   const [query,    setQuery]    = useState('')
   const [results,  setResults]  = useState([])
   const [selected, setSelected] = useState(null)
-  const [meal,     setMeal]     = useState('')
+  const [meal,     setMeal]     = useState(defaultMeal || '')
   const [qty,      setQty]      = useState(1)
   const [saving,   setSaving]   = useState(false)
   const [error,    setError]    = useState('')
 
   useEffect(() => {
     if (open) {
+      setMeal(defaultMeal || '')
       setTimeout(() => searchRef.current?.focus(), 350)
     } else {
       setTimeout(() => {
@@ -28,7 +29,7 @@ export default function LogFoodModal({ open, onClose, onLogged }) {
         setMeal(''); setQty(1); setError('')
       }, 300)
     }
-  }, [open])
+  }, [open, defaultMeal])
 
   useEffect(() => {
     setResults(query.trim() ? searchFoods(query) : [])
@@ -165,17 +166,26 @@ export default function LogFoodModal({ open, onClose, onLogged }) {
           </div>
         )}
 
-        {/* Meal selector */}
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Select Meal</p>
-        <div className="grid grid-cols-4 gap-2 mb-5">
-          {MEAL_TYPES.map(m => (
-            <button key={m.id} onClick={() => setMeal(m.id)}
-              className={`flex flex-col items-center py-3 rounded-xl border-2 transition-all ${meal === m.id ? 'border-primary bg-primary/10 text-white' : 'border-slate-800 bg-slate-900 text-slate-400 hover:border-slate-600'}`}>
-              <span className="text-2xl mb-1">{m.emoji}</span>
-              <span className="text-xs font-semibold">{m.label}</span>
-            </button>
-          ))}
-        </div>
+        {/* Meal selector — hidden when pre-selected from a meal section */}
+        {!defaultMeal ? (
+          <>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Select Meal</p>
+            <div className="grid grid-cols-4 gap-2 mb-5">
+              {MEAL_TYPES.map(m => (
+                <button key={m.id} onClick={() => setMeal(m.id)}
+                  className={`flex flex-col items-center py-3 rounded-xl border-2 transition-all ${meal === m.id ? 'border-primary bg-primary/10 text-white' : 'border-slate-800 bg-slate-900 text-slate-400 hover:border-slate-600'}`}>
+                  <span className="text-2xl mb-1">{m.emoji}</span>
+                  <span className="text-xs font-semibold">{m.label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-2 mb-5 px-1">
+            <span className="text-lg">{MEAL_TYPES.find(m => m.id === defaultMeal)?.emoji}</span>
+            <p className="text-sm text-slate-400">Logging to <span className="text-white font-semibold">{MEAL_TYPES.find(m => m.id === defaultMeal)?.label}</span></p>
+          </div>
+        )}
 
         {/* Popular */}
         {!query && !selected && (
