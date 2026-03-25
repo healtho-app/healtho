@@ -30,7 +30,7 @@ export default function AuthCallback() {
             .from('profiles')
             .select('is_onboarded')
             .eq('id', user.id)
-            .single()
+            .maybeSingle()
 
           if (profile?.is_onboarded) {
             navigate('/dashboard', { replace: true })

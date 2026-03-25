@@ -98,11 +98,17 @@ export default function Profile() {
         .from('profiles')
         .select('full_name, username, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal, country, phone_number, avatar_url')
         .eq('id', session.user.id)
-        .single()
+        .maybeSingle()
 
       if (error) {
         console.error('[Profile] Supabase fetch error:', error.message, error)
         setLoading(false)
+        return
+      }
+
+      // No profile row yet — send them back to finish registration
+      if (!data) {
+        navigate('/register?google=1')
         return
       }
       if (data) {

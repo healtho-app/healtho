@@ -62,12 +62,13 @@ export default function Dashboard() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { setLoading(false); return }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('full_name, username, timezone, daily_calorie_goal, weight_kg, height_cm, age, bmi, activity_level')
         .eq('id', session.user.id)
-        .single()
+        .maybeSingle()
 
+      if (error) console.error('[Dashboard] Supabase fetch error:', error.message, error)
       setProfile(data)
       setLoading(false)
     }
