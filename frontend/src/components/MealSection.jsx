@@ -10,7 +10,7 @@ export default function MealSection({ emoji, name, calories = 0, items = [], def
         <div className="flex-1">
           <p className="text-sm font-bold text-white">{name}</p>
           <p className="text-xs text-slate-500 mt-0.5">
-            {calories > 0
+            {items.length > 0
               ? <><span className="text-slate-300 font-semibold">{calories}</span> kcal · {items.length} item{items.length !== 1 ? 's' : ''}</>
               : 'Not logged yet'
             }
