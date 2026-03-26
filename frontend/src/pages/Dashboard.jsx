@@ -46,12 +46,39 @@ const localDateStr = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 export default function Dashboard() {
-  const [logOpen,  setLogOpen]  = useState(false)
-  const [logMeal,  setLogMeal]  = useState(null)   // pre-selected meal when opening from a section
-  const [profile,  setProfile]  = useState(null)
-  const [loading,  setLoading]  = useState(true)
-  const [logs,     setLogs]     = useState([])      // today's food_logs rows
-  const [streak,   setStreak]   = useState(0)
+  const [logOpen,      setLogOpen]      = useState(false)
+  const [logMeal,      setLogMeal]      = useState(null)
+  const [profile,      setProfile]      = useState(null)
+  const [loading,      setLoading]      = useState(true)
+  const [logs,         setLogs]         = useState([])
+  const [streak,       setStreak]       = useState(0)
+  const [selectedDate, setSelectedDate] = useState(() => localDateStr())
+
+  // ── Date navigation ────────────────────────────────────────────────────────
+  const today   = localDateStr()
+  const isToday = selectedDate === today
+
+  const goBack = () => {
+    const d = new Date(selectedDate + 'T00:00:00')
+    d.setDate(d.getDate() - 1)
+    setSelectedDate(localDateStr(d))
+  }
+  const goForward = () => {
+    if (isToday) return
+    const d = new Date(selectedDate + 'T00:00:00')
+    d.setDate(d.getDate() + 1)
+    setSelectedDate(localDateStr(d))
+  }
+
+  // Human-readable label for the selected date
+  const dateLabel = (() => {
+    const yesterday = localDateStr(new Date(Date.now() - 86400000))
+    const d = new Date(selectedDate + 'T00:00:00')
+    const long = d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    if (selectedDate === today)     return `Today · ${long}`
+    if (selectedDate === yesterday) return `Yesterday · ${long}`
+    return long
+  })()
 
   // ── Fetch profile ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -70,20 +97,19 @@ export default function Dashboard() {
     fetchProfile()
   }, [])
 
-  // ── Fetch today's food logs ────────────────────────────────────────────────
+  // ── Fetch food logs for selectedDate ─────────────────────────────────────
   const fetchLogs = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const today = localDateStr()
     const { data, error } = await supabase
       .from('food_logs')
       .select('*')
       .eq('user_id', session.user.id)
-      .eq('date', today)
+      .eq('date', selectedDate)
       .order('created_at', { ascending: true })
     if (error) console.error('[Dashboard] food_logs fetch error:', error.message)
     setLogs(data || [])
-  }, [])
+  }, [selectedDate])
 
   useEffect(() => { fetchLogs() }, [fetchLogs])
 
@@ -190,16 +216,33 @@ export default function Dashboard() {
 
           {/* Greeting */}
           <div className="mb-2">
-            <p className="text-slate-400 text-sm font-medium">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
+            {/* Date navigator */}
+            <div className="flex items-center gap-2 mb-1">
+              <button
+                onClick={goBack}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition-colors flex-shrink-0"
+                aria-label="Previous day"
+              >
+                <span className="material-symbols-outlined text-sm">chevron_left</span>
+              </button>
+              <p className="text-slate-400 text-sm font-medium flex-1 truncate">{dateLabel}</p>
+              <button
+                onClick={goForward}
+                disabled={isToday}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isToday ? 'text-slate-700 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
+                aria-label="Next day"
+              >
+                <span className="material-symbols-outlined text-sm">chevron_right</span>
+              </button>
+            </div>
+
             {loading ? <Skeleton className="h-10 w-64 mt-1" /> : (
               <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight mt-1">
                 {greeting(profile?.timezone)}, <span className="text-primary">{firstName}</span> 👋
               </h1>
             )}
             <p className="text-slate-500 text-base mt-1">
-              Here's your nutrition summary for today.
+              {isToday ? "Here's your nutrition summary for today." : `Viewing logs for ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.`}
               {username && <span className="ml-2 text-slate-600 font-mono text-sm">{username}</span>}
             </p>
           </div>
@@ -233,25 +276,41 @@ export default function Dashboard() {
 
           {/* Meals header */}
           <div className="flex items-center justify-between pt-2">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Today's Meals</p>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+              {isToday ? "Today's Meals" : new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </p>
             <button onClick={() => { setLogMeal(null); setLogOpen(true) }} className="text-primary text-xs font-semibold hover:underline">
               + Log food
             </button>
           </div>
 
           {/* Meal sections — real data */}
-          {meals.map(meal => (
-            <MealSection
-              key={meal.id}
-              emoji={meal.emoji}
-              name={meal.name}
-              calories={meal.calories}
-              items={meal.items}
-              defaultOpen={meal.defaultOpen}
-              onAdd={() => { setLogMeal(meal.id); setLogOpen(true) }}
-              onDelete={handleDelete}
-            />
-          ))}
+          {logs.length === 0 && !loading && !isToday ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-center">
+              <p className="text-3xl mb-2">📋</p>
+              <p className="text-slate-300 text-sm font-semibold">No entries for this day</p>
+              <p className="text-slate-600 text-xs mt-1">Nothing was logged on {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.</p>
+              <button
+                onClick={() => { setLogMeal(null); setLogOpen(true) }}
+                className="mt-3 text-primary text-xs font-semibold hover:underline"
+              >
+                + Add an entry for this day
+              </button>
+            </div>
+          ) : (
+            meals.map(meal => (
+              <MealSection
+                key={meal.id}
+                emoji={meal.emoji}
+                name={meal.name}
+                calories={meal.calories}
+                items={meal.items}
+                defaultOpen={meal.defaultOpen}
+                onAdd={() => { setLogMeal(meal.id); setLogOpen(true) }}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
 
           {/* Streak */}
           <div className="relative group">
@@ -317,7 +376,7 @@ export default function Dashboard() {
         <p className="text-slate-700 text-xs">© 2025 Healtho. All rights reserved.</p>
       </footer>
 
-      <LogFoodModal open={logOpen} defaultMeal={logMeal} onClose={() => { setLogOpen(false); setLogMeal(null) }} onLogged={fetchLogs} />
+      <LogFoodModal open={logOpen} defaultMeal={logMeal} logDate={selectedDate} onClose={() => { setLogOpen(false); setLogMeal(null) }} onLogged={fetchLogs} />
     </div>
   )
 }

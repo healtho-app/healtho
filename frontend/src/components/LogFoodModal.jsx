@@ -29,7 +29,11 @@ const EMPTY_CUSTOM = {
 const calcCalories = (protein, carbs, fat) =>
   Math.round((parseFloat(protein) || 0) * 4 + (parseFloat(carbs) || 0) * 4 + (parseFloat(fat) || 0) * 9)
 
-export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogged }) {
+// Fallback: compute today's local date string if logDate not provided
+const localDateStr = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+export default function LogFoodModal({ open, defaultMeal = null, logDate, onClose, onLogged }) {
   const searchRef  = useRef(null)
   const [itemType,    setItemType]    = useState('food')
   const [query,       setQuery]       = useState('')
@@ -164,8 +168,7 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not signed in')
 
-      const d     = new Date()
-      const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const dateToLog = logDate || localDateStr()
 
       const finalCals    = customMode ? (custom.autoCalc ? autoCalories : parseFloat(custom.calories) || 0) : null
       const servingLabel = customMode
@@ -175,7 +178,7 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
       const row = customMode
         ? {
             user_id:   session.user.id,
-            date:      today,
+            date:      dateToLog,
             meal_type: meal,
             food_name: custom.name.trim(),
             calories:  scaled(finalCals),
@@ -188,7 +191,7 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
           }
         : {
             user_id:   session.user.id,
-            date:      today,
+            date:      dateToLog,
             meal_type: meal,
             food_name: selected.name,
             calories:  scaled(selected.calories),
@@ -245,7 +248,16 @@ export default function LogFoodModal({ open, defaultMeal = null, onClose, onLogg
           {customMode ? 'Custom Food' : 'Log Food'}
         </h2>
         <p className="text-slate-500 text-sm mb-5">
-          {customMode ? 'Fill in the details — it\'ll be saved to your library for future use.' : 'Search an item, set quantity, then pick a meal.'}
+          {customMode
+            ? "Fill in the details — it'll be saved to your library for future use."
+            : (() => {
+                const today = localDateStr()
+                if (!logDate || logDate === today) return 'Search an item, set quantity, then pick a meal.'
+                const d = new Date(logDate + 'T00:00:00')
+                const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                return `Logging to ${label}`
+              })()
+          }
         </p>
 
         {/* Food / Drink toggle — hide in custom mode */}
