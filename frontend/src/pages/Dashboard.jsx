@@ -45,6 +45,8 @@ function Skeleton({ className = '' }) {
 const localDateStr = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
+const MAX_HISTORY_DAYS = 30   // how far back the user can navigate
+
 export default function Dashboard() {
   const [logOpen,      setLogOpen]      = useState(false)
   const [logMeal,      setLogMeal]      = useState(null)
@@ -53,12 +55,22 @@ export default function Dashboard() {
   const [logs,         setLogs]         = useState([])
   const [streak,       setStreak]       = useState(0)
   const [selectedDate, setSelectedDate] = useState(() => localDateStr())
+  const [editEntry,    setEditEntry]    = useState(null)   // item being edited
 
   // ── Date navigation ────────────────────────────────────────────────────────
   const today   = localDateStr()
   const isToday = selectedDate === today
 
+  // Earliest navigable date = today minus MAX_HISTORY_DAYS
+  const earliestDate = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() - MAX_HISTORY_DAYS)
+    return localDateStr(d)
+  })()
+  const isAtEarliest = selectedDate <= earliestDate
+
   const goBack = () => {
+    if (isAtEarliest) return
     const d = new Date(selectedDate + 'T00:00:00')
     d.setDate(d.getDate() - 1)
     setSelectedDate(localDateStr(d))
@@ -161,6 +173,12 @@ export default function Dashboard() {
     else console.error('[Dashboard] delete error:', error.message)
   }
 
+  // ── Edit a log entry ───────────────────────────────────────────────────────
+  const handleEdit = (item) => {
+    setEditEntry(item)
+    setLogOpen(true)
+  }
+
   // ── Derived totals ─────────────────────────────────────────────────────────
   const totalCalories = logs.reduce((s, l) => s + (l.calories  || 0), 0)
   const totalProtein  = logs.reduce((s, l) => s + (l.protein_g || 0), 0)
@@ -195,13 +213,28 @@ export default function Dashboard() {
     { label: 'Fiber',   amount: Math.round(totalFiber),   pct: 0,                                                     color: 'bg-fiber'   },
   ]
 
-  // Group logs by meal_type
+  // Group logs by meal_type — items include unit macros so the edit modal can recalculate
   const meals = MEAL_META.map(m => ({
     ...m,
     calories: Math.round(logs.filter(l => l.meal_type === m.id).reduce((s, l) => s + (l.calories || 0), 0)),
     items: logs
       .filter(l => l.meal_type === m.id)
-      .map(l => ({ id: l.id, name: l.food_name, portion: l.portion, calories: Math.round(l.calories) })),
+      .map(l => {
+        const qty = parseFloat(l.quantity) || 1
+        return {
+          id:          l.id,
+          name:        l.food_name,
+          portion:     l.portion,
+          calories:    Math.round(l.calories),
+          meal_type:   l.meal_type,
+          quantity:    qty,
+          unitCalories: (l.calories  || 0) / qty,
+          unitProtein:  (l.protein_g || 0) / qty,
+          unitCarbs:    (l.carbs_g   || 0) / qty,
+          unitFat:      (l.fat_g     || 0) / qty,
+          unitFiber:    (l.fiber_g   || 0) / qty,
+        }
+      }),
   }))
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
@@ -220,16 +253,27 @@ export default function Dashboard() {
             <div className="flex items-center gap-2 mb-1">
               <button
                 onClick={goBack}
-                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition-colors flex-shrink-0"
+                disabled={isAtEarliest}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isAtEarliest ? 'text-slate-700 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
                 aria-label="Previous day"
+                title={isAtEarliest ? `History limited to ${MAX_HISTORY_DAYS} days` : 'Previous day'}
               >
                 <span className="material-symbols-outlined text-sm">chevron_left</span>
               </button>
               <p className="text-slate-400 text-sm font-medium flex-1 truncate">{dateLabel}</p>
+              {/* "Today" quick-jump — only shown when not on today */}
+              {!isToday && (
+                <button
+                  onClick={() => setSelectedDate(localDateStr())}
+                  className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-lg transition-colors flex-shrink-0"
+                >
+                  Today
+                </button>
+              )}
               <button
                 onClick={goForward}
                 disabled={isToday}
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isToday ? 'text-slate-700 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isToday ? 'text-slate-700 cursor-not-allowed opacity-0 pointer-events-none' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
                 aria-label="Next day"
               >
                 <span className="material-symbols-outlined text-sm">chevron_right</span>
@@ -308,6 +352,7 @@ export default function Dashboard() {
                 defaultOpen={meal.defaultOpen}
                 onAdd={() => { setLogMeal(meal.id); setLogOpen(true) }}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
               />
             ))
           )}
@@ -317,8 +362,11 @@ export default function Dashboard() {
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4 cursor-default">
               <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl flex-shrink-0">🔥</div>
               <div className="flex-1">
-                <p className="text-sm font-bold text-white">
+                <p className="text-sm font-bold text-white flex items-center gap-2">
                   {streak === 0 ? 'No streak yet' : `Day ${streak} streak`}
+                  {!isToday && (
+                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">current</span>
+                  )}
                 </p>
                 <p className="text-xs font-semibold mt-0.5 text-green-400">
                   {streak === 0 && 'Log a meal today to start your streak!'}
@@ -331,8 +379,8 @@ export default function Dashboard() {
               <span className="material-symbols-outlined text-primary">emoji_events</span>
             </div>
 
-            {/* Tooltip */}
-            <div className="absolute bottom-full left-0 right-0 mb-2 z-10 pointer-events-none
+            {/* Tooltip — z-50 so it renders above all meal cards */}
+            <div className="absolute bottom-full left-0 right-0 mb-2 z-50 pointer-events-none
                             opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-xl">
                 <p className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
@@ -373,10 +421,17 @@ export default function Dashboard() {
       </main>
 
       <footer className="py-6 px-6 text-center">
-        <p className="text-slate-700 text-xs">© 2025 Healtho. All rights reserved.</p>
+        <p className="text-slate-700 text-xs">© {new Date().getFullYear()} Healtho. All rights reserved.</p>
       </footer>
 
-      <LogFoodModal open={logOpen} defaultMeal={logMeal} logDate={selectedDate} onClose={() => { setLogOpen(false); setLogMeal(null) }} onLogged={fetchLogs} />
+      <LogFoodModal
+        open={logOpen}
+        defaultMeal={logMeal}
+        logDate={selectedDate}
+        editEntry={editEntry}
+        onClose={() => { setLogOpen(false); setLogMeal(null); setEditEntry(null) }}
+        onLogged={fetchLogs}
+      />
     </div>
   )
 }

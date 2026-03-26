@@ -33,8 +33,11 @@ const calcCalories = (protein, carbs, fat) =>
 const localDateStr = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-export default function LogFoodModal({ open, defaultMeal = null, logDate, onClose, onLogged }) {
+export default function LogFoodModal({ open, defaultMeal = null, logDate, editEntry = null, onClose, onLogged }) {
   const searchRef  = useRef(null)
+  const savingRef  = useRef(false)   // ref guard — prevents double-submit on rapid clicks
+  const isEditing  = !!editEntry
+
   const [itemType,    setItemType]    = useState('food')
   const [query,       setQuery]       = useState('')
   const [results,     setResults]     = useState([])
@@ -87,12 +90,24 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
   // ── Reset on open/close ───────────────────────────────────────────────────
   useEffect(() => {
     if (open) {
-      setItemType('food')
-      setMeal(defaultMeal || '')
-      setCustomMode(false)
-      setCustom(EMPTY_CUSTOM)
-      fetchLibrary()
-      setTimeout(() => searchRef.current?.focus(), 350)
+      if (editEntry) {
+        // Edit mode — pre-fill from existing log entry
+        setMeal(editEntry.meal_type || defaultMeal || '')
+        setQty(editEntry.quantity || 1)
+        setItemType('food')
+        setCustomMode(false)
+        setQuery('')
+        setResults([])
+        setSelected(null)
+        setError('')
+      } else {
+        setItemType('food')
+        setMeal(defaultMeal || '')
+        setCustomMode(false)
+        setCustom(EMPTY_CUSTOM)
+        fetchLibrary()
+        setTimeout(() => searchRef.current?.focus(), 350)
+      }
     } else {
       setTimeout(() => {
         setQuery(''); setResults([]); setSelected(null)
@@ -100,7 +115,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
         setCustomMode(false); setCustom(EMPTY_CUSTOM)
       }, 300)
     }
-  }, [open, defaultMeal])
+  }, [open, defaultMeal, editEntry])
 
   useEffect(() => {
     if (query.trim()) setResults(searchAll(query, itemType))
@@ -154,13 +169,19 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
   const customReady = customMode && custom.name.trim() &&
     (custom.autoCalc ? autoCalories > 0 : custom.calories !== '')
 
-  // ── Log ───────────────────────────────────────────────────────────────────
+  // ── Log / Save edit ───────────────────────────────────────────────────────
   const handleLog = async () => {
-    if (!customMode && !selected) { setError(`Please select a ${itemType}.`); return }
-    if (customMode && !custom.name.trim()) { setError('Food name is required.'); return }
-    if (customMode && !custom.autoCalc && custom.calories === '') { setError('Calories are required.'); return }
-    if (!meal)    { setError('Please select a meal.'); return }
-    if (qty <= 0) { setError('Quantity must be greater than 0.'); return }
+    // Ref guard — hard-block double-fire even if React batching is delayed
+    if (savingRef.current) return
+    savingRef.current = true
+
+    if (!isEditing) {
+      if (!customMode && !selected) { savingRef.current = false; setError(`Please select a ${itemType}.`); return }
+      if (customMode && !custom.name.trim()) { savingRef.current = false; setError('Food name is required.'); return }
+      if (customMode && !custom.autoCalc && custom.calories === '') { savingRef.current = false; setError('Calories are required.'); return }
+    }
+    if (!meal)    { savingRef.current = false; setError('Please select a meal.'); return }
+    if (qty <= 0) { savingRef.current = false; setError('Quantity must be greater than 0.'); return }
 
     setSaving(true)
     setError('')
@@ -168,6 +189,31 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not signed in')
 
+      // ── EDIT MODE — UPDATE existing row ─────────────────────────────────
+      if (isEditing) {
+        const perUnit   = (v) => Math.round(v * qty * 10) / 10
+        // Strip leading "N × " from stored portion to get the per-serving label
+        const baseLabel = editEntry.portion?.replace(/^[\d.]+\s×\s/, '') || editEntry.name
+        const { error: updateError } = await supabase
+          .from('food_logs')
+          .update({
+            quantity:  qty,
+            meal_type: meal,
+            calories:  perUnit(editEntry.unitCalories),
+            protein_g: perUnit(editEntry.unitProtein),
+            carbs_g:   perUnit(editEntry.unitCarbs),
+            fat_g:     perUnit(editEntry.unitFat),
+            fiber_g:   perUnit(editEntry.unitFiber),
+            portion:   `${qty} × ${baseLabel}`,
+          })
+          .eq('id', editEntry.id)
+        if (updateError) throw updateError
+        onLogged?.()
+        onClose()
+        return
+      }
+
+      // ── NEW LOG — INSERT ─────────────────────────────────────────────────
       const dateToLog = logDate || localDateStr()
 
       const finalCals    = customMode ? (custom.autoCalc ? autoCalories : parseFloat(custom.calories) || 0) : null
@@ -229,6 +275,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
       setError(err.message || 'Could not save. Please try again.')
     } finally {
       setSaving(false)
+      savingRef.current = false   // always reset ref so modal can be used again
     }
   }
 
@@ -245,23 +292,78 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
 
         <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mb-5" />
         <h2 className="text-white text-2xl font-extrabold mb-1">
-          {customMode ? 'Custom Food' : 'Log Food'}
+          {isEditing ? 'Edit Entry' : customMode ? 'Custom Food' : 'Log Food'}
         </h2>
-        <p className="text-slate-500 text-sm mb-5">
-          {customMode
-            ? "Fill in the details — it'll be saved to your library for future use."
-            : (() => {
-                const today = localDateStr()
-                if (!logDate || logDate === today) return 'Search an item, set quantity, then pick a meal.'
-                const d = new Date(logDate + 'T00:00:00')
-                const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-                return `Logging to ${label}`
-              })()
+        <p className="text-slate-500 text-sm mb-4">
+          {isEditing
+            ? `Editing "${editEntry?.name}" — adjust servings or move to a different meal.`
+            : customMode
+              ? "Fill in the details — it'll be saved to your library for future use."
+              : 'Search an item, set quantity, then pick a meal.'
           }
         </p>
 
-        {/* Food / Drink toggle — hide in custom mode */}
-        {!customMode && (
+        {/* Past-date warning banner — shown when logging/editing for a non-today date */}
+        {!isEditing && logDate && logDate !== localDateStr() && (
+          <div className="flex items-start gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 mb-5">
+            <span className="material-symbols-outlined text-yellow-400 text-base mt-0.5 flex-shrink-0">event</span>
+            <div className="flex-1">
+              <p className="text-yellow-300 text-xs font-semibold">
+                Logging to {new Date(logDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </p>
+              <p className="text-yellow-500/80 text-[11px] mt-0.5">Not today. Make sure this is the right date.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── EDIT MODE UI ── */}
+        {isEditing && (
+          <div className="mb-5 space-y-4">
+            {/* Food info card — read-only */}
+            <div className="bg-slate-900 border border-primary/20 rounded-xl p-4">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Editing</p>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">✏️</span>
+                <div>
+                  <p className="text-white font-bold text-sm">{editEntry?.name}</p>
+                  <p className="text-slate-500 text-xs">
+                    {editEntry?.portion?.replace(/^[\d.]+\s×\s/, '') || 'per serving'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Qty stepper */}
+            <div className="flex items-center gap-3 px-1">
+              <p className="text-slate-400 text-sm font-semibold flex-1">Servings</p>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setQty(q => Math.max(0.5, parseFloat((q - 0.5).toFixed(1))))}
+                  className="w-8 h-8 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center hover:bg-slate-700 transition-colors">−</button>
+                <span className="text-white font-mono font-bold w-8 text-center">{qty}</span>
+                <button onClick={() => setQty(q => parseFloat((q + 0.5).toFixed(1)))}
+                  className="w-8 h-8 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center hover:bg-slate-700 transition-colors">+</button>
+              </div>
+            </div>
+
+            {/* Live calorie preview */}
+            <div className="grid grid-cols-4 gap-2 text-center">
+              {[
+                { label: 'Calories', val: Math.round(editEntry.unitCalories * qty), color: 'text-primary'    },
+                { label: 'Protein',  val: Math.round(editEntry.unitProtein  * qty * 10) / 10, color: 'text-blue-400'   },
+                { label: 'Carbs',    val: Math.round(editEntry.unitCarbs    * qty * 10) / 10, color: 'text-yellow-400' },
+                { label: 'Fat',      val: Math.round(editEntry.unitFat      * qty * 10) / 10, color: 'text-red-400'    },
+              ].map(m => (
+                <div key={m.label} className="bg-slate-900 rounded-xl py-2 px-1">
+                  <p className={`font-mono font-bold text-base ${m.color}`}>{m.val}</p>
+                  <p className="text-slate-500 text-[10px] font-semibold mt-0.5">{m.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Food / Drink toggle — hide in custom mode and edit mode */}
+        {!customMode && !isEditing && (
           <div className="flex gap-2 mb-5 p-1 bg-slate-900 border border-slate-800 rounded-xl">
             {[{ id: 'food', emoji: '🍽️', label: 'Food' }, { id: 'drink', emoji: '🥤', label: 'Drinks' }].map(t => (
               <button key={t.id} onClick={() => setItemType(t.id)}
@@ -273,7 +375,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
         )}
 
         {/* ── Search ── */}
-        {!customMode && (
+        {!customMode && !isEditing && (
           <>
             <div className="relative mb-1">
               <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xl">search</span>
@@ -451,7 +553,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
         )}
 
         {/* ── Selected DB item card ── */}
-        {selected && !customMode && (
+        {selected && !customMode && !isEditing && (
           <div className="bg-slate-900 border border-primary/30 rounded-xl p-4 mb-5">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-3xl">{selected.emoji}</span>
@@ -510,7 +612,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
         )}
 
         {/* ── Popular — idle state only ── */}
-        {!query && !selected && !customMode && (
+        {!query && !selected && !customMode && !isEditing && (
           <>
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">
               {userLibrary.length > 0 ? 'Your Library' : (itemType === 'food' ? 'Popular Foods' : 'Popular Drinks')}
@@ -553,11 +655,13 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, onClos
 
         <button
           onClick={handleLog}
-          disabled={saving || (!customMode && (!selected || !meal)) || (customMode && (!customReady || !meal))}
+          disabled={saving || (isEditing ? !meal : (!customMode && (!selected || !meal)) || (customMode && (!customReady || !meal)))}
           className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-bold text-base shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 mt-5">
           {saving
             ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
-            : <><span className="material-symbols-outlined text-xl">add_circle</span>Log {customMode ? 'Custom Food' : itemType === 'food' ? 'Food' : 'Drink'}</>
+            : isEditing
+              ? <><span className="material-symbols-outlined text-xl">check_circle</span>Save Changes</>
+              : <><span className="material-symbols-outlined text-xl">add_circle</span>Log {customMode ? 'Custom Food' : itemType === 'food' ? 'Food' : 'Drink'}</>
           }
         </button>
 
