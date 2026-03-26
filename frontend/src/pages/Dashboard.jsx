@@ -250,21 +250,53 @@ export default function Dashboard() {
           ))}
 
           {/* Streak */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl flex-shrink-0">🔥</div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-white">
-                {streak === 0 ? 'No streak yet' : `Day ${streak} streak`}
-              </p>
-              <p className="text-xs font-semibold mt-0.5 text-green-400">
-                {streak === 0 && 'Log a meal today to start your streak!'}
-                {streak === 1 && "Great start — log tomorrow to keep it going!"}
-                {streak >= 2 && streak < 7  && `${streak} days in a row — keep it up!`}
-                {streak >= 7 && streak < 30 && `🎯 ${streak} day streak — you're on fire!`}
-                {streak >= 30 && `🏆 ${streak} days — absolute legend!`}
-              </p>
+          <div className="relative group">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4 cursor-default">
+              <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl flex-shrink-0">🔥</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-white">
+                  {streak === 0 ? 'No streak yet' : `Day ${streak} streak`}
+                </p>
+                <p className="text-xs font-semibold mt-0.5 text-green-400">
+                  {streak === 0 && 'Log a meal today to start your streak!'}
+                  {streak === 1 && "Great start — log tomorrow to keep it going!"}
+                  {streak >= 2 && streak < 7  && `${streak} days in a row — keep it up!`}
+                  {streak >= 7 && streak < 30 && `🎯 ${streak} day streak — you're on fire!`}
+                  {streak >= 30 && `🏆 ${streak} days — absolute legend!`}
+                </p>
+              </div>
+              <span className="material-symbols-outlined text-primary">emoji_events</span>
             </div>
-            <span className="material-symbols-outlined text-primary">emoji_events</span>
+
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-0 right-0 mb-2 z-10 pointer-events-none
+                            opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-xl">
+                <p className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                  <span className="text-base">🔥</span> How streaks work
+                </p>
+                <ul className="space-y-1.5">
+                  <li className="flex items-start gap-2 text-xs text-slate-400">
+                    <span className="text-green-400 mt-0.5">✓</span>
+                    Log <span className="text-white font-semibold mx-1">at least 1 meal</span> per day to grow your streak
+                  </li>
+                  <li className="flex items-start gap-2 text-xs text-slate-400">
+                    <span className="text-green-400 mt-0.5">✓</span>
+                    Consecutive days logged = streak count
+                  </li>
+                  <li className="flex items-start gap-2 text-xs text-slate-400">
+                    <span className="text-red-400 mt-0.5">✕</span>
+                    Miss a day and your streak resets to 0
+                  </li>
+                  <li className="flex items-start gap-2 text-xs text-slate-400">
+                    <span className="text-yellow-400 mt-0.5">◷</span>
+                    You have until midnight to log and keep today's streak alive
+                  </li>
+                </ul>
+              </div>
+              {/* Arrow */}
+              <div className="w-3 h-3 bg-slate-800 border-r border-b border-slate-700 rotate-45 mx-auto -mt-1.5" />
+            </div>
           </div>
 
           {/* Log Food CTA */}
