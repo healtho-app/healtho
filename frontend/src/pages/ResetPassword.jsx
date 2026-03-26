@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
@@ -18,6 +18,7 @@ export default function ResetPassword() {
 
   const [ready,    setReady]    = useState(false)   // true once Supabase fires PASSWORD_RECOVERY
   const [invalid,  setInvalid]  = useState(false)   // true if link is missing / expired
+  const readyRef = useRef(false)                     // ref copy — avoids stale closure in setTimeout
   const [password, setPassword] = useState('')
   const [confirm,  setConfirm]  = useState('')
   const [showPw,   setShowPw]   = useState(false)
@@ -28,19 +29,23 @@ export default function ResetPassword() {
   // Supabase fires PASSWORD_RECOVERY when it detects a recovery token in the URL hash
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true)
+      if (event === 'PASSWORD_RECOVERY') {
+        readyRef.current = true   // update ref first (no stale closure risk)
+        setReady(true)
+      }
     })
 
-    // If no event fires within 3 seconds, the link is missing or expired
+    // If no event fires within 5 seconds, the link is missing or expired.
+    // Use readyRef (not the `ready` state) to avoid stale closure — the timeout
+    // callback captures ready=false at creation time and never sees the update.
     const timer = setTimeout(() => {
-      setInvalid(prev => prev || !ready)
-    }, 3000)
+      if (!readyRef.current) setInvalid(true)
+    }, 5000)
 
     return () => {
       subscription.unsubscribe()
       clearTimeout(timer)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const validate = () => {

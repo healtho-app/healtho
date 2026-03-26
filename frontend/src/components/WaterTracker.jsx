@@ -1,17 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const TOTAL_DOTS = 8
-const ML_PER_DOT = 2500 / 8   // 312.5 ml per dot
+const TOTAL_DOTS   = 8
+const ML_PER_DOT   = 2500 / 8   // 312.5 ml per dot
+const STORAGE_KEY  = 'healtho_water_manual'
+
+// Local date string (YYYY-MM-DD) in user's timezone — same helper as Dashboard
+const localDateStr = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 export default function WaterTracker({ waterLevel = 0 }) {
-  // waterLevel  — float 0–8 driven by food_logs (logged drinks)
-  // manualDots  — integer 0–8 set by tapping; fully independent of waterLevel
+  // waterLevel  — float 0–8 driven by food_logs (logged drinks) — persists via DB
+  // manualDots  — integer 0–8 set by tapping — persists via localStorage (date-keyed)
   // The two sources are combined at render: totalLevel = max(waterLevel, manualDots)
   // This means:
   //   • Logging water raises the tracker automatically
   //   • Deleting a water log brings it back down to the logged level
   //   • Manual taps are always preserved through any log add/delete
-  const [manualDots, setManualDots] = useState(0)
+  //   • Manual taps auto-reset at midnight (localStorage date key expires)
+  const [manualDots, setManualDots] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+      return saved.date === localDateStr() ? (saved.dots ?? 0) : 0
+    } catch { return 0 }
+  })
+
+  // Persist manual dots to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: localDateStr(), dots: manualDots }))
+    } catch { /* localStorage unavailable — silently ignore */ }
+  }, [manualDots])
 
   const totalLevel = Math.min(TOTAL_DOTS, Math.max(waterLevel, manualDots))
   const liters = ((totalLevel * ML_PER_DOT) / 1000).toFixed(1)
