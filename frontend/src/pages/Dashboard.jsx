@@ -46,6 +46,7 @@ export default function Dashboard() {
   const [profile,  setProfile]  = useState(null)
   const [loading,  setLoading]  = useState(true)
   const [logs,     setLogs]     = useState([])      // today's food_logs rows
+  const [streak,   setStreak]   = useState(0)
 
   // ── Fetch profile ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -80,6 +81,48 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => { fetchLogs() }, [fetchLogs])
+
+  // ── Streak — count consecutive days with ≥1 food log ──────────────────────
+  useEffect(() => {
+    async function fetchStreak() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const { data, error } = await supabase
+        .from('food_logs')
+        .select('date')
+        .eq('user_id', session.user.id)
+        .order('date', { ascending: false })
+
+      if (error || !data) return
+
+      // Deduplicate dates
+      const dates = [...new Set(data.map(r => r.date))].sort((a, b) => b.localeCompare(a))
+      if (dates.length === 0) { setStreak(0); return }
+
+      const toStr = (d) => d.toISOString().split('T')[0]
+      const today     = toStr(new Date())
+      const yesterday = toStr(new Date(Date.now() - 86400000))
+
+      // Streak is alive if there's a log today OR yesterday (user may still log today)
+      if (dates[0] !== today && dates[0] !== yesterday) { setStreak(0); return }
+
+      let count = 0
+      let expected = dates[0]
+      for (const d of dates) {
+        if (d === expected) {
+          count++
+          const prev = new Date(expected + 'T00:00:00')
+          prev.setDate(prev.getDate() - 1)
+          expected = toStr(prev)
+        } else {
+          break
+        }
+      }
+      setStreak(count)
+    }
+    fetchStreak()
+  }, [logs]) // re-run whenever today's logs change
 
   // ── Delete a log entry ─────────────────────────────────────────────────────
   const handleDelete = async (id) => {
@@ -210,8 +253,16 @@ export default function Dashboard() {
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl flex-shrink-0">🔥</div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-white">Day 1 streak</p>
-              <p className="text-xs text-green-400 font-semibold mt-0.5">Welcome to Healtho — let's build that streak!</p>
+              <p className="text-sm font-bold text-white">
+                {streak === 0 ? 'No streak yet' : `Day ${streak} streak`}
+              </p>
+              <p className="text-xs font-semibold mt-0.5 text-green-400">
+                {streak === 0 && 'Log a meal today to start your streak!'}
+                {streak === 1 && "Great start — log tomorrow to keep it going!"}
+                {streak >= 2 && streak < 7  && `${streak} days in a row — keep it up!`}
+                {streak >= 7 && streak < 30 && `🎯 ${streak} day streak — you're on fire!`}
+                {streak >= 30 && `🏆 ${streak} days — absolute legend!`}
+              </p>
             </div>
             <span className="material-symbols-outlined text-primary">emoji_events</span>
           </div>
