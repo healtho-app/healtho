@@ -40,6 +40,11 @@ function Skeleton({ className = '' }) {
   return <div className={`animate-pulse bg-slate-800 rounded-lg ${className}`} />
 }
 
+// Returns YYYY-MM-DD in the user's LOCAL timezone (not UTC)
+// Fixes a bug where toISOString() gives UTC date, which can be off by ±1 day
+const localDateStr = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
 export default function Dashboard() {
   const [logOpen,  setLogOpen]  = useState(false)
   const [logMeal,  setLogMeal]  = useState(null)   // pre-selected meal when opening from a section
@@ -69,7 +74,7 @@ export default function Dashboard() {
   const fetchLogs = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    const today = new Date().toISOString().split('T')[0]
+    const today = localDateStr()
     const { data, error } = await supabase
       .from('food_logs')
       .select('*')
@@ -100,9 +105,8 @@ export default function Dashboard() {
       const dates = [...new Set(data.map(r => r.date))].sort((a, b) => b.localeCompare(a))
       if (dates.length === 0) { setStreak(0); return }
 
-      const toStr = (d) => d.toISOString().split('T')[0]
-      const today     = toStr(new Date())
-      const yesterday = toStr(new Date(Date.now() - 86400000))
+      const today     = localDateStr()
+      const yesterday = localDateStr(new Date(Date.now() - 86400000))
 
       // Streak is alive if there's a log today OR yesterday (user may still log today)
       if (dates[0] !== today && dates[0] !== yesterday) { setStreak(0); return }
@@ -114,7 +118,7 @@ export default function Dashboard() {
           count++
           const prev = new Date(expected + 'T00:00:00')
           prev.setDate(prev.getDate() - 1)
-          expected = toStr(prev)
+          expected = localDateStr(prev)
         } else {
           break
         }
