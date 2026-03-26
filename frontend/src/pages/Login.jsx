@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 
@@ -32,8 +32,10 @@ function FieldError({ message }) {
 
 export default function Login() {
   const navigate  = useNavigate()
+  const location  = useLocation()
+  const prefill   = location.state?.prefillEmail ?? ''
   const [showPwd, setShowPwd]           = useState(false)
-  const [form, setForm]                 = useState({ email: '', password: '' })
+  const [form, setForm]                 = useState({ email: prefill, password: '' })
   const [errors, setErrors]             = useState({})
   const [loading, setLoading]           = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -233,7 +235,7 @@ export default function Login() {
       </main>
 
       <footer className="py-6 px-6 text-center">
-        <p className="text-slate-700 text-xs">© 2025 Healtho. All rights reserved.</p>
+        <p className="text-slate-700 text-xs">© {new Date().getFullYear()} Healtho. All rights reserved.</p>
       </footer>
     </div>
   )

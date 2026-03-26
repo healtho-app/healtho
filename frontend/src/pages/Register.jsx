@@ -172,9 +172,11 @@ export default function Register() {
   const [step,        setStep]       = useState(1)
   const [showPwd,     setShowPwd]    = useState(false)
   const [loading,       setLoading]       = useState(false)
+  const [checking,      setChecking]      = useState(false)  // pre-check RPC in flight
   const [googleLoading, setGoogleLoading] = useState(false)
   const [errors,        setErrors]        = useState({})
   const [serverError,   setServerError]   = useState('')
+  const [isDuplicate,   setIsDuplicate]   = useState(false)  // true when email already exists
 
   // Email OTP state
   const [otpDigits,   setOtpDigits]  = useState(Array(OTP_LENGTH).fill(''))
@@ -192,6 +194,7 @@ export default function Register() {
   const set = (field) => (e) => {
     setForm(f => ({ ...f, [field]: e.target.value }))
     if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
+    if (field === 'email' && isDuplicate) setIsDuplicate(false)
   }
 
   // Username: auto-lowercase, strip invalid chars
@@ -259,22 +262,62 @@ export default function Register() {
     const errs = validateStep1(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
+    const normalizedEmail = form.email.trim().toLowerCase()
+
+    // ── Pre-check: does this email already exist? ──────────────────────────
+    setChecking(true)
+    setServerError('')
+    setIsDuplicate(false)
+    try {
+      const { data: exists, error: rpcError } = await supabase.rpc('check_email_exists', {
+        input_email: normalizedEmail,
+      })
+      console.log('[dup-check] RPC result:', { exists, rpcError })
+      if (rpcError) throw rpcError
+      if (exists) {
+        setIsDuplicate(true)
+        return   // stop here — duplicate UI is rendered below
+      }
+    } catch (rpcCatchErr) {
+      console.warn('[dup-check] RPC failed, falling through:', rpcCatchErr)
+    } finally {
+      setChecking(false)
+    }
+
     setLoading(true)
     setServerError('')
     try {
       const { data, error } = await supabase.auth.signUp({
-        email:    form.email.trim().toLowerCase(),
+        email:    normalizedEmail,
         password: form.password,
         options:  { data: { full_name: form.name.trim() } },
       })
+      console.log('[dup-check] signUp result:', JSON.stringify({
+        user: data?.user ? {
+          id: data.user.id,
+          email: data.user.email,
+          identities: data.user.identities,
+          confirmed_at: data.user.confirmed_at,
+        } : null,
+        session: data?.session,
+        error,
+      }, null, 2))
       if (error) throw error
+
+      // When email confirmation is ON, Supabase returns a fake user object with an
+      // empty identities array for duplicate emails (to prevent email enumeration).
+      // Older versions return { user: null } — both cases handled here.
+      if (!data.user || data.user.identities?.length === 0) {
+        setIsDuplicate(true)
+        return
+      }
 
       if (data.session) {
         // Confirm email is OFF — session returned immediately, seed profile and skip OTP
         const profilePayload = {
           full_name:         form.name.trim(),
           username:          form.username.toLowerCase(),
-          email:             form.email.trim().toLowerCase(),
+          email:             normalizedEmail,
           registration_step: 1,
         }
         try {
@@ -473,12 +516,27 @@ export default function Register() {
                 <p className="text-slate-400 text-lg mt-2">Start your health journey with Healtho.</p>
               </div>
 
-              {serverError && (
+              {isDuplicate ? (
+                <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl mb-6">
+                  <span className="material-symbols-outlined text-amber-400 mt-0.5">person_check</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-amber-300 text-sm font-bold">Account already exists</p>
+                    <p className="text-amber-400/80 text-xs mt-0.5">An account with this email is already registered.</p>
+                    <button
+                      onClick={() => navigate('/login', { state: { prefillEmail: form.email.trim().toLowerCase() } })}
+                      className="mt-2 text-xs font-bold text-amber-300 hover:text-white bg-amber-500/20 hover:bg-amber-500/40 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-sm">login</span>
+                      Log in instead
+                    </button>
+                  </div>
+                </div>
+              ) : serverError ? (
                 <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
                   <span className="material-symbols-outlined text-red-400">warning</span>
                   <p className="text-red-400 text-sm font-semibold">{serverError}</p>
                 </div>
-              )}
+              ) : null}
 
               <div className="space-y-5">
                 {/* Full Name */}
@@ -565,9 +623,11 @@ export default function Register() {
                 </span>
               </button>
 
-              <button onClick={submitStep1} disabled={loading}
+              <button onClick={submitStep1} disabled={loading || checking}
                 className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
-                {loading ? (
+                {checking ? (
+                  <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Checking…</>
+                ) : loading ? (
                   <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Creating account…</>
                 ) : (
                   <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
