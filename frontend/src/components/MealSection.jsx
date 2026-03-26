@@ -11,7 +11,13 @@ export default function MealSection({ emoji, name, calories = 0, items = [], def
           <p className="text-sm font-bold text-white">{name}</p>
           <p className="text-xs text-slate-500 mt-0.5">
             {items.length > 0
-              ? <><span className="text-slate-300 font-semibold">{calories}</span> kcal · {items.length} item{items.length !== 1 ? 's' : ''}</>
+              ? <>
+                  <span className="text-slate-300 font-semibold">{calories}</span> kcal
+                  {calories === 0 && items.length > 0 && (
+                    <span className="text-slate-600"> (0 cal items)</span>
+                  )}
+                  {' · '}{items.length} item{items.length !== 1 ? 's' : ''}
+                </>
               : 'Not logged yet'
             }
           </p>

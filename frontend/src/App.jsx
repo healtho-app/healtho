@@ -6,6 +6,7 @@ import Profile        from './pages/Profile'
 import NotFound       from './pages/NotFound'
 import AuthCallback    from './pages/AuthCallback'
 import ForgotPassword  from './pages/ForgotPassword'
+import ResetPassword   from './pages/ResetPassword'
 import Terms           from './pages/Terms'
 import Privacy         from './pages/Privacy'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/register"      element={<Register />} />
       <Route path="/auth/callback"    element={<AuthCallback />} />
       <Route path="/forgot-password"  element={<ForgotPassword />} />
+      <Route path="/reset-password"   element={<ResetPassword />} />
       <Route path="/terms"            element={<Terms />} />
       <Route path="/privacy"          element={<Privacy />} />
 
