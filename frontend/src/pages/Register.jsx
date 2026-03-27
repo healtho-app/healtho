@@ -3,12 +3,15 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 
-// ── Step config — 4 steps: details → verify email → metrics → activity ────────
+// ── Step config — 3 steps: details → metrics → activity ──────────────────────
+// [OTP-REMOVED] Step 2 (email OTP verification) bypassed for pre-MVP testing.
+// Re-enable: turn "Confirm email" back ON in Supabase Auth settings. Step 2 UI
+// and verifyEmail/resendEmailCode functions are preserved below, just unreachable.
 const STEPS = {
-  1: { label: '1', pct: '25%',  width: '25%',  hint: "Let's start with your account details..." },
-  2: { label: '2', pct: '50%',  width: '50%',  hint: 'Check your inbox — enter the 8-digit code.' },
-  3: { label: '3', pct: '75%',  width: '75%',  hint: 'Your personalised plan is taking shape...' },
-  4: { label: '4', pct: '100%', width: '100%', hint: 'Almost done — just one more thing!' },
+  1: { label: '1', pct: '33%',  width: '33%',  hint: "Let's start with your account details..." },
+  2: { label: '2', pct: '66%',  width: '66%',  hint: 'Check your inbox — enter the 8-digit code.' }, // [OTP-REMOVED] unreachable
+  3: { label: '2', pct: '66%',  width: '66%',  hint: 'Your personalised plan is taking shape...' },
+  4: { label: '3', pct: '100%', width: '100%', hint: 'Almost done — just one more thing!' },
 }
 
 const ACTIVITY_OPTIONS = [
@@ -23,20 +26,13 @@ const OTP_LENGTH     = 8
 const RESEND_SECONDS = 30
 
 // ── Allowed email domains ─────────────────────────────────────────────────────
-const ALLOWED_DOMAINS = new Set([
-  'gmail.com', 'googlemail.com',
-  'yahoo.com', 'yahoo.in', 'yahoo.co.uk', 'yahoo.co.in', 'yahoo.ca', 'yahoo.com.au',
-  'ymail.com',
-  'outlook.com', 'outlook.in', 'outlook.co.uk',
-  'hotmail.com', 'hotmail.in', 'hotmail.co.uk',
-  'live.com', 'live.in', 'live.co.uk',
-  'msn.com',
-  'icloud.com', 'me.com', 'mac.com',
-  'aol.com',
-  'protonmail.com', 'proton.me',
-  'rediffmail.com',
-  'zoho.com',
-])
+// [OTP-REMOVED] Domain whitelist disabled for pre-MVP testing — testers may use
+// company or custom domains. Re-enable at MVP by uncommenting the Set below and
+// restoring the domain check in validateStep1.
+// const ALLOWED_DOMAINS = new Set([
+//   'gmail.com', 'googlemail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
+//   'live.com', 'icloud.com', 'me.com', 'protonmail.com', 'proton.me', ...
+// ])
 
 // ── Validation ────────────────────────────────────────────────────────────────
 function validateStep1({ name, username, email, password }) {
@@ -51,12 +47,8 @@ function validateStep1({ name, username, email, password }) {
     errors.email = 'Email is required'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.email = 'Enter a valid email address'
-  } else {
-    const domain = email.trim().toLowerCase().split('@')[1]
-    if (!ALLOWED_DOMAINS.has(domain)) {
-      errors.email = 'Please use a real email provider (Gmail, Yahoo, Outlook, iCloud, etc.)'
-    }
   }
+  // [OTP-REMOVED] Domain whitelist check removed for pre-MVP testing.
   if (!password)                   errors.password = 'Password is required'
   else if (password.length < 8)    errors.password = 'Password must be at least 8 characters'
   else if (!/(?=.*[0-9!@#$%^&*])/.test(password)) errors.password = 'Include at least one number or symbol'
@@ -468,7 +460,7 @@ export default function Register() {
           <div className="flex flex-col gap-3 mb-10">
             <div className="flex items-center justify-between">
               <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">
-                Step {s.label} of 4
+                Step {s.label} of 3
               </p>
               <p className="text-primary text-sm font-bold">{s.pct}</p>
             </div>
