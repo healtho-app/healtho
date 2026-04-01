@@ -142,7 +142,7 @@ export default function ForgotPassword() {
       </main>
 
       <footer className="py-6 px-6 text-center">
-        <p className="text-slate-700 text-xs">© 2025 Healtho. All rights reserved.</p>
+        <p className="text-slate-700 text-xs">© {new Date().getFullYear()} Healtho. All rights reserved.</p>
       </footer>
     </div>
   )

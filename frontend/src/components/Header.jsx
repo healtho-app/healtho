@@ -33,9 +33,9 @@ export default function Header({ rightLabel, rightTo, rightIcon = 'arrow_forward
 
   return (
     <header className="flex items-center justify-between border-b border-slate-800 px-6 py-4 lg:px-10">
-      <Link to={logoTo} className="flex items-center gap-2.5">
+      <Link to={logoTo} className="flex items-center gap-2.5 flex-shrink-0">
         <img src="/healtho-icon.svg" alt="Healtho" className="w-9 h-9 rounded-xl" />
-        <h2 className="text-xl font-bold tracking-tight text-brand-gradient">Healtho</h2>
+        <h2 className="text-xl font-bold tracking-tight text-brand-gradient whitespace-nowrap">Healtho</h2>
       </Link>
 
       <div className="flex items-center gap-4">
