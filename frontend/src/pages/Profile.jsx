@@ -34,12 +34,21 @@ function getBmiInfo(bmi) {
   return             { label: 'Obese range',         color: 'text-red-400',    bar: 'bg-red-400',    pct: 92 }
 }
 
-function validate({ age, height, weight }) {
+function validate({ age, height, weight, unit_system }) {
   const errors = {}
   const a = parseInt(age), h = parseFloat(height), w = parseFloat(weight)
-  if (!age || isNaN(a) || a < 13 || a > 120)     errors.age    = 'Enter a valid age (13–120)'
-  if (!height || isNaN(h) || h < 50 || h > 300)  errors.height = 'Enter a valid height (50–300 cm)'
-  if (!weight || isNaN(w) || w < 20 || w > 500)  errors.weight = 'Enter a valid weight (20–500 kg)'
+  const imperial = unit_system === 'imperial'
+  if (!age || isNaN(a) || a < 13 || a > 120) errors.age = 'Enter a valid age (13–120)'
+  if (!height || isNaN(h) || h <= 0) {
+    errors.height = 'Enter a valid height'
+  } else if (imperial ? (h < 20 || h > 108) : (h < 50 || h > 300)) {
+    errors.height = imperial ? 'Enter a valid height (20–108 in)' : 'Enter a valid height (50–300 cm)'
+  }
+  if (!weight || isNaN(w) || w <= 0) {
+    errors.weight = 'Enter a valid weight'
+  } else if (imperial ? (w < 44 || w > 1100) : (w < 20 || w > 500)) {
+    errors.weight = imperial ? 'Enter a valid weight (44–1100 lb)' : 'Enter a valid weight (20–500 kg)'
+  }
   return errors
 }
 
@@ -75,9 +84,10 @@ export default function Profile() {
     height:   params.get('height')   || '',
     weight:   params.get('weight')   || '',
     activity: params.get('activity') || 'moderately_active',
-    country:  params.get('country')  || '',
-    phone:    params.get('phone')    || '',
-    avatar:   '',
+    country:     params.get('country')     || '',
+    phone:       params.get('phone')       || '',
+    avatar:      '',
+    unit_system: params.get('unit_system') || 'metric',
   }
 
   const [profile,  setProfile]  = useState(fallback)
@@ -96,7 +106,7 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, username, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal, country, phone_number, avatar_url')
+        .select('full_name, username, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal, country, phone_number, avatar_url, unit_system')
         .eq('id', session.user.id)
         .maybeSingle()
 
@@ -112,17 +122,25 @@ export default function Profile() {
         return
       }
       if (data) {
+        const imperial = data.unit_system === 'imperial'
+        const heightDisplay = data.height_cm != null
+          ? (imperial ? String(parseFloat((data.height_cm / 2.54).toFixed(1))) : String(data.height_cm))
+          : fallback.height
+        const weightDisplay = data.weight_kg != null
+          ? (imperial ? String(parseFloat((data.weight_kg / 0.453592).toFixed(1))) : String(data.weight_kg))
+          : fallback.weight
         const fetched = {
-          name:     data.full_name     || fallback.name,
-          username: data.username      || '',
-          email:    data.email         || fallback.email,
-          age:      data.age != null   ? String(data.age)        : fallback.age,
-          height:   data.height_cm != null ? String(data.height_cm) : fallback.height,
-          weight:   data.weight_kg != null ? String(data.weight_kg) : fallback.weight,
-          activity: data.activity_level || fallback.activity,
-          country:  data.country        || '',
-          phone:    data.phone_number   || '',
-          avatar:   data.avatar_url     || '',
+          name:        data.full_name     || fallback.name,
+          username:    data.username      || '',
+          email:       data.email         || fallback.email,
+          age:         data.age != null   ? String(data.age) : fallback.age,
+          height:      heightDisplay,
+          weight:      weightDisplay,
+          activity:    data.activity_level || fallback.activity,
+          country:     data.country        || '',
+          phone:       data.phone_number   || '',
+          avatar:      data.avatar_url     || '',
+          unit_system: data.unit_system    || 'metric',
         }
         setProfile(fetched)
         setDraft(fetched)
@@ -134,8 +152,11 @@ export default function Profile() {
 
   // Live-computed values from current profile (or draft while editing)
   const view     = editing ? draft : profile
-  const bmi      = calcBMI(parseFloat(view.weight), parseFloat(view.height))
-  const calories = calcCalories(parseFloat(view.weight), parseFloat(view.height), parseInt(view.age), view.activity)
+  const imperial = profile.unit_system === 'imperial'
+  const viewWeightKg = imperial ? parseFloat(view.weight) * 0.453592 : parseFloat(view.weight)
+  const viewHeightCm = imperial ? parseFloat(view.height) * 2.54     : parseFloat(view.height)
+  const bmi      = calcBMI(viewWeightKg, viewHeightCm)
+  const calories = calcCalories(viewWeightKg, viewHeightCm, parseInt(view.age), view.activity)
   const bmiInfo  = getBmiInfo(bmi)
   const actInfo  = ACTIVITY_MAP[view.activity] || ACTIVITY_MAP.moderately_active
   const initials = profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -159,7 +180,7 @@ export default function Profile() {
   }
 
   const saveEdit = async () => {
-    const errs = validate(draft)
+    const errs = validate({ ...draft, unit_system: profile.unit_system })
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     setSaving(true)
@@ -167,8 +188,9 @@ export default function Profile() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not signed in')
 
-      const weight_kg = parseFloat(draft.weight)
-      const height_cm = parseFloat(draft.height)
+      const imperial  = profile.unit_system === 'imperial'
+      const weight_kg = imperial ? parseFloat((parseFloat(draft.weight) * 0.453592).toFixed(2)) : parseFloat(draft.weight)
+      const height_cm = imperial ? parseFloat((parseFloat(draft.height) * 2.54).toFixed(2))     : parseFloat(draft.height)
       const age       = parseInt(draft.age)
       const bmi       = calculateBMI(weight_kg, height_cm)
 
@@ -296,8 +318,8 @@ export default function Profile() {
               {[
                 { icon: 'calendar_today', label: 'Age',    value: profile.age,    sub: 'years old'   },
                 { icon: 'monitor_heart',  label: 'BMI',    value: bmi || '—',     sub: bmiInfo?.label || '—', subColor: bmiInfo?.color },
-                { icon: 'height',         label: 'Height', value: profile.height, sub: 'centimetres' },
-                { icon: 'monitor_weight', label: 'Weight', value: profile.weight, sub: 'kilograms'   },
+                { icon: 'height',         label: 'Height', value: profile.height, sub: profile.unit_system === 'imperial' ? 'inches' : 'centimetres' },
+                { icon: 'monitor_weight', label: 'Weight', value: profile.weight, sub: profile.unit_system === 'imperial' ? 'pounds' : 'kilograms'   },
               ].map(s => (
                 <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-1">
                   <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold uppercase tracking-wider">
@@ -344,13 +366,13 @@ export default function Profile() {
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
+                      type="number" min="0"
                       value={draft.height}
                       onChange={setDraftField('height')}
-                      placeholder="175"
+                      placeholder={profile.unit_system === 'imperial' ? '69' : '175'}
                       className={`${inputCls(errors.height)} pr-10`}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">cm</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{profile.unit_system === 'imperial' ? 'in' : 'cm'}</span>
                   </div>
                   <FieldError message={errors.height} />
                 </div>
@@ -361,13 +383,13 @@ export default function Profile() {
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
+                      type="number" min="0"
                       value={draft.weight}
                       onChange={setDraftField('weight')}
-                      placeholder="70"
+                      placeholder={profile.unit_system === 'imperial' ? '154' : '70'}
                       className={`${inputCls(errors.weight)} pr-10`}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">kg</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{profile.unit_system === 'imperial' ? 'lb' : 'kg'}</span>
                   </div>
                   <FieldError message={errors.weight} />
                 </div>

@@ -55,12 +55,21 @@ function validateStep1({ name, username, email, password }) {
   return errors
 }
 
-function validateStep3({ age, height, weight }) {
+function validateStep3({ age, height, weight, unit_system }) {
   const errors = {}
   const a = parseInt(age), h = parseFloat(height), w = parseFloat(weight)
-  if (!age    || isNaN(a) || a < 10 || a > 120)  errors.age    = 'Enter a valid age between 10 and 120'
-  if (!height || isNaN(h) || h < 50 || h > 300)  errors.height = 'Enter a valid height (50–300 cm)'
-  if (!weight || isNaN(w) || w < 20 || w > 500)  errors.weight = 'Enter a valid weight (20–500 kg)'
+  const imperial = unit_system === 'imperial'
+  if (!age    || isNaN(a) || a < 10 || a > 120)  errors.age = 'Enter a valid age between 10 and 120'
+  if (!height || isNaN(h) || h <= 0) {
+    errors.height = 'Enter a valid height'
+  } else if (imperial ? (h < 20 || h > 108) : (h < 50 || h > 300)) {
+    errors.height = imperial ? 'Enter a valid height (20–108 in)' : 'Enter a valid height (50–300 cm)'
+  }
+  if (!weight || isNaN(w) || w <= 0) {
+    errors.weight = 'Enter a valid weight'
+  } else if (imperial ? (w < 44 || w > 1100) : (w < 20 || w > 500)) {
+    errors.weight = imperial ? 'Enter a valid weight (44–1100 lb)' : 'Enter a valid weight (20–500 kg)'
+  }
   return errors
 }
 
@@ -88,9 +97,13 @@ function inputClass(errors, field, extra = '') {
 }
 
 // ── BMI helpers ───────────────────────────────────────────────────────────────
-function calcBMI(weight, height) {
-  if (!weight || !height || height < 50 || weight < 20) return null
-  return (weight / Math.pow(height / 100, 2)).toFixed(1)
+function calcBMI(weight, height, unit_system) {
+  if (!weight || !height || weight <= 0 || height <= 0) return null
+  const imperial = unit_system === 'imperial'
+  const w = imperial ? weight * 0.453592 : weight
+  const h = imperial ? height * 2.54     : height
+  if (h < 50 || w < 20) return null
+  return (w / Math.pow(h / 100, 2)).toFixed(1)
 }
 
 function getBmiInfo(bmi) {
@@ -215,7 +228,7 @@ export default function Register() {
     if (searchParams.get('google') === '1') setStep(3)
   }, [searchParams])
 
-  const bmi     = calcBMI(parseFloat(form.weight), parseFloat(form.height))
+  const bmi     = calcBMI(parseFloat(form.weight), parseFloat(form.height), form.unit_system)
   const bmiInfo = bmi ? getBmiInfo(bmi) : null
 
   const goTo = (n) => {
@@ -733,7 +746,7 @@ export default function Register() {
                       <span className="material-symbols-outlined text-primary text-xl">height</span>Height
                     </label>
                     <div className="relative">
-                      <input type="number" value={form.height} onChange={set('height')}
+                      <input type="number" min="0" value={form.height} onChange={set('height')}
                         placeholder={form.unit_system === 'metric' ? '175' : '69'}
                         className={inputClass(errors, 'height', 'pr-14')} />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
@@ -747,7 +760,7 @@ export default function Register() {
                       <span className="material-symbols-outlined text-primary text-xl">monitor_weight</span>Weight
                     </label>
                     <div className="relative">
-                      <input type="number" value={form.weight} onChange={set('weight')}
+                      <input type="number" min="0" value={form.weight} onChange={set('weight')}
                         placeholder={form.unit_system === 'metric' ? '70' : '154'}
                         className={inputClass(errors, 'weight', 'pr-14')} />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
