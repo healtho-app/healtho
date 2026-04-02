@@ -1,7 +1,7 @@
 const stats = [
-  { value: '50K+',  label: 'Active Users' },
-  { value: '4.9/5', label: 'User Rating' },
-  { value: '1M+',   label: 'Meals Tracked' },
+  { value: '\u2014',    label: 'Active Users' },
+  { value: '\u2014/5',  label: 'User Rating' },
+  { value: '\u2014',    label: 'Meals Tracked' },
 ]
 
 export default function StatsBar() {
