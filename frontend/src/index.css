@@ -33,3 +33,28 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ── Landing page animations ──────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+.landing-fade-up {
+  opacity: 0;
+  animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.landing-delay-1 { animation-delay: 0.1s; }
+.landing-delay-2 { animation-delay: 0.2s; }
+.landing-delay-3 { animation-delay: 0.35s; }
+.landing-delay-4 { animation-delay: 0.5s; }
+
+.landing-float {
+  animation: float 5s ease-in-out infinite;
+}
