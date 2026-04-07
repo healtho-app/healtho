@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
+import { useProfile } from '../contexts/ProfileContext'
 
 // ── Countries (US + India pinned, then alphabetical) ─────────────────────────
 const COUNTRIES = [
@@ -127,9 +128,13 @@ function inputCls(hasError) {
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
+const AVATAR_MAX_SIZE = 2 * 1024 * 1024 // 2 MB
+const AVATAR_TYPES   = ['image/jpeg', 'image/png', 'image/webp']
+
 export default function Profile() {
   const [params]  = useSearchParams()
   const navigate  = useNavigate()
+  const { refreshProfile } = useProfile()
 
   // Fallback values from URL params (passed by Register flow)
   const fallback = {
@@ -158,6 +163,9 @@ export default function Profile() {
   const [countryIdx,    setCountryIdx]    = useState(-1)
   const countryRef = useRef(null)
   const countryListRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState('')
 
   // Close country dropdown on outside click
   useEffect(() => {
@@ -262,6 +270,94 @@ export default function Profile() {
     setErrors({})
   }
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset input so same file can be re-selected
+    e.target.value = ''
+    setAvatarError('')
+
+    if (!AVATAR_TYPES.includes(file.type)) {
+      setAvatarError('Only JPG, PNG, and WebP images are allowed')
+      return
+    }
+    if (file.size > AVATAR_MAX_SIZE) {
+      setAvatarError('Image must be under 2 MB')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not signed in')
+
+      const ext = file.name.split('.').pop().toLowerCase()
+      const filePath = `${session.user.id}/avatar.${ext}`
+
+      // Upload (upsert) to avatars bucket
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true, contentType: file.type })
+      if (uploadError) throw uploadError
+
+      // Get public URL and append cache-busting timestamp
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`
+
+      // Save URL to profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', session.user.id)
+      if (updateError) throw updateError
+
+      // Update local state + global context
+      setProfile(p => ({ ...p, avatar: publicUrl }))
+      setDraft(d => ({ ...d, avatar: publicUrl }))
+      await refreshProfile()
+    } catch (err) {
+      setAvatarError(err.message || 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleAvatarRemove = async () => {
+    setAvatarError('')
+    setUploading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not signed in')
+
+      // List files in user's avatar folder to delete them
+      const { data: files } = await supabase.storage
+        .from('avatars')
+        .list(session.user.id)
+
+      if (files && files.length > 0) {
+        const paths = files.map(f => `${session.user.id}/${f.name}`)
+        await supabase.storage.from('avatars').remove(paths)
+      }
+
+      // Clear avatar_url in profiles
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', session.user.id)
+      if (error) throw error
+
+      setProfile(p => ({ ...p, avatar: '' }))
+      setDraft(d => ({ ...d, avatar: '' }))
+      await refreshProfile()
+    } catch (err) {
+      setAvatarError(err.message || 'Could not remove photo')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const saveEdit = async () => {
     const errs = validate({ ...draft, unit_system: profile.unit_system })
     // Phone validation
@@ -304,6 +400,7 @@ export default function Profile() {
       setEditing(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+      refreshProfile()
     } catch (err) {
       setErrors({ save: err.message || 'Could not save. Please try again.' })
     } finally {
@@ -351,12 +448,45 @@ export default function Profile() {
                   {initials}
                 </div>
               )}
-              {/* Upload photo placeholder */}
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center cursor-not-allowed" title="Photo upload coming soon">
-                <span className="material-symbols-outlined text-slate-500 text-base">photo_camera</span>
-              </div>
+              {/* Upload photo button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-slate-700 hover:border-primary/50 transition-colors disabled:opacity-50"
+                title={profile.avatar ? 'Change photo' : 'Upload photo'}
+              >
+                {uploading ? (
+                  <span className="material-symbols-outlined text-primary text-base animate-spin">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-slate-400 text-base">photo_camera</span>
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
             </div>
-            <p className="text-slate-600 text-xs mb-3 italic">Photo upload coming soon</p>
+            {/* Avatar actions */}
+            <div className="flex items-center gap-3 mb-3">
+              {profile.avatar && !uploading && (
+                <button
+                  onClick={handleAvatarRemove}
+                  className="text-red-400 text-xs font-semibold hover:text-red-300 transition-colors flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                  Remove photo
+                </button>
+              )}
+            </div>
+            {avatarError && (
+              <p className="flex items-center gap-1 text-red-400 text-xs font-semibold mb-2">
+                <span className="material-symbols-outlined text-sm">error</span>
+                {avatarError}
+              </p>
+            )}
             <h1 className="text-white text-3xl font-extrabold tracking-tight">{profile.name}</h1>
             {profile.username && (
               <p className="text-primary font-mono font-semibold text-base mt-1">@{profile.username}</p>

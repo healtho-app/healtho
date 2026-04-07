@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useProfile } from '../contexts/ProfileContext'
 
 export default function Header({ rightLabel, rightTo, rightIcon = 'arrow_forward', showLogout = false }) {
   const [logoTo, setLogoTo]       = useState('/register')
   const [signingOut, setSigningOut] = useState(false)
   const navigate = useNavigate()
+  const { profile } = useProfile()
 
   useEffect(() => {
     // Check session on mount to decide where the logo links
@@ -44,6 +46,23 @@ export default function Header({ rightLabel, rightTo, rightIcon = 'arrow_forward
           <Link to={rightTo} className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
             {rightLabel}
             <span className="material-symbols-outlined text-base">{rightIcon}</span>
+          </Link>
+        )}
+
+        {/* Profile avatar — links to profile page */}
+        {profile && (
+          <Link to="/profile" className="flex-shrink-0" title="My Profile">
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.full_name || 'Avatar'}
+                className="w-8 h-8 rounded-full object-cover border border-slate-700 hover:border-primary/60 transition-colors"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xs font-bold text-primary hover:bg-primary/30 transition-colors">
+                {(profile.full_name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+              </div>
+            )}
           </Link>
         )}
 
