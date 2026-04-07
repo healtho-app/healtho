@@ -1,7 +1,63 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
+
+// ── Countries (US + India pinned, then alphabetical) ─────────────────────────
+const COUNTRIES = [
+  'United States', 'India',
+  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda',
+  'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan',
+  'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize',
+  'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil',
+  'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi',
+  'Cabo Verde', 'Cambodia', 'Cameroon', 'Canada', 'Central African Republic', 'Chad',
+  'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica', 'Croatia', 'Cuba',
+  'Cyprus', 'Czech Republic',
+  'Democratic Republic of the Congo', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic',
+  'East Timor', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea',
+  'Estonia', 'Eswatini', 'Ethiopia',
+  'Fiji', 'Finland', 'France',
+  'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala',
+  'Guinea', 'Guinea-Bissau', 'Guyana',
+  'Haiti', 'Honduras', 'Hungary',
+  'Iceland', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy',
+  'Ivory Coast', 'Jamaica', 'Japan', 'Jordan',
+  'Kazakhstan', 'Kenya', 'Kiribati', 'Kosovo', 'Kuwait', 'Kyrgyzstan',
+  'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein',
+  'Lithuania', 'Luxembourg',
+  'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands',
+  'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia',
+  'Montenegro', 'Morocco', 'Mozambique', 'Myanmar',
+  'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger',
+  'Nigeria', 'North Korea', 'North Macedonia', 'Norway',
+  'Oman',
+  'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru',
+  'Philippines', 'Poland', 'Portugal',
+  'Qatar',
+  'Romania', 'Russia', 'Rwanda',
+  'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa',
+  'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia',
+  'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands',
+  'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka',
+  'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria',
+  'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Togo', 'Tonga',
+  'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu',
+  'UAE', 'Uganda', 'Ukraine', 'United Kingdom', 'Uruguay', 'Uzbekistan',
+  'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam',
+  'Yemen',
+  'Zambia', 'Zimbabwe',
+]
+
+// ── Phone validation ─────────────────────────────────────────────────────────
+function validatePhone(phone) {
+  if (!phone) return '' // optional
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length < 7) return 'Phone number too short (min 7 digits)'
+  if (digits.length > 15) return 'Phone number too long (max 15 digits)'
+  if (!/^[+\d\s().-]+$/.test(phone)) return 'Phone contains invalid characters'
+  return ''
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const ACTIVITY_MAP = {
@@ -97,6 +153,33 @@ export default function Profile() {
   const [errors,   setErrors]   = useState({})
   const [saving,   setSaving]   = useState(false)
   const [saved,    setSaved]    = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
+  const [countryOpen,   setCountryOpen]   = useState(false)
+  const [countryIdx,    setCountryIdx]    = useState(-1)
+  const countryRef = useRef(null)
+  const countryListRef = useRef(null)
+
+  // Close country dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (countryRef.current && !countryRef.current.contains(e.target)) setCountryOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  // Scroll active country into view on keyboard nav
+  useEffect(() => {
+    if (countryIdx >= 0 && countryListRef.current) {
+      const item = countryListRef.current.children[countryIdx]
+      if (item) item.scrollIntoView({ block: 'nearest' })
+    }
+  }, [countryIdx])
+
+  // Filtered country list based on search
+  const filteredCountries = countrySearch
+    ? COUNTRIES.filter(c => c.toLowerCase().includes(countrySearch.toLowerCase()))
+    : COUNTRIES
 
   // Fetch profile from Supabase on mount
   useEffect(() => {
@@ -181,6 +264,11 @@ export default function Profile() {
 
   const saveEdit = async () => {
     const errs = validate({ ...draft, unit_system: profile.unit_system })
+    // Phone validation
+    const phoneErr = validatePhone(draft.phone)
+    if (phoneErr) errs.phone = phoneErr
+    // Country validation — must be from the list or empty
+    if (draft.country && !COUNTRIES.includes(draft.country)) errs.country = 'Please select a country from the list'
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
 
     setSaving(true)
@@ -440,30 +528,96 @@ export default function Profile() {
                 ))}
               </div>
 
-              {/* Country */}
+              {/* Country — searchable dropdown */}
               <div className="flex flex-col gap-1">
                 <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-base">location_on</span>
                   Country <span className="text-slate-600 font-normal text-xs">(optional)</span>
                 </label>
-                <select
-                  value={draft.country}
-                  onChange={setDraftField('country')}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl h-12 px-4 text-base text-slate-100 focus:outline-none focus:ring-2 focus:border-primary focus:ring-primary/20 transition-all appearance-none"
-                >
-                  <option value="">Select country…</option>
-                  <option value="India">India</option>
-                  <option value="United States">United States</option>
-                  <option value="Canada">Canada</option>
-                  <option value="United Kingdom">United Kingdom</option>
-                  <option value="Australia">Australia</option>
-                  <option value="New Zealand">New Zealand</option>
-                  <option value="Germany">Germany</option>
-                  <option value="France">France</option>
-                  <option value="UAE">UAE</option>
-                  <option value="Singapore">Singapore</option>
-                  <option value="Other">Other</option>
-                </select>
+                <div className="relative" ref={countryRef}>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={countryOpen ? countrySearch : draft.country}
+                      onChange={(e) => {
+                        setCountrySearch(e.target.value)
+                        setCountryIdx(-1)
+                        if (!countryOpen) setCountryOpen(true)
+                      }}
+                      onFocus={() => {
+                        setCountrySearch('')
+                        setCountryOpen(true)
+                        setCountryIdx(-1)
+                      }}
+                      onKeyDown={(e) => {
+                        if (!countryOpen) return
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault()
+                          setCountryIdx(i => Math.min(i + 1, filteredCountries.length - 1))
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault()
+                          setCountryIdx(i => Math.max(i - 1, 0))
+                        } else if (e.key === 'Enter' && countryIdx >= 0) {
+                          e.preventDefault()
+                          setDraft(d => ({ ...d, country: filteredCountries[countryIdx] }))
+                          setCountryOpen(false)
+                          setCountrySearch('')
+                          if (errors.country) setErrors(er => ({ ...er, country: '' }))
+                        } else if (e.key === 'Escape') {
+                          setCountryOpen(false)
+                          setCountrySearch('')
+                        }
+                      }}
+                      placeholder="Search country…"
+                      autoComplete="off"
+                      className={inputCls(errors.country)}
+                    />
+                    {draft.country && !countryOpen && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDraft(d => ({ ...d, country: '' }))
+                          setCountrySearch('')
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    )}
+                  </div>
+                  {countryOpen && (
+                    <ul
+                      ref={countryListRef}
+                      className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto bg-slate-800 border border-slate-700 rounded-xl shadow-xl"
+                    >
+                      {filteredCountries.length === 0 ? (
+                        <li className="px-4 py-3 text-slate-500 text-sm">No results</li>
+                      ) : (
+                        filteredCountries.map((c, i) => (
+                          <li
+                            key={c}
+                            onMouseDown={() => {
+                              setDraft(d => ({ ...d, country: c }))
+                              setCountryOpen(false)
+                              setCountrySearch('')
+                              if (errors.country) setErrors(er => ({ ...er, country: '' }))
+                            }}
+                            onMouseEnter={() => setCountryIdx(i)}
+                            className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                              i === countryIdx
+                                ? 'bg-primary/20 text-white'
+                                : 'text-slate-300 hover:bg-slate-700/50'
+                            } ${(c === 'United States' || c === 'India') && i < 2 ? 'font-semibold' : ''}`}
+                          >
+                            {c}
+                            {i === 1 && <hr className="border-slate-700 mt-2.5 -mx-4" />}
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  )}
+                </div>
+                <FieldError message={errors.country} />
               </div>
 
               {/* Phone number */}
@@ -475,10 +629,14 @@ export default function Profile() {
                 <input
                   type="tel"
                   value={draft.phone}
-                  onChange={setDraftField('phone')}
+                  onChange={(e) => {
+                    setDraft(d => ({ ...d, phone: e.target.value }))
+                    if (errors.phone) setErrors(er => ({ ...er, phone: '' }))
+                  }}
                   placeholder="+1 555 000 0000"
-                  className={inputCls(false)}
+                  className={inputCls(errors.phone)}
                 />
+                <FieldError message={errors.phone} />
               </div>
 
               {/* Save button */}
