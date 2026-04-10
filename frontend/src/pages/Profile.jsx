@@ -130,7 +130,9 @@ function inputCls(hasError) {
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
-const AVATAR_MAX_SIZE = 2 * 1024 * 1024 // 2 MB
+// Source file cap is 20 MB — covers any phone photo. Image is resized client-side
+// to a 512×512 JPEG (~50-100 KB) before upload, so on-disk size stays tiny.
+const AVATAR_MAX_SIZE = 20 * 1024 * 1024 // 20 MB
 const AVATAR_TYPES   = ['image/jpeg', 'image/png', 'image/webp']
 
 // ── DiceBear (Dylan) helpers ─────────────────────────────────────────────────
@@ -163,6 +165,39 @@ async function svgToPngBlob(svgString) {
   const ctx = canvas.getContext('2d')
   ctx.drawImage(img, 0, 0, 512, 512)
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+}
+
+// Resize a user-uploaded image to a square JPEG (~50-100 KB) before upload.
+// - Center-crops to square so circular avatar display has no gaps
+// - Scales to 512×512 (avatar display is much smaller — 32 to 96 px)
+// - Outputs JPEG @ 0.85 quality (visually identical to original at this size)
+// - Strips EXIF metadata (privacy win — no GPS, camera info)
+// - createImageBitmap with imageOrientation: 'from-image' honors EXIF rotation
+//   so portrait phone photos don't end up sideways
+async function resizeImageToBlob(file, maxDim = 512) {
+  let bitmap
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+  } catch {
+    // Older Safari fallback — orientation may be wrong on some phone photos
+    bitmap = await createImageBitmap(file)
+  }
+
+  // Center-crop to square using the shorter side
+  const sourceSize = Math.min(bitmap.width, bitmap.height)
+  const sx = (bitmap.width  - sourceSize) / 2
+  const sy = (bitmap.height - sourceSize) / 2
+
+  const canvas = document.createElement('canvas')
+  canvas.width  = maxDim
+  canvas.height = maxDim
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(bitmap, sx, sy, sourceSize, sourceSize, 0, 0, maxDim, maxDim)
+  bitmap.close?.()
+
+  return await new Promise(resolve =>
+    canvas.toBlob(resolve, 'image/jpeg', 0.85)
+  )
 }
 
 export default function Profile() {
@@ -318,7 +353,7 @@ export default function Profile() {
       return
     }
     if (file.size > AVATAR_MAX_SIZE) {
-      setAvatarError('Image must be under 2 MB')
+      setAvatarError('Image must be under 20 MB')
       return
     }
 
@@ -327,13 +362,22 @@ export default function Profile() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not signed in')
 
-      const ext = file.name.split('.').pop().toLowerCase()
-      const filePath = `${session.user.id}/avatar.${ext}`
+      // Resize/compress to 512×512 JPEG before upload (~50-100 KB)
+      const resizedBlob = await resizeImageToBlob(file, 512)
+      if (!resizedBlob) throw new Error('Could not process image')
+
+      const filePath = `${session.user.id}/avatar.jpg`
+
+      // Best-effort cleanup of any old DiceBear PNG so each user keeps exactly one file
+      await supabase.storage
+        .from('avatars')
+        .remove([`${session.user.id}/avatar.png`])
+        .catch(() => {})
 
       // Upload (upsert) to avatars bucket
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true, contentType: file.type })
+        .upload(filePath, resizedBlob, { upsert: true, contentType: 'image/jpeg' })
       if (uploadError) throw uploadError
 
       // Get public URL and append cache-busting timestamp
@@ -417,6 +461,13 @@ export default function Profile() {
       if (!pngBlob) throw new Error('Could not generate avatar image')
 
       const filePath = `${session.user.id}/avatar.png`
+
+      // Best-effort cleanup of any old uploaded JPEG so each user keeps exactly one file
+      await supabase.storage
+        .from('avatars')
+        .remove([`${session.user.id}/avatar.jpg`])
+        .catch(() => {})
+
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, pngBlob, { upsert: true, contentType: 'image/png' })
