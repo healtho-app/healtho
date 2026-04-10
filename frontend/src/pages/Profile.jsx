@@ -146,26 +146,23 @@ function randomSeed() {
   return Math.random().toString(36).substring(2, 12)
 }
 
-// Convert SVG string to PNG Blob via canvas (avoids storing SVG which can contain JS)
+// Convert SVG string to PNG Blob via canvas (avoids storing SVG which can contain JS).
+// Uses a data URL instead of a blob URL because Vercel/strict CSPs block blob: in <img src>.
 async function svgToPngBlob(svgString) {
-  const svgBlob = new Blob([svgString], { type: 'image/svg+xml' })
-  const url = URL.createObjectURL(svgBlob)
-  try {
-    const img = new Image()
-    await new Promise((resolve, reject) => {
-      img.onload = resolve
-      img.onerror = reject
-      img.src = url
-    })
-    const canvas = document.createElement('canvas')
-    canvas.width = 512
-    canvas.height = 512
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(img, 0, 0, 512, 512)
-    return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
-  } finally {
-    URL.revokeObjectURL(url)
-  }
+  // unescape() handles non-ASCII chars before btoa()
+  const dataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)))
+  const img = new Image()
+  await new Promise((resolve, reject) => {
+    img.onload = resolve
+    img.onerror = () => reject(new Error('Failed to load generated SVG'))
+    img.src = dataUrl
+  })
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(img, 0, 0, 512, 512)
+  return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
 }
 
 export default function Profile() {
