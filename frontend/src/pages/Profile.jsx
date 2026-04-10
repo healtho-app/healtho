@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { createAvatar } from '@dicebear/core'
+import { dylan } from '@dicebear/collection'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 import { useProfile } from '../contexts/ProfileContext'
@@ -131,6 +133,41 @@ function inputCls(hasError) {
 const AVATAR_MAX_SIZE = 2 * 1024 * 1024 // 2 MB
 const AVATAR_TYPES   = ['image/jpeg', 'image/png', 'image/webp']
 
+// ── DiceBear (Dylan) helpers ─────────────────────────────────────────────────
+function dylanDataUri(seed) {
+  return createAvatar(dylan, { seed, size: 256, radius: 50 }).toDataUri()
+}
+
+function dylanSvg(seed) {
+  return createAvatar(dylan, { seed, size: 256, radius: 50 }).toString()
+}
+
+function randomSeed() {
+  return Math.random().toString(36).substring(2, 12)
+}
+
+// Convert SVG string to PNG Blob via canvas (avoids storing SVG which can contain JS)
+async function svgToPngBlob(svgString) {
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(svgBlob)
+  try {
+    const img = new Image()
+    await new Promise((resolve, reject) => {
+      img.onload = resolve
+      img.onerror = reject
+      img.src = url
+    })
+    const canvas = document.createElement('canvas')
+    canvas.width = 512
+    canvas.height = 512
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0, 512, 512)
+    return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export default function Profile() {
   const [params]  = useSearchParams()
   const navigate  = useNavigate()
@@ -166,6 +203,8 @@ export default function Profile() {
   const fileInputRef = useRef(null)
   const [uploading, setUploading] = useState(false)
   const [avatarError, setAvatarError] = useState('')
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerSeeds, setPickerSeeds] = useState(() => Array.from({ length: 8 }, randomSeed))
 
   // Close country dropdown on outside click
   useEffect(() => {
@@ -358,6 +397,55 @@ export default function Profile() {
     }
   }
 
+  const openPicker = () => {
+    setPickerSeeds(Array.from({ length: 8 }, randomSeed))
+    setPickerOpen(true)
+    setAvatarError('')
+  }
+
+  const shufflePicker = () => {
+    setPickerSeeds(Array.from({ length: 8 }, randomSeed))
+  }
+
+  const handleDicebearSelect = async (seed) => {
+    setPickerOpen(false)
+    setUploading(true)
+    setAvatarError('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not signed in')
+
+      const svg = dylanSvg(seed)
+      const pngBlob = await svgToPngBlob(svg)
+      if (!pngBlob) throw new Error('Could not generate avatar image')
+
+      const filePath = `${session.user.id}/avatar.png`
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, pngBlob, { upsert: true, contentType: 'image/png' })
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', session.user.id)
+      if (updateError) throw updateError
+
+      setProfile(p => ({ ...p, avatar: publicUrl }))
+      setDraft(d => ({ ...d, avatar: publicUrl }))
+      await refreshProfile()
+    } catch (err) {
+      setAvatarError(err.message || 'Could not save generated avatar')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const saveEdit = async () => {
     const errs = validate({ ...draft, unit_system: profile.unit_system })
     // Phone validation
@@ -470,7 +558,15 @@ export default function Profile() {
               />
             </div>
             {/* Avatar actions */}
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-3 flex-wrap justify-center">
+              <button
+                onClick={openPicker}
+                disabled={uploading}
+                className="text-primary text-xs font-semibold hover:text-primary/80 transition-colors flex items-center gap-1 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                Generate avatar
+              </button>
               {profile.avatar && !uploading && (
                 <button
                   onClick={handleAvatarRemove}
@@ -486,6 +582,47 @@ export default function Profile() {
                 <span className="material-symbols-outlined text-sm">error</span>
                 {avatarError}
               </p>
+            )}
+
+            {/* DiceBear picker — inline grid */}
+            {pickerOpen && (
+              <div className="w-full bg-slate-900 border border-primary/30 rounded-xl p-4 mb-3">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-slate-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-primary text-base">auto_awesome</span>
+                    Pick an avatar
+                  </p>
+                  <button
+                    onClick={() => setPickerOpen(false)}
+                    className="text-slate-500 hover:text-slate-300"
+                    title="Close"
+                  >
+                    <span className="material-symbols-outlined text-base">close</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {pickerSeeds.map(seed => (
+                    <button
+                      key={seed}
+                      onClick={() => handleDicebearSelect(seed)}
+                      className="aspect-square rounded-full overflow-hidden border-2 border-slate-700 hover:border-primary transition-all hover:scale-105"
+                      title="Select this avatar"
+                    >
+                      <img src={dylanDataUri(seed)} alt="" className="w-full h-full" />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={shufflePicker}
+                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">shuffle</span>
+                  Shuffle
+                </button>
+                <p className="text-slate-600 text-[10px] mt-2 text-center">
+                  Avatars by Natalia Spivak · <a href="https://www.dicebear.com/styles/dylan/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 underline">Dylan</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-400 underline">CC BY 4.0</a>
+                </p>
+              </div>
             )}
             <h1 className="text-white text-3xl font-extrabold tracking-tight">{profile.name}</h1>
             {profile.username && (
