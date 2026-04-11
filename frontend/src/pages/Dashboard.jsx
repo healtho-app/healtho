@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { WATER_SERVING_ML } from '../data/foods'
-import Header       from '../components/Header'
-import CalorieRing  from '../components/CalorieRing'
-import MacroCard    from '../components/MacroCard'
-import WaterTracker from '../components/WaterTracker'
-import MealSection  from '../components/MealSection'
-import LogFoodModal from '../components/LogFoodModal'
+import { useProfile }  from '../contexts/ProfileContext'
+import Header            from '../components/Header'
+import CalorieRing       from '../components/CalorieRing'
+import MacroCard         from '../components/MacroCard'
+import WaterTracker      from '../components/WaterTracker'
+import MealSection       from '../components/MealSection'
+import LogFoodModal      from '../components/LogFoodModal'
+import ProfileLoadError  from '../components/ProfileLoadError'
 
 const MEAL_META = [
   { id: 'breakfast', emoji: '🌅', name: 'Breakfast', defaultOpen: true  },
@@ -48,14 +50,30 @@ const localDateStr = (d = new Date()) =>
 const MAX_HISTORY_DAYS = 30   // how far back the user can navigate
 
 export default function Dashboard() {
+  // Profile comes from the shared ProfileContext (HLTH-586/588). Dashboard
+  // previously had its own fetchProfile — removed in HLTH-585 so there's a
+  // single source of truth for profile data + error handling across Header
+  // and Dashboard.
+  const {
+    profile,
+    loading,
+    errorType: profileErrorType,
+    retrying: profileRetrying,
+    retryProfile,
+  } = useProfile()
+
   const [logOpen,      setLogOpen]      = useState(false)
   const [logMeal,      setLogMeal]      = useState(null)
-  const [profile,      setProfile]      = useState(null)
-  const [loading,      setLoading]      = useState(true)
   const [logs,         setLogs]         = useState([])
   const [streak,       setStreak]       = useState(0)
   const [selectedDate, setSelectedDate] = useState(() => localDateStr())
   const [editEntry,    setEditEntry]    = useState(null)   // item being edited
+
+  // Is the dashboard still usable in the current state?
+  // - network / unknown errors: partial fallback (keep food logs, show banner)
+  // - auth / notfound: full blocking fallback (nothing useful to show)
+  const profileErrorBlocks  = profileErrorType === 'auth' || profileErrorType === 'notfound'
+  const profileErrorPartial = profileErrorType === 'network' || profileErrorType === 'unknown'
 
   // ── Date navigation ────────────────────────────────────────────────────────
   const today   = localDateStr()
@@ -92,22 +110,9 @@ export default function Dashboard() {
     return long
   })()
 
-  // ── Fetch profile ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    async function fetchProfile() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { setLoading(false); return }
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, username, timezone, daily_calorie_goal, weight_kg, height_cm, age, bmi, activity_level')
-        .eq('id', session.user.id)
-        .maybeSingle()
-      if (error) console.error('[Dashboard] profile fetch error:', error.message)
-      setProfile(data)
-      setLoading(false)
-    }
-    fetchProfile()
-  }, [])
+  // Profile is now provided by ProfileContext — no local fetch here. This
+  // eliminates the duplicate fetch bug where Dashboard and Header could be
+  // out of sync on the same page (HLTH-585/586).
 
   // ── Fetch food logs for selectedDate ─────────────────────────────────────
   const fetchLogs = useCallback(async () => {
@@ -240,12 +245,49 @@ export default function Dashboard() {
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
   const username  = profile?.username ? `@${profile.username}` : null
 
+  // ── Blocking error fallback ────────────────────────────────────────────────
+  // For auth/notfound errors there's no meaningful dashboard to render — the
+  // user must re-auth or finish onboarding. Short-circuit with a fullpage card
+  // (Header + footer still render for navigation).
+  if (profileErrorBlocks) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header rightLabel="My Profile" rightTo="/profile" rightIcon="person" showLogout />
+        <main className="flex-1 flex items-center justify-center px-4 py-10">
+          <div className="w-full max-w-[520px]">
+            <ProfileLoadError
+              errorType={profileErrorType}
+              onRetry={retryProfile}
+              retrying={profileRetrying}
+              variant="fullpage"
+            />
+          </div>
+        </main>
+        <footer className="py-6 px-6 text-center">
+          <p className="text-slate-700 text-xs">© {new Date().getFullYear()} Healtho. All rights reserved.</p>
+        </footer>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header rightLabel="My Profile" rightTo="/profile" rightIcon="person" showLogout />
 
       <main className="flex-1 flex items-start justify-center px-4 py-10">
         <div className="w-full max-w-[520px] space-y-4">
+
+          {/* Non-blocking profile error banner — for network / unknown errors.
+              Food logs / water / streak continue to render below so the user's
+              tracked data is never held hostage by a flaky profile fetch. */}
+          {profileErrorPartial && (
+            <ProfileLoadError
+              errorType={profileErrorType}
+              onRetry={retryProfile}
+              retrying={profileRetrying}
+              variant="banner"
+            />
+          )}
 
           {/* Greeting */}
           <div className="mb-2">
@@ -292,7 +334,13 @@ export default function Dashboard() {
           </div>
 
           {/* Calorie goal banner */}
-          {loading ? <Skeleton className="h-16 w-full" /> : (
+          {loading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : profileErrorPartial ? (
+            // Partial error: showing "0 kcal" would be misleading. Hide the
+            // banner entirely — the alert banner above already explains.
+            null
+          ) : (
             <div className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-3 flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Daily Calorie Goal</p>
@@ -307,8 +355,11 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Calorie ring — live consumed from food_logs */}
-          <CalorieRing consumed={Math.round(totalCalories)} goal={calorieGoal} burned={0} />
+          {/* Calorie ring — live consumed from food_logs. Hidden during a
+              partial profile error since the goal would be 0 and misleading. */}
+          {!profileErrorPartial && (
+            <CalorieRing consumed={Math.round(totalCalories)} goal={calorieGoal} burned={0} />
+          )}
 
           {/* Macro strip */}
           <div className="grid grid-cols-4 gap-3">
