@@ -1,10 +1,23 @@
-const stats = [
-  { value: '\u2014',    label: 'Active Users' },
-  { value: '\u2014/5',  label: 'User Rating' },
-  { value: '\u2014',    label: 'Meals Tracked' },
-]
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
 
 export default function StatsBar() {
+  const [userCount, setUserCount] = useState(null)
+
+  useEffect(() => {
+    async function fetchCount() {
+      const { data, error } = await supabase.rpc('get_user_count')
+      if (!error && typeof data === 'number') setUserCount(data)
+    }
+    fetchCount()
+  }, [])
+
+  const stats = [
+    { value: userCount != null ? userCount.toLocaleString() : '—', label: 'Active Users' },
+    { value: '—/5',  label: 'User Rating' },
+    { value: '—',    label: 'Meals Tracked' },
+  ]
+
   return (
     <div className="flex items-center gap-8 sm:gap-12 mt-12">
       {stats.map(({ value, label }, i) => (
