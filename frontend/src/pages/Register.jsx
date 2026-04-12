@@ -263,6 +263,16 @@ export default function Register() {
     if (field === 'email') setIsDuplicate(false)
   }
 
+  // Height/weight: strip negatives on change (covers paste), block keys (covers typing)
+  const setPositiveNum = (field) => (e) => {
+    const val = e.target.value.replace(/-/g, '')
+    setForm(f => ({ ...f, [field]: val }))
+    if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
+  }
+  const blockNegativeKeys = (e) => {
+    if (['-', 'e', 'E', '+'].includes(e.key)) e.preventDefault()
+  }
+
   // Username: auto-lowercase, strip invalid chars
   const setUsername = (e) => {
     const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
@@ -836,7 +846,8 @@ export default function Register() {
                       <span className="material-symbols-outlined text-primary text-xl">height</span>Height
                     </label>
                     <div className="relative">
-                      <input type="number" min="0" value={form.height} onChange={set('height')}
+                      <input type="number" min="0" value={form.height}
+                        onChange={setPositiveNum('height')} onKeyDown={blockNegativeKeys}
                         placeholder={form.unit_system === 'metric' ? '175' : '69'}
                         className={inputClass(errors, 'height', 'pr-14')} />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
@@ -850,7 +861,8 @@ export default function Register() {
                       <span className="material-symbols-outlined text-primary text-xl">monitor_weight</span>Weight
                     </label>
                     <div className="relative">
-                      <input type="number" min="0" value={form.weight} onChange={set('weight')}
+                      <input type="number" min="0" value={form.weight}
+                        onChange={setPositiveNum('weight')} onKeyDown={blockNegativeKeys}
                         placeholder={form.unit_system === 'metric' ? '70' : '154'}
                         className={inputClass(errors, 'weight', 'pr-14')} />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">

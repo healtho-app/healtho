@@ -328,6 +328,16 @@ export default function Profile() {
     if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
   }
 
+  // Height/weight: strip negatives on change (covers paste), block keys (covers typing)
+  const setDraftPositiveNum = (field) => (e) => {
+    const val = e.target.value.replace(/-/g, '')
+    setDraft(d => ({ ...d, [field]: val }))
+    if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
+  }
+  const blockNegativeKeys = (e) => {
+    if (['-', 'e', 'E', '+'].includes(e.key)) e.preventDefault()
+  }
+
   const startEdit = () => {
     setDraft({ ...profile })
     setErrors({})
@@ -815,7 +825,8 @@ export default function Profile() {
                     <input
                       type="number" min="0"
                       value={draft.height}
-                      onChange={setDraftField('height')}
+                      onChange={setDraftPositiveNum('height')}
+                      onKeyDown={blockNegativeKeys}
                       placeholder={draft.unit_system === 'imperial' ? '69' : '175'}
                       className={`${inputCls(errors.height)} pr-10`}
                     />
@@ -832,7 +843,8 @@ export default function Profile() {
                     <input
                       type="number" min="0"
                       value={draft.weight}
-                      onChange={setDraftField('weight')}
+                      onChange={setDraftPositiveNum('weight')}
+                      onKeyDown={blockNegativeKeys}
                       placeholder={draft.unit_system === 'imperial' ? '154' : '70'}
                       className={`${inputCls(errors.weight)} pr-10`}
                     />
