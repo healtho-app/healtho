@@ -807,7 +807,8 @@ export default function Profile() {
                 <input
                   type="number" min="13" max="120"
                   value={draft.age}
-                  onChange={setDraftField('age')}
+                  onChange={setDraftPositiveNum('age')}
+                  onKeyDown={blockNegativeKeys}
                   placeholder="e.g. 27"
                   className={inputCls(errors.age)}
                 />

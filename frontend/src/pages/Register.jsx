@@ -834,7 +834,8 @@ export default function Register() {
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">calendar_today</span>Age
                   </label>
-                  <input type="number" min="10" max="120" value={form.age} onChange={set('age')}
+                  <input type="number" min="10" max="120" value={form.age}
+                    onChange={setPositiveNum('age')} onKeyDown={blockNegativeKeys}
                     placeholder="e.g. 27" className={inputClass(errors, 'age')} />
                   <FieldError message={errors.age} />
                 </div>
