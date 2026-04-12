@@ -314,7 +314,7 @@ export default function Profile() {
 
   // Live-computed values from current profile (or draft while editing)
   const view     = editing ? draft : profile
-  const imperial = profile.unit_system === 'imperial'
+  const imperial = (editing ? draft.unit_system : profile.unit_system) === 'imperial'
   const viewWeightKg = imperial ? parseFloat(view.weight) * 0.453592 : parseFloat(view.weight)
   const viewHeightCm = imperial ? parseFloat(view.height) * 2.54     : parseFloat(view.height)
   const bmi      = calcBMI(viewWeightKg, viewHeightCm)
@@ -339,6 +339,29 @@ export default function Profile() {
   const cancelEdit = () => {
     setEditing(false)
     setErrors({})
+  }
+
+  // ── Unit system toggle — live-converts height/weight between metric ↔ imperial
+  const toggleUnitSystem = (newSystem) => {
+    if (newSystem === draft.unit_system) return
+
+    const h = parseFloat(draft.height)
+    const w = parseFloat(draft.weight)
+    const updated = { ...draft, unit_system: newSystem }
+
+    if (newSystem === 'imperial' && draft.unit_system === 'metric') {
+      // cm → in, kg → lb
+      if (!isNaN(h) && h > 0) updated.height = String(parseFloat((h / 2.54).toFixed(1)))
+      if (!isNaN(w) && w > 0) updated.weight = String(parseFloat((w / 0.453592).toFixed(1)))
+    } else if (newSystem === 'metric' && draft.unit_system === 'imperial') {
+      // in → cm, lb → kg
+      if (!isNaN(h) && h > 0) updated.height = String(parseFloat((h * 2.54).toFixed(1)))
+      if (!isNaN(w) && w > 0) updated.weight = String(parseFloat((w * 0.453592).toFixed(1)))
+    }
+
+    setDraft(updated)
+    // Clear stale validation errors since values just changed
+    if (errors.height || errors.weight) setErrors(er => ({ ...er, height: '', weight: '' }))
   }
 
   const handleAvatarUpload = async (e) => {
@@ -495,7 +518,7 @@ export default function Profile() {
   }
 
   const saveEdit = async () => {
-    const errs = validate({ ...draft, unit_system: profile.unit_system })
+    const errs = validate(draft)
     // Phone validation
     const phoneErr = validatePhone(draft.phone)
     if (phoneErr) errs.phone = phoneErr
@@ -508,7 +531,7 @@ export default function Profile() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not signed in')
 
-      const imperial  = profile.unit_system === 'imperial'
+      const imperial  = draft.unit_system === 'imperial'
       const weight_kg = imperial ? parseFloat((parseFloat(draft.weight) * 0.453592).toFixed(2)) : parseFloat(draft.weight)
       const height_cm = imperial ? parseFloat((parseFloat(draft.height) * 2.54).toFixed(2))     : parseFloat(draft.height)
       const age       = parseInt(draft.age)
@@ -525,6 +548,7 @@ export default function Profile() {
           bmi,
           activity_level:     draft.activity,
           daily_calorie_goal: newCalories,
+          unit_system:        draft.unit_system,
           country:            draft.country.trim()  || null,
           phone_number:       draft.phone.trim()    || null,
         })
@@ -744,6 +768,26 @@ export default function Profile() {
                 Edit your metrics
               </p>
 
+              {/* Unit system toggle */}
+              <div className="flex mb-2">
+                <div className="flex h-11 w-full items-center rounded-xl bg-slate-800/50 p-1.5">
+                  {[
+                    { value: 'metric',   label: 'Metric (kg, cm)' },
+                    { value: 'imperial', label: 'Imperial (lb, in)' },
+                  ].map(opt => (
+                    <button key={opt.value} type="button"
+                      onClick={() => toggleUnitSystem(opt.value)}
+                      className={`flex cursor-pointer h-full grow items-center justify-center rounded-lg px-4 transition-all text-sm font-semibold ${
+                        draft.unit_system === opt.value
+                          ? 'bg-slate-700 text-primary'
+                          : 'text-slate-400 hover:text-slate-300'
+                      }`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Age */}
               <div className="flex flex-col gap-1">
                 <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
@@ -772,10 +816,10 @@ export default function Profile() {
                       type="number" min="0"
                       value={draft.height}
                       onChange={setDraftField('height')}
-                      placeholder={profile.unit_system === 'imperial' ? '69' : '175'}
+                      placeholder={draft.unit_system === 'imperial' ? '69' : '175'}
                       className={`${inputCls(errors.height)} pr-10`}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{profile.unit_system === 'imperial' ? 'in' : 'cm'}</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{draft.unit_system === 'imperial' ? 'in' : 'cm'}</span>
                   </div>
                   <FieldError message={errors.height} />
                 </div>
@@ -789,10 +833,10 @@ export default function Profile() {
                       type="number" min="0"
                       value={draft.weight}
                       onChange={setDraftField('weight')}
-                      placeholder={profile.unit_system === 'imperial' ? '154' : '70'}
+                      placeholder={draft.unit_system === 'imperial' ? '154' : '70'}
                       className={`${inputCls(errors.weight)} pr-10`}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{profile.unit_system === 'imperial' ? 'lb' : 'kg'}</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{draft.unit_system === 'imperial' ? 'lb' : 'kg'}</span>
                   </div>
                   <FieldError message={errors.weight} />
                 </div>
