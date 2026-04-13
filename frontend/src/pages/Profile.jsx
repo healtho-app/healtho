@@ -93,15 +93,32 @@ function getBmiInfo(bmi) {
   return             { label: 'Obese range',         color: 'text-red-400',    bar: 'bg-red-400',    pct: 92 }
 }
 
-function validate({ age, height, weight, unit_system }) {
+// Compute total inches from separate ft + in fields
+function totalInchesFromFtIn(ft, inches) {
+  return (parseInt(ft) || 0) * 12 + (parseInt(inches) || 0)
+}
+
+function validate({ age, height, heightFt, heightIn, weight, unit_system }) {
   const errors = {}
-  const a = parseInt(age), h = parseFloat(height), w = parseFloat(weight)
+  const a = parseInt(age), w = parseFloat(weight)
   const imperial = unit_system === 'imperial'
   if (!age || isNaN(a) || a < 13 || a > 120) errors.age = 'Enter a valid age (13–120)'
-  if (!height || isNaN(h) || h <= 0) {
-    errors.height = 'Enter a valid height'
-  } else if (imperial ? (h < 20 || h > 108) : (h < 50 || h > 300)) {
-    errors.height = imperial ? 'Enter a valid height (20–108 in)' : 'Enter a valid height (50–300 cm)'
+
+  if (imperial) {
+    const ft = parseInt(heightFt)
+    const totalIn = totalInchesFromFtIn(heightFt, heightIn)
+    if (!heightFt || isNaN(ft) || ft < 0) {
+      errors.height = 'Enter a valid height'
+    } else if (totalIn < 20 || totalIn > 108) {
+      errors.height = 'Height must be between 1\'8″ and 9\'0″'
+    }
+  } else {
+    const h = parseFloat(height)
+    if (!height || isNaN(h) || h <= 0) {
+      errors.height = 'Enter a valid height'
+    } else if (h < 50 || h > 300) {
+      errors.height = 'Enter a valid height (50–300 cm)'
+    }
   }
   if (!weight || isNaN(w) || w <= 0) {
     errors.weight = 'Enter a valid weight'
@@ -285,9 +302,17 @@ export default function Profile() {
       }
       if (data) {
         const imperial = data.unit_system === 'imperial'
-        const heightDisplay = data.height_cm != null
-          ? (imperial ? String(parseFloat((data.height_cm / 2.54).toFixed(1))) : String(data.height_cm))
-          : fallback.height
+        let heightDisplay = fallback.height, heightFtDisplay = '', heightInDisplay = ''
+        if (data.height_cm != null) {
+          if (imperial) {
+            const totalIn = data.height_cm / 2.54
+            heightFtDisplay = String(Math.floor(totalIn / 12))
+            heightInDisplay = String(Math.round(totalIn % 12))
+            heightDisplay = '' // not used in imperial mode
+          } else {
+            heightDisplay = String(data.height_cm)
+          }
+        }
         const weightDisplay = data.weight_kg != null
           ? (imperial ? String(parseFloat((data.weight_kg / 0.453592).toFixed(1))) : String(data.weight_kg))
           : fallback.weight
@@ -297,6 +322,8 @@ export default function Profile() {
           email:       data.email         || fallback.email,
           age:         data.age != null   ? String(data.age) : fallback.age,
           height:      heightDisplay,
+          heightFt:    heightFtDisplay,
+          heightIn:    heightInDisplay,
           weight:      weightDisplay,
           activity:    data.activity_level || fallback.activity,
           country:     data.country        || '',
@@ -316,7 +343,7 @@ export default function Profile() {
   const view     = editing ? draft : profile
   const imperial = (editing ? draft.unit_system : profile.unit_system) === 'imperial'
   const viewWeightKg = imperial ? parseFloat(view.weight) * 0.453592 : parseFloat(view.weight)
-  const viewHeightCm = imperial ? parseFloat(view.height) * 2.54     : parseFloat(view.height)
+  const viewHeightCm = imperial ? totalInchesFromFtIn(view.heightFt, view.heightIn) * 2.54 : parseFloat(view.height)
   const bmi      = calcBMI(viewWeightKg, viewHeightCm)
   const calories = calcCalories(viewWeightKg, viewHeightCm, parseInt(view.age), view.activity)
   const bmiInfo  = getBmiInfo(bmi)
@@ -332,7 +359,8 @@ export default function Profile() {
   const setDraftPositiveNum = (field) => (e) => {
     const val = e.target.value.replace(/-/g, '')
     setDraft(d => ({ ...d, [field]: val }))
-    if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
+    const errorField = (field === 'heightFt' || field === 'heightIn') ? 'height' : field
+    if (errors[errorField]) setErrors(er => ({ ...er, [errorField]: '' }))
   }
   const blockNegativeKeys = (e) => {
     if (['-', 'e', 'E', '+'].includes(e.key)) e.preventDefault()
@@ -354,23 +382,31 @@ export default function Profile() {
   // ── Unit system toggle — live-converts height/weight between metric ↔ imperial
   const toggleUnitSystem = (newSystem) => {
     if (newSystem === draft.unit_system) return
-
-    const h = parseFloat(draft.height)
-    const w = parseFloat(draft.weight)
     const updated = { ...draft, unit_system: newSystem }
+    const w = parseFloat(draft.weight)
 
     if (newSystem === 'imperial' && draft.unit_system === 'metric') {
-      // cm → in, kg → lb
-      if (!isNaN(h) && h > 0) updated.height = String(parseFloat((h / 2.54).toFixed(1)))
+      // cm → ft + in, kg → lb
+      const cm = parseFloat(draft.height)
+      if (!isNaN(cm) && cm > 0) {
+        const totalIn = cm / 2.54
+        updated.heightFt = String(Math.floor(totalIn / 12))
+        updated.heightIn = String(Math.round(totalIn % 12))
+        updated.height = ''
+      }
       if (!isNaN(w) && w > 0) updated.weight = String(parseFloat((w / 0.453592).toFixed(1)))
     } else if (newSystem === 'metric' && draft.unit_system === 'imperial') {
-      // in → cm, lb → kg
-      if (!isNaN(h) && h > 0) updated.height = String(parseFloat((h * 2.54).toFixed(1)))
+      // ft + in → cm, lb → kg
+      const totalIn = totalInchesFromFtIn(draft.heightFt, draft.heightIn)
+      if (totalIn > 0) {
+        updated.height = String(parseFloat((totalIn * 2.54).toFixed(1)))
+        updated.heightFt = ''
+        updated.heightIn = ''
+      }
       if (!isNaN(w) && w > 0) updated.weight = String(parseFloat((w * 0.453592).toFixed(1)))
     }
 
     setDraft(updated)
-    // Clear stale validation errors since values just changed
     if (errors.height || errors.weight) setErrors(er => ({ ...er, height: '', weight: '' }))
   }
 
@@ -543,7 +579,8 @@ export default function Profile() {
 
       const imperial  = draft.unit_system === 'imperial'
       const weight_kg = imperial ? parseFloat((parseFloat(draft.weight) * 0.453592).toFixed(2)) : parseFloat(draft.weight)
-      const height_cm = imperial ? parseFloat((parseFloat(draft.height) * 2.54).toFixed(2))     : parseFloat(draft.height)
+      const totalIn   = imperial ? totalInchesFromFtIn(draft.heightFt, draft.heightIn) : 0
+      const height_cm = imperial ? parseFloat((totalIn * 2.54).toFixed(2)) : parseFloat(draft.height)
       const age       = parseInt(draft.age)
       const bmi       = calculateBMI(weight_kg, height_cm)
 
@@ -755,7 +792,7 @@ export default function Profile() {
               {[
                 { icon: 'calendar_today', label: 'Age',    value: profile.age,    sub: 'years old'   },
                 { icon: 'monitor_heart',  label: 'BMI',    value: bmi || '—',     sub: bmiInfo?.label || '—', subColor: bmiInfo?.color },
-                { icon: 'height',         label: 'Height', value: profile.height, sub: profile.unit_system === 'imperial' ? 'inches' : 'centimetres' },
+                { icon: 'height',         label: 'Height', value: profile.unit_system === 'imperial' ? `${profile.heightFt || 0}'${profile.heightIn || 0}"` : profile.height, sub: profile.unit_system === 'imperial' ? 'feet / inches' : 'centimetres' },
                 { icon: 'monitor_weight', label: 'Weight', value: profile.weight, sub: profile.unit_system === 'imperial' ? 'pounds' : 'kilograms'   },
               ].map(s => (
                 <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-1">
@@ -783,7 +820,7 @@ export default function Profile() {
                 <div className="flex h-11 w-full items-center rounded-xl bg-slate-800/50 p-1.5">
                   {[
                     { value: 'metric',   label: 'Metric (kg, cm)' },
-                    { value: 'imperial', label: 'Imperial (lb, in)' },
+                    { value: 'imperial', label: 'Imperial (lb, ft)' },
                   ].map(opt => (
                     <button key={opt.value} type="button"
                       onClick={() => toggleUnitSystem(opt.value)}
@@ -822,17 +859,41 @@ export default function Profile() {
                     <span className="material-symbols-outlined text-primary text-base">height</span>
                     Height
                   </label>
-                  <div className="relative">
-                    <input
-                      type="number" min="0"
-                      value={draft.height}
-                      onChange={setDraftPositiveNum('height')}
-                      onKeyDown={blockNegativeKeys}
-                      placeholder={draft.unit_system === 'imperial' ? '69' : '175'}
-                      className={`${inputCls(errors.height)} pr-10`}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{draft.unit_system === 'imperial' ? 'in' : 'cm'}</span>
-                  </div>
+                  {draft.unit_system === 'imperial' ? (
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input type="number" min="0" max="9"
+                          value={draft.heightFt}
+                          onChange={setDraftPositiveNum('heightFt')}
+                          onKeyDown={blockNegativeKeys}
+                          placeholder="5"
+                          className={`${inputCls(errors.height)} pr-8`}
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-sm">ft</span>
+                      </div>
+                      <div className="relative flex-1">
+                        <input type="number" min="0" max="11"
+                          value={draft.heightIn}
+                          onChange={setDraftPositiveNum('heightIn')}
+                          onKeyDown={blockNegativeKeys}
+                          placeholder="7"
+                          className={`${inputCls(errors.height)} pr-8`}
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-sm">in</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input type="number" min="0"
+                        value={draft.height}
+                        onChange={setDraftPositiveNum('height')}
+                        onKeyDown={blockNegativeKeys}
+                        placeholder="175"
+                        className={`${inputCls(errors.height)} pr-10`}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">cm</span>
+                    </div>
+                  )}
                   <FieldError message={errors.height} />
                 </div>
                 <div className="flex flex-col gap-1">

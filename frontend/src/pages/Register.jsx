@@ -111,16 +111,34 @@ function validateStep1({ name, username, email, password }) {
   return errors
 }
 
-function validateStep3({ age, height, weight, unit_system }) {
+// Compute total inches from separate ft + in fields
+function totalInchesFromFtIn(ft, inches) {
+  return (parseInt(ft) || 0) * 12 + (parseInt(inches) || 0)
+}
+
+function validateStep3({ age, height, heightFt, heightIn, weight, unit_system }) {
   const errors = {}
-  const a = parseInt(age), h = parseFloat(height), w = parseFloat(weight)
+  const a = parseInt(age), w = parseFloat(weight)
   const imperial = unit_system === 'imperial'
-  if (!age    || isNaN(a) || a < 10 || a > 120)  errors.age = 'Enter a valid age between 10 and 120'
-  if (!height || isNaN(h) || h <= 0) {
-    errors.height = 'Enter a valid height'
-  } else if (imperial ? (h < 20 || h > 108) : (h < 50 || h > 300)) {
-    errors.height = imperial ? 'Enter a valid height (20–108 in)' : 'Enter a valid height (50–300 cm)'
+  if (!age || isNaN(a) || a < 10 || a > 120) errors.age = 'Enter a valid age between 10 and 120'
+
+  if (imperial) {
+    const ft = parseInt(heightFt)
+    const totalIn = totalInchesFromFtIn(heightFt, heightIn)
+    if (!heightFt || isNaN(ft) || ft < 0) {
+      errors.height = 'Enter a valid height'
+    } else if (totalIn < 20 || totalIn > 108) {
+      errors.height = 'Height must be between 1\'8″ and 9\'0″'
+    }
+  } else {
+    const h = parseFloat(height)
+    if (!height || isNaN(h) || h <= 0) {
+      errors.height = 'Enter a valid height'
+    } else if (h < 50 || h > 300) {
+      errors.height = 'Enter a valid height (50–300 cm)'
+    }
   }
+
   if (!weight || isNaN(w) || w <= 0) {
     errors.weight = 'Enter a valid weight'
   } else if (imperial ? (w < 44 || w > 1100) : (w < 20 || w > 500)) {
@@ -247,7 +265,7 @@ export default function Register() {
   const [form, setForm] = useState({
     name: '', username: '', email: '', password: '',
     unit_system: 'metric',
-    age: '', height: '', weight: '',
+    age: '', height: '', heightFt: '', heightIn: '', weight: '',
     activity: '',
     country: '', phone: '',
   })
@@ -267,7 +285,37 @@ export default function Register() {
   const setPositiveNum = (field) => (e) => {
     const val = e.target.value.replace(/-/g, '')
     setForm(f => ({ ...f, [field]: val }))
-    if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
+    // heightFt/heightIn share the 'height' error key
+    const errorField = (field === 'heightFt' || field === 'heightIn') ? 'height' : field
+    if (errors[errorField]) setErrors(er => ({ ...er, [errorField]: '' }))
+  }
+
+  // Unit system toggle — converts height/weight between metric ↔ imperial
+  const switchUnitSystem = (newSystem) => {
+    if (newSystem === form.unit_system) return
+    const updated = { ...form, unit_system: newSystem }
+    if (newSystem === 'imperial' && form.unit_system === 'metric') {
+      const cm = parseFloat(form.height)
+      if (!isNaN(cm) && cm > 0) {
+        const totalIn = cm / 2.54
+        updated.heightFt = String(Math.floor(totalIn / 12))
+        updated.heightIn = String(Math.round(totalIn % 12))
+        updated.height = ''
+      }
+      const kg = parseFloat(form.weight)
+      if (!isNaN(kg) && kg > 0) updated.weight = String(parseFloat((kg / 0.453592).toFixed(1)))
+    } else if (newSystem === 'metric' && form.unit_system === 'imperial') {
+      const totalIn = totalInchesFromFtIn(form.heightFt, form.heightIn)
+      if (totalIn > 0) {
+        updated.height = String(parseFloat((totalIn * 2.54).toFixed(1)))
+        updated.heightFt = ''
+        updated.heightIn = ''
+      }
+      const lb = parseFloat(form.weight)
+      if (!isNaN(lb) && lb > 0) updated.weight = String(parseFloat((lb * 0.453592).toFixed(1)))
+    }
+    setForm(updated)
+    if (errors.height || errors.weight) setErrors(er => ({ ...er, height: '', weight: '' }))
   }
   const blockNegativeKeys = (e) => {
     if (['-', 'e', 'E', '+'].includes(e.key)) e.preventDefault()
@@ -300,7 +348,8 @@ export default function Register() {
     if (searchParams.get('google') === '1') setStep(3)
   }, [searchParams])
 
-  const bmi     = calcBMI(parseFloat(form.weight), parseFloat(form.height), form.unit_system)
+  const imperialHeight = form.unit_system === 'imperial' ? totalInchesFromFtIn(form.heightFt, form.heightIn) : 0
+  const bmi     = calcBMI(parseFloat(form.weight), form.unit_system === 'imperial' ? imperialHeight : parseFloat(form.height), form.unit_system)
   const bmiInfo = bmi ? getBmiInfo(bmi) : null
 
   const goTo = (n) => {
@@ -487,7 +536,8 @@ export default function Register() {
 
       const isImperial = form.unit_system === 'imperial'
       const weight_kg  = isImperial ? parseFloat((parseFloat(form.weight) * 0.453592).toFixed(2)) : parseFloat(form.weight)
-      const height_cm  = isImperial ? parseFloat((parseFloat(form.height) * 2.54).toFixed(2))    : parseFloat(form.height)
+      const totalIn    = isImperial ? totalInchesFromFtIn(form.heightFt, form.heightIn) : 0
+      const height_cm  = isImperial ? parseFloat((totalIn * 2.54).toFixed(2)) : parseFloat(form.height)
       const bmiVal     = parseFloat((weight_kg / Math.pow(height_cm / 100, 2)).toFixed(1))
 
       const { error } = await supabase.from('profiles').upsert({
@@ -524,7 +574,8 @@ export default function Register() {
 
       const isImperial  = form.unit_system === 'imperial'
       const weight_kg   = isImperial ? parseFloat(form.weight) * 0.453592 : parseFloat(form.weight)
-      const height_cm   = isImperial ? parseFloat(form.height) * 2.54     : parseFloat(form.height)
+      const totalIn4    = isImperial ? totalInchesFromFtIn(form.heightFt, form.heightIn) : 0
+      const height_cm   = isImperial ? totalIn4 * 2.54 : parseFloat(form.height)
       const bmr         = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(form.age)
       const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
       const tdee        = Math.round(bmr * multipliers[form.activity])
@@ -549,7 +600,9 @@ export default function Register() {
 
       const params = new URLSearchParams({
         name: displayName, username: form.username, email: displayEmail,
-        age: form.age, height: form.height, weight: form.weight,
+        age: form.age,
+        height: form.unit_system === 'imperial' ? String(totalInchesFromFtIn(form.heightFt, form.heightIn)) : form.height,
+        weight: form.weight,
         activity: form.activity, daily_calorie_goal: tdee,
       })
       navigate('/profile?' + params.toString())
@@ -813,10 +866,10 @@ export default function Register() {
                 <div className="flex h-12 w-full items-center rounded-xl bg-slate-800/50 p-1.5">
                   {[
                     { value: 'metric',   label: 'Metric (kg, cm)' },
-                    { value: 'imperial', label: 'Imperial (lb, in)' },
+                    { value: 'imperial', label: 'Imperial (lb, ft)' },
                   ].map(opt => (
                     <button key={opt.value} type="button"
-                      onClick={() => setForm(f => ({ ...f, unit_system: opt.value }))}
+                      onClick={() => switchUnitSystem(opt.value)}
                       className={`flex cursor-pointer h-full grow items-center justify-center rounded-lg px-4 transition-all text-base font-semibold ${
                         form.unit_system === opt.value
                           ? 'bg-slate-700 text-primary'
@@ -846,15 +899,32 @@ export default function Register() {
                     <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
                       <span className="material-symbols-outlined text-primary text-xl">height</span>Height
                     </label>
-                    <div className="relative">
-                      <input type="number" min="0" value={form.height}
-                        onChange={setPositiveNum('height')} onKeyDown={blockNegativeKeys}
-                        placeholder={form.unit_system === 'metric' ? '175' : '69'}
-                        className={inputClass(errors, 'height', 'pr-14')} />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
-                        {form.unit_system === 'metric' ? 'cm' : 'in'}
-                      </span>
-                    </div>
+                    {form.unit_system === 'imperial' ? (
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input type="number" min="0" max="9" value={form.heightFt}
+                            onChange={setPositiveNum('heightFt')} onKeyDown={blockNegativeKeys}
+                            placeholder="5"
+                            className={inputClass(errors, 'height', 'pr-8')} />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">ft</span>
+                        </div>
+                        <div className="relative flex-1">
+                          <input type="number" min="0" max="11" value={form.heightIn}
+                            onChange={setPositiveNum('heightIn')} onKeyDown={blockNegativeKeys}
+                            placeholder="7"
+                            className={inputClass(errors, 'height', 'pr-8')} />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">in</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <input type="number" min="0" value={form.height}
+                          onChange={setPositiveNum('height')} onKeyDown={blockNegativeKeys}
+                          placeholder="175"
+                          className={inputClass(errors, 'height', 'pr-14')} />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">cm</span>
+                      </div>
+                    )}
                     <FieldError message={errors.height} />
                   </div>
                   <div className="flex flex-col gap-1">
