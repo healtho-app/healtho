@@ -150,11 +150,16 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
     const { data: { session } } = await supabase.auth.getSession()
     const userId = session?.user?.id || null
 
+    // PostgREST .or() uses commas as delimiters — strip commas from the
+    // search term so food names like "TACO BELL, Bean Burrito" don't break
+    // the filter parser. Replacing with space still matches via ILIKE.
+    const safe = q.replace(/,/g, ' ').replace(/\s+/g, ' ').trim()
+
     const { data, error: searchError } = await supabase
       .from('foods')
       .select('*')
       .eq('type', type)
-      .or(`normalized_name.ilike.%${q.toLowerCase()}%,name.ilike.%${q}%`)
+      .or(`normalized_name.ilike.%${safe.toLowerCase()}%,name.ilike.%${safe}%`)
       .order('is_verified', { ascending: false })
       .limit(10)
 
