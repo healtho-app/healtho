@@ -106,6 +106,38 @@ async function searchUSDA(query) {
   }
 }
 
+// ── Macro card — defined OUTSIDE LogFoodModal so React keeps a stable ────────
+// ── component identity across re-renders (fixes focus loss on edit) ──────────
+function MacroCard({ field, label, value, color, unit, isPinned, estimatedValue, onEdit, onAcceptEstimate }) {
+  const showEstimate = isPinned && estimatedValue != null && Math.abs((value || 0) - estimatedValue) > 0.05
+  return (
+    <div className={`rounded-xl py-2 px-1 relative ${isPinned ? 'bg-slate-700 border border-primary/30' : 'bg-slate-800'}`}>
+      <input
+        type="number"
+        min="0"
+        step="0.1"
+        value={value || 0}
+        onChange={(e) => onEdit(field, e.target.value)}
+        onKeyDown={(e) => { if (['-', 'e', 'E', '+'].includes(e.key)) e.preventDefault() }}
+        className={`font-mono font-bold text-base text-center w-full bg-transparent focus:outline-none ${color}`}
+      />
+      <p className="text-slate-500 text-[10px] font-semibold mt-0.5 text-center">{label}{unit && ` (${unit})`}</p>
+      {isPinned && (
+        <span className="absolute top-1 right-1 text-primary text-[8px]">✏️</span>
+      )}
+      {showEstimate && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onAcceptEstimate(field) }}
+          className="mt-1 w-full text-center text-[9px] text-green-400/80 hover:text-green-300 transition-colors cursor-pointer"
+          title="Click to use estimated value"
+        >
+          Est: {estimatedValue} ↩
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ── Debounce hook for search ─────────────────────────────────────────────────
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value)
@@ -525,26 +557,24 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
       .then(({ data }) => setPopular(data || []))
   }, [open, itemType, isEditing])
 
-  // ── Macro card component (editable) ────────────────────────────────────────
-  const MacroCard = ({ field, label, value, color, unit = '' }) => {
-    const isPinned = pinnedFields.has(field)
-    return (
-      <div className={`rounded-xl py-2 px-1 relative ${isPinned ? 'bg-slate-700 border border-primary/30' : 'bg-slate-800'}`}>
-        <input
-          type="number"
-          min="0"
-          step="0.1"
-          value={value || 0}
-          onChange={(e) => handleMacroEdit(field, e.target.value)}
-          onKeyDown={(e) => { if (['-', 'e', 'E', '+'].includes(e.key)) e.preventDefault() }}
-          className={`font-mono font-bold text-base text-center w-full bg-transparent focus:outline-none ${color}`}
-        />
-        <p className="text-slate-500 text-[10px] font-semibold mt-0.5 text-center">{label}{unit && ` (${unit})`}</p>
-        {isPinned && (
-          <span className="absolute top-1 right-1 text-primary text-[8px]">✏️</span>
-        )}
-      </div>
-    )
+  // ── Estimated values (proportional to baseMacros × qty) ─────────────────────
+  const estimatedMacros = baseMacros ? {
+    calories: Math.round(baseMacros.calories * qty * 10) / 10,
+    protein:  Math.round(baseMacros.protein  * qty * 10) / 10,
+    carbs:    Math.round(baseMacros.carbs    * qty * 10) / 10,
+    fat:      Math.round(baseMacros.fat      * qty * 10) / 10,
+    fiber:    Math.round(baseMacros.fiber    * qty * 10) / 10,
+  } : null
+
+  // Accept the proportional estimate for a single field (unpin it)
+  const acceptEstimate = (field) => {
+    if (!estimatedMacros) return
+    setMacros(prev => ({ ...prev, [field]: estimatedMacros[field] }))
+    setPinnedFields(prev => {
+      const next = new Set(prev)
+      next.delete(field)
+      return next
+    })
   }
 
   return (
@@ -611,19 +641,30 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
 
             {/* Editable macro cards */}
             <div className="grid grid-cols-4 gap-2 text-center">
-              <MacroCard field="calories" label="Calories" value={macros.calories} color="text-primary" unit="kcal" />
-              <MacroCard field="protein"  label="Protein"  value={macros.protein}  color="text-blue-400" unit="g" />
-              <MacroCard field="carbs"    label="Carbs"    value={macros.carbs}    color="text-yellow-400" unit="g" />
-              <MacroCard field="fat"      label="Fat"      value={macros.fat}      color="text-red-400" unit="g" />
+              <MacroCard field="calories" label="Calories" value={macros.calories} color="text-primary" unit="kcal"
+                isPinned={pinnedFields.has('calories')} estimatedValue={estimatedMacros?.calories}
+                onEdit={handleMacroEdit} onAcceptEstimate={acceptEstimate} />
+              <MacroCard field="protein" label="Protein" value={macros.protein} color="text-blue-400" unit="g"
+                isPinned={pinnedFields.has('protein')} estimatedValue={estimatedMacros?.protein}
+                onEdit={handleMacroEdit} onAcceptEstimate={acceptEstimate} />
+              <MacroCard field="carbs" label="Carbs" value={macros.carbs} color="text-yellow-400" unit="g"
+                isPinned={pinnedFields.has('carbs')} estimatedValue={estimatedMacros?.carbs}
+                onEdit={handleMacroEdit} onAcceptEstimate={acceptEstimate} />
+              <MacroCard field="fat" label="Fat" value={macros.fat} color="text-red-400" unit="g"
+                isPinned={pinnedFields.has('fat')} estimatedValue={estimatedMacros?.fat}
+                onEdit={handleMacroEdit} onAcceptEstimate={acceptEstimate} />
             </div>
 
             {/* Reset overrides */}
             {pinnedFields.size > 0 && (
-              <button onClick={resetPins}
-                className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 px-1">
-                <span className="material-symbols-outlined text-xs">restart_alt</span>
-                Reset to recommended values
-              </button>
+              <div className="flex items-center justify-between px-1">
+                <button onClick={resetPins}
+                  className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs">restart_alt</span>
+                  Reset all to estimates
+                </button>
+                <span className="text-[10px] text-slate-600">Tap "Est" on any field to accept</span>
+              </div>
             )}
 
             {/* Estimation disclaimer */}
@@ -871,19 +912,30 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
 
             {/* Editable macro cards */}
             <div className="grid grid-cols-4 gap-2 text-center">
-              <MacroCard field="calories" label="Calories" value={macros.calories} color="text-primary" unit="kcal" />
-              <MacroCard field="protein"  label="Protein"  value={macros.protein}  color="text-blue-400" unit="g" />
-              <MacroCard field="carbs"    label="Carbs"    value={macros.carbs}    color="text-yellow-400" unit="g" />
-              <MacroCard field="fat"      label="Fat"      value={macros.fat}      color="text-red-400" unit="g" />
+              <MacroCard field="calories" label="Calories" value={macros.calories} color="text-primary" unit="kcal"
+                isPinned={pinnedFields.has('calories')} estimatedValue={estimatedMacros?.calories}
+                onEdit={handleMacroEdit} onAcceptEstimate={acceptEstimate} />
+              <MacroCard field="protein" label="Protein" value={macros.protein} color="text-blue-400" unit="g"
+                isPinned={pinnedFields.has('protein')} estimatedValue={estimatedMacros?.protein}
+                onEdit={handleMacroEdit} onAcceptEstimate={acceptEstimate} />
+              <MacroCard field="carbs" label="Carbs" value={macros.carbs} color="text-yellow-400" unit="g"
+                isPinned={pinnedFields.has('carbs')} estimatedValue={estimatedMacros?.carbs}
+                onEdit={handleMacroEdit} onAcceptEstimate={acceptEstimate} />
+              <MacroCard field="fat" label="Fat" value={macros.fat} color="text-red-400" unit="g"
+                isPinned={pinnedFields.has('fat')} estimatedValue={estimatedMacros?.fat}
+                onEdit={handleMacroEdit} onAcceptEstimate={acceptEstimate} />
             </div>
 
             {/* Reset overrides */}
             {pinnedFields.size > 0 && (
-              <button onClick={resetPins}
-                className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 px-1 mt-3">
-                <span className="material-symbols-outlined text-xs">restart_alt</span>
-                Reset to recommended values
-              </button>
+              <div className="flex items-center justify-between px-1 mt-3">
+                <button onClick={resetPins}
+                  className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs">restart_alt</span>
+                  Reset all to estimates
+                </button>
+                <span className="text-[10px] text-slate-600">Tap "Est" on any field to accept</span>
+              </div>
             )}
 
             {/* Estimation disclaimer */}
