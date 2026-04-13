@@ -279,22 +279,24 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
 
     // If this is a USDA result, cache it in our foods table
     if (food._usda) {
+      const { data: { session } } = await supabase.auth.getSession()
       const { data: cached } = await supabase
         .from('foods')
         .insert({
-          name:            food.name,
-          normalized_name: food.name.toLowerCase(),
-          emoji:           '🔬',
-          type:            food.type || 'food',
-          calories:        food.calories,
-          protein_g:       food.protein_g,
-          carbs_g:         food.carbs_g,
-          fat_g:           food.fat_g,
-          fiber_g:         food.fiber_g,
-          serving:         food.serving,
-          source:          'usda',
-          is_verified:     true,
-          usda_fdc_id:     food.usda_fdc_id,
+          name:               food.name,
+          normalized_name:    food.name.toLowerCase(),
+          emoji:              '🔬',
+          type:               food.type || 'food',
+          calories:           food.calories,
+          protein_g:          food.protein_g,
+          carbs_g:            food.carbs_g,
+          fat_g:              food.fat_g,
+          fiber_g:            food.fiber_g,
+          serving:            food.serving,
+          source:             'usda',
+          is_verified:        true,
+          usda_fdc_id:        food.usda_fdc_id,
+          created_by_user_id: session?.user?.id,
         })
         .select()
         .maybeSingle()
