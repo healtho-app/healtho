@@ -42,7 +42,7 @@ function usdaNutrient(nutrients, number) {
   return Math.round((n?.value || 0) * 10) / 10
 }
 
-// Search USDA and map to our food schema (values per 100g)
+// Search USDA and map to our food schema — use real serving sizes when available
 async function searchUSDA(query) {
   if (!USDA_API_KEY || !query.trim()) return []
   try {
@@ -55,22 +55,51 @@ async function searchUSDA(query) {
     const res = await fetch(`${USDA_SEARCH_URL}?${params}`)
     if (!res.ok) return []
     const json = await res.json()
-    return (json.foods || []).map(f => ({
-      _usda:          true,
-      usda_fdc_id:    String(f.fdcId),
-      name:           f.description,
-      normalized_name: f.description.toLowerCase(),
-      emoji:          '🔬',
-      type:           'food',
-      calories:       usdaNutrient(f.foodNutrients, 208),
-      protein_g:      usdaNutrient(f.foodNutrients, 203),
-      carbs_g:        usdaNutrient(f.foodNutrients, 205),
-      fat_g:          usdaNutrient(f.foodNutrients, 204),
-      fiber_g:        usdaNutrient(f.foodNutrients, 291),
-      serving:        '100g',
-      source:         'usda',
-      is_verified:    true,
-    }))
+    return (json.foods || []).map(f => {
+      // USDA nutrients are always per 100g — scale to real serving if available
+      const per100 = {
+        calories: usdaNutrient(f.foodNutrients, 208),
+        protein:  usdaNutrient(f.foodNutrients, 203),
+        carbs:    usdaNutrient(f.foodNutrients, 205),
+        fat:      usdaNutrient(f.foodNutrients, 204),
+        fiber:    usdaNutrient(f.foodNutrients, 291),
+      }
+
+      const srvSize = f.servingSize          // e.g. 50 (grams)
+      const srvUnit = f.servingSizeUnit       // e.g. "g"
+      const srvText = f.householdServingFullText // e.g. "1 large"
+
+      // Build serving label + scale factor
+      let serving = '100g'
+      let scale   = 1 // 1 = per 100g (no scaling)
+
+      if (srvSize && srvUnit?.toLowerCase() === 'g' && srvSize !== 100) {
+        scale = srvSize / 100
+        const grams = `${Math.round(srvSize)}g`
+        serving = srvText ? `${srvText} (${grams})` : grams
+      } else if (srvText) {
+        serving = srvText
+      }
+
+      const round1 = (v) => Math.round(v * scale * 10) / 10
+
+      return {
+        _usda:          true,
+        usda_fdc_id:    String(f.fdcId),
+        name:           f.description,
+        normalized_name: f.description.toLowerCase(),
+        emoji:          '🔬',
+        type:           'food',
+        calories:       round1(per100.calories),
+        protein_g:      round1(per100.protein),
+        carbs_g:        round1(per100.carbs),
+        fat_g:          round1(per100.fat),
+        fiber_g:        round1(per100.fiber),
+        serving,
+        source:         'usda',
+        is_verified:    true,
+      }
+    })
   } catch (err) {
     console.warn('[LogFoodModal] USDA search failed:', err.message)
     return []
