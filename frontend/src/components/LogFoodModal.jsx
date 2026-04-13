@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { searchFoods, searchDrinks, POPULAR_FOODS, POPULAR_DRINKS } from '../data/foods'
 
 const MEAL_TYPES = [
   { id: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -12,7 +11,7 @@ const MEAL_TYPES = [
 const SERVING_UNITS = ['g', 'oz', 'ml', 'cup', 'tbsp', 'tsp', 'piece', 'serving']
 
 const EMPTY_CUSTOM = {
-  id:          null,   // set if editing from user library
+  id:          null,
   name:        '',
   brand:       '',
   servingSize: '100',
@@ -22,7 +21,7 @@ const EMPTY_CUSTOM = {
   carbs:       '',
   fat:         '',
   fiber:       '',
-  autoCalc:    true,   // auto-compute calories from macros
+  autoCalc:    true,
 }
 
 // Auto-calculate calories from macros (4/4/9 rule)
@@ -33,14 +32,26 @@ const calcCalories = (protein, carbs, fat) =>
 const localDateStr = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
+// ── Debounce hook for search ─────────────────────────────────────────────────
+function useDebounce(value, delay) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
+}
+
 export default function LogFoodModal({ open, defaultMeal = null, logDate, editEntry = null, onClose, onLogged }) {
   const searchRef  = useRef(null)
-  const savingRef  = useRef(false)   // ref guard — prevents double-submit on rapid clicks
+  const savingRef  = useRef(false)
   const isEditing  = !!editEntry
 
+  // ── Core state ─────────────────────────────────────────────────────────────
   const [itemType,    setItemType]    = useState('food')
   const [query,       setQuery]       = useState('')
   const [results,     setResults]     = useState([])
+  const [searching,   setSearching]   = useState(false)
   const [selected,    setSelected]    = useState(null)
   const [meal,        setMeal]        = useState(defaultMeal || '')
   const [qty,         setQty]         = useState(1)
@@ -48,50 +59,75 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
   const [error,       setError]       = useState('')
   const [customMode,  setCustomMode]  = useState(false)
   const [custom,      setCustom]      = useState(EMPTY_CUSTOM)
-  const [userLibrary, setUserLibrary] = useState([])  // saved custom foods
 
-  // ── Fetch user's custom food library ──────────────────────────────────────
-  const fetchLibrary = async () => {
+  // ── Macro editing state ────────────────────────────────────────────────────
+  // baseMacros = per-serving reference values from the food DB
+  // macros     = live values (qty-scaled + any user overrides)
+  // pinnedFields = set of fields the user has manually edited
+  const [baseMacros,    setBaseMacros]    = useState(null)
+  const [macros,        setMacros]        = useState({ calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 })
+  const [pinnedFields,  setPinnedFields]  = useState(new Set())
+
+  const debouncedQuery = useDebounce(query, 250)
+
+  // ── Search Supabase foods table ────────────────────────────────────────────
+  const searchFoods = useCallback(async (q, type) => {
+    if (!q || q.trim().length < 1) return []
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const { data } = await supabase
-      .from('custom_foods')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false })
-    setUserLibrary(data || [])
-  }
+    const userId = session?.user?.id || null
 
-  // ── Search: combines local DB + user library ───────────────────────────────
-  const searchAll = (q, type) => {
-    const dbResults  = type === 'food' ? searchFoods(q) : searchDrinks(q)
-    const libResults = userLibrary
-      .filter(f =>
-        f.name.toLowerCase().includes(q.toLowerCase()) ||
-        (f.brand && f.brand.toLowerCase().includes(q.toLowerCase()))
-      )
-      .map(f => ({
-        id:        `custom_${f.id}`,
-        supabaseId: f.id,
-        emoji:     '⭐',
-        name:      f.name,
-        brand:     f.brand,
-        serving:   `${f.serving_size} ${f.serving_unit}`,
-        calories:  f.calories,
-        protein_g: f.protein_g,
-        carbs_g:   f.carbs_g,
-        fat_g:     f.fat_g,
-        fiber_g:   f.fiber_g,
-        isCustom:  true,
-      }))
-    return [...libResults, ...dbResults]
-  }
+    const { data, error: searchError } = await supabase
+      .from('foods')
+      .select('*')
+      .eq('type', type)
+      .or(`normalized_name.ilike.%${q.toLowerCase()}%,name.ilike.%${q}%`)
+      .order('is_verified', { ascending: false })
+      .limit(10)
+
+    if (searchError) {
+      console.error('[LogFoodModal] search error:', searchError.message)
+      return []
+    }
+
+    // Filter: show global foods + only this user's custom foods
+    return (data || []).filter(f => !f.created_by_user_id || f.created_by_user_id === userId)
+  }, [])
+
+  // ── Run search when debounced query changes ────────────────────────────────
+  useEffect(() => {
+    if (!debouncedQuery.trim() || selected || customMode || isEditing) {
+      if (!debouncedQuery.trim()) setResults([])
+      return
+    }
+    let cancelled = false
+    setSearching(true)
+    searchFoods(debouncedQuery, itemType).then(data => {
+      if (!cancelled) {
+        setResults(data)
+        setSearching(false)
+      }
+    })
+    return () => { cancelled = true }
+  }, [debouncedQuery, itemType, searchFoods, selected, customMode, isEditing])
+
+  // ── Recalculate unpinned macros when qty changes ───────────────────────────
+  useEffect(() => {
+    if (!baseMacros) return
+    setMacros(prev => {
+      const updated = { ...prev }
+      for (const key of Object.keys(baseMacros)) {
+        if (!pinnedFields.has(key)) {
+          updated[key] = Math.round(baseMacros[key] * qty * 10) / 10
+        }
+      }
+      return updated
+    })
+  }, [qty, baseMacros, pinnedFields])
 
   // ── Reset on open/close ───────────────────────────────────────────────────
   useEffect(() => {
     if (open) {
       if (editEntry) {
-        // Edit mode — pre-fill from existing log entry
         setMeal(editEntry.meal_type || defaultMeal || '')
         setQty(editEntry.quantity || 1)
         setItemType('food')
@@ -100,12 +136,30 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
         setResults([])
         setSelected(null)
         setError('')
+        // Set up macros from the edit entry
+        const unitCals = editEntry.unitCalories || 0
+        const unitP    = editEntry.unitProtein  || 0
+        const unitC    = editEntry.unitCarbs    || 0
+        const unitF    = editEntry.unitFat      || 0
+        const unitFi   = editEntry.unitFiber    || 0
+        const base = { calories: unitCals, protein: unitP, carbs: unitC, fat: unitF, fiber: unitFi }
+        setBaseMacros(base)
+        setMacros({
+          calories: Math.round(unitCals * (editEntry.quantity || 1) * 10) / 10,
+          protein:  Math.round(unitP * (editEntry.quantity || 1) * 10) / 10,
+          carbs:    Math.round(unitC * (editEntry.quantity || 1) * 10) / 10,
+          fat:      Math.round(unitF * (editEntry.quantity || 1) * 10) / 10,
+          fiber:    Math.round(unitFi * (editEntry.quantity || 1) * 10) / 10,
+        })
+        setPinnedFields(new Set())
       } else {
         setItemType('food')
         setMeal(defaultMeal || '')
         setCustomMode(false)
         setCustom(EMPTY_CUSTOM)
-        fetchLibrary()
+        setBaseMacros(null)
+        setMacros({ calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 })
+        setPinnedFields(new Set())
         setTimeout(() => searchRef.current?.focus(), 350)
       }
     } else {
@@ -113,26 +167,21 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
         setQuery(''); setResults([]); setSelected(null)
         setItemType('food'); setMeal(''); setQty(1); setError('')
         setCustomMode(false); setCustom(EMPTY_CUSTOM)
+        setBaseMacros(null); setMacros({ calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 })
+        setPinnedFields(new Set())
       }, 300)
     }
   }, [open, defaultMeal, editEntry])
 
+  // Clear results when switching food/drink tab
   useEffect(() => {
-    if (query.trim()) setResults(searchAll(query, itemType))
-    else setResults([])
+    setResults([])
     setSelected(null)
     setQuery('')
     setCustomMode(false)
   }, [itemType])
 
-  useEffect(() => {
-    if (!query.trim()) { setResults([]); return }
-    setResults(searchAll(query, itemType))
-  }, [query, itemType, userLibrary])
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  const scaled = (val) => Math.round((parseFloat(val) || 0) * qty * 10) / 10
-
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSelect = (food) => {
     setSelected(food)
     setQuery(food.name)
@@ -140,6 +189,35 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
     setQty(1)
     setError('')
     setCustomMode(false)
+    const base = {
+      calories: food.calories,
+      protein:  food.protein_g,
+      carbs:    food.carbs_g,
+      fat:      food.fat_g,
+      fiber:    food.fiber_g,
+    }
+    setBaseMacros(base)
+    setMacros({ ...base })
+    setPinnedFields(new Set())
+  }
+
+  const handleMacroEdit = (field, value) => {
+    const num = value === '' ? 0 : parseFloat(value) || 0
+    setMacros(prev => ({ ...prev, [field]: num }))
+    setPinnedFields(prev => new Set([...prev, field]))
+  }
+
+  const resetPins = () => {
+    setPinnedFields(new Set())
+    if (baseMacros) {
+      setMacros({
+        calories: Math.round(baseMacros.calories * qty * 10) / 10,
+        protein:  Math.round(baseMacros.protein  * qty * 10) / 10,
+        carbs:    Math.round(baseMacros.carbs    * qty * 10) / 10,
+        fat:      Math.round(baseMacros.fat      * qty * 10) / 10,
+        fiber:    Math.round(baseMacros.fiber    * qty * 10) / 10,
+      })
+    }
   }
 
   const setField = (field) => (e) =>
@@ -152,6 +230,9 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
     setCustom({ ...EMPTY_CUSTOM, name: query.trim() })
     setQty(1)
     setError('')
+    setBaseMacros(null)
+    setMacros({ calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 })
+    setPinnedFields(new Set())
   }
 
   const exitCustomMode = () => {
@@ -160,18 +241,18 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
     setSelected(null)
   }
 
-  // Display calories: auto-calc or manual
+  // Custom food helpers
   const autoCalories = calcCalories(custom.protein, custom.carbs, custom.fat)
   const displayCalories = custom.autoCalc
     ? (autoCalories > 0 ? String(autoCalories) : '')
     : custom.calories
-
   const customReady = customMode && custom.name.trim() &&
     (custom.autoCalc ? autoCalories > 0 : custom.calories !== '')
 
+  const customScaled = (val) => Math.round((parseFloat(val) || 0) * qty * 10) / 10
+
   // ── Log / Save edit ───────────────────────────────────────────────────────
   const handleLog = async () => {
-    // Ref guard — hard-block double-fire even if React batching is delayed
     if (savingRef.current) return
     savingRef.current = true
 
@@ -191,20 +272,23 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
 
       // ── EDIT MODE — UPDATE existing row ─────────────────────────────────
       if (isEditing) {
-        const perUnit   = (v) => Math.round(v * qty * 10) / 10
-        // Strip leading "N × " from stored portion to get the per-serving label
         const baseLabel = editEntry.portion?.replace(/^[\d.]+\s×\s/, '') || editEntry.name
         const { error: updateError } = await supabase
           .from('food_logs')
           .update({
-            quantity:  qty,
-            meal_type: meal,
-            calories:  perUnit(editEntry.unitCalories),
-            protein_g: perUnit(editEntry.unitProtein),
-            carbs_g:   perUnit(editEntry.unitCarbs),
-            fat_g:     perUnit(editEntry.unitFat),
-            fiber_g:   perUnit(editEntry.unitFiber),
-            portion:   `${qty} × ${baseLabel}`,
+            quantity:           qty,
+            meal_type:          meal,
+            calories:           macros.calories,
+            protein_g:          macros.protein,
+            carbs_g:            macros.carbs,
+            fat_g:              macros.fat,
+            fiber_g:            macros.fiber,
+            original_calories:  baseMacros?.calories  ?? null,
+            original_protein_g: baseMacros?.protein   ?? null,
+            original_carbs_g:   baseMacros?.carbs     ?? null,
+            original_fat_g:     baseMacros?.fat       ?? null,
+            original_fiber_g:   baseMacros?.fiber     ?? null,
+            portion:            `${qty} × ${baseLabel}`,
           })
           .eq('id', editEntry.id)
         if (updateError) throw updateError
@@ -216,57 +300,76 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
       // ── NEW LOG — INSERT ─────────────────────────────────────────────────
       const dateToLog = logDate || localDateStr()
 
-      const finalCals    = customMode ? (custom.autoCalc ? autoCalories : parseFloat(custom.calories) || 0) : null
-      const servingLabel = customMode
-        ? `${custom.servingSize} ${custom.servingUnit}${custom.brand ? ` · ${custom.brand}` : ''}`
-        : selected.serving
+      if (customMode) {
+        const finalCals    = custom.autoCalc ? autoCalories : (parseFloat(custom.calories) || 0)
+        const servingLabel = `${custom.servingSize} ${custom.servingUnit}${custom.brand ? ` · ${custom.brand}` : ''}`
 
-      const row = customMode
-        ? {
-            user_id:   session.user.id,
-            date:      dateToLog,
-            meal_type: meal,
-            food_name: custom.name.trim(),
-            calories:  scaled(finalCals),
-            protein_g: scaled(custom.protein),
-            carbs_g:   scaled(custom.carbs),
-            fat_g:     scaled(custom.fat),
-            fiber_g:   scaled(custom.fiber),
-            portion:   `${qty} × ${servingLabel}`,
-            quantity:  qty,
-          }
-        : {
-            user_id:   session.user.id,
-            date:      dateToLog,
-            meal_type: meal,
-            food_name: selected.name,
-            calories:  scaled(selected.calories),
-            protein_g: scaled(selected.protein_g),
-            carbs_g:   scaled(selected.carbs_g),
-            fat_g:     scaled(selected.fat_g),
-            fiber_g:   scaled(selected.fiber_g),
-            portion:   `${qty} × ${selected.serving}`,
-            quantity:  qty,
-          }
+        const row = {
+          user_id:            session.user.id,
+          date:               dateToLog,
+          meal_type:          meal,
+          food_name:          custom.name.trim(),
+          calories:           customScaled(finalCals),
+          protein_g:          customScaled(custom.protein),
+          carbs_g:            customScaled(custom.carbs),
+          fat_g:              customScaled(custom.fat),
+          fiber_g:            customScaled(custom.fiber),
+          original_calories:  finalCals,
+          original_protein_g: parseFloat(custom.protein) || 0,
+          original_carbs_g:   parseFloat(custom.carbs)   || 0,
+          original_fat_g:     parseFloat(custom.fat)     || 0,
+          original_fiber_g:   parseFloat(custom.fiber)   || 0,
+          portion:            `${qty} × ${servingLabel}`,
+          quantity:           qty,
+        }
 
-      const { error: insertError } = await supabase.from('food_logs').insert(row)
-      if (insertError) throw insertError
+        const { error: insertError } = await supabase.from('food_logs').insert(row)
+        if (insertError) throw insertError
 
-      // Save to user library (skip if already saved — has a supabaseId / custom.id)
-      if (customMode && !custom.id) {
-        await supabase.from('custom_foods').insert({
-          user_id:      session.user.id,
-          name:         custom.name.trim(),
-          brand:        custom.brand.trim() || null,
-          serving_size: parseFloat(custom.servingSize) || 1,
-          serving_unit: custom.servingUnit,
-          calories:     finalCals,
-          protein_g:    parseFloat(custom.protein) || 0,
-          carbs_g:      parseFloat(custom.carbs)   || 0,
-          fat_g:        parseFloat(custom.fat)     || 0,
-          fiber_g:      parseFloat(custom.fiber)   || 0,
-        })
-        // Ignore library save errors — food was still logged
+        // Save to foods table as user-created food (skip if already saved)
+        if (!custom.id) {
+          await supabase.from('foods').insert({
+            name:               custom.name.trim(),
+            normalized_name:    custom.name.trim().toLowerCase(),
+            emoji:              '⭐',
+            type:               itemType,
+            calories:           finalCals,
+            protein_g:          parseFloat(custom.protein) || 0,
+            carbs_g:            parseFloat(custom.carbs)   || 0,
+            fat_g:              parseFloat(custom.fat)     || 0,
+            fiber_g:            parseFloat(custom.fiber)   || 0,
+            serving:            `${custom.servingSize} ${custom.servingUnit}`,
+            source:             'user',
+            is_verified:        false,
+            created_by_user_id: session.user.id,
+          }).then(({ error: foodErr }) => {
+            if (foodErr) console.warn('[LogFoodModal] Could not save to foods table:', foodErr.message)
+          })
+        }
+      } else {
+        // Standard food from the foods table
+        const row = {
+          user_id:            session.user.id,
+          date:               dateToLog,
+          meal_type:          meal,
+          food_name:          selected.name,
+          food_id:            selected.id,
+          calories:           macros.calories,
+          protein_g:          macros.protein,
+          carbs_g:            macros.carbs,
+          fat_g:              macros.fat,
+          fiber_g:            macros.fiber,
+          original_calories:  baseMacros.calories,
+          original_protein_g: baseMacros.protein,
+          original_carbs_g:   baseMacros.carbs,
+          original_fat_g:     baseMacros.fat,
+          original_fiber_g:   baseMacros.fiber,
+          portion:            `${qty} × ${selected.serving}`,
+          quantity:           qty,
+        }
+
+        const { error: insertError } = await supabase.from('food_logs').insert(row)
+        if (insertError) throw insertError
       }
 
       onLogged?.()
@@ -275,13 +378,48 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
       setError(err.message || 'Could not save. Please try again.')
     } finally {
       setSaving(false)
-      savingRef.current = false   // always reset ref so modal can be used again
+      savingRef.current = false
     }
   }
 
   const handleOverlay = (e) => { if (e.target === e.currentTarget) onClose() }
-  const popularList   = itemType === 'food' ? POPULAR_FOODS : POPULAR_DRINKS
-  const noResults     = query.trim().length > 1 && results.length === 0 && !selected && !customMode
+  const noResults = debouncedQuery.trim().length > 1 && results.length === 0 && !selected && !customMode && !searching
+
+  // ── Fetch popular foods for idle state ──────────────────────────────────
+  const [popular, setPopular] = useState([])
+  useEffect(() => {
+    if (!open || isEditing) return
+    supabase
+      .from('foods')
+      .select('*')
+      .eq('type', itemType)
+      .eq('is_verified', true)
+      .order('name')
+      .limit(8)
+      .then(({ data }) => setPopular(data || []))
+  }, [open, itemType, isEditing])
+
+  // ── Macro card component (editable) ────────────────────────────────────────
+  const MacroCard = ({ field, label, value, color, unit = '' }) => {
+    const isPinned = pinnedFields.has(field)
+    return (
+      <div className={`rounded-xl py-2 px-1 relative ${isPinned ? 'bg-slate-700 border border-primary/30' : 'bg-slate-800'}`}>
+        <input
+          type="number"
+          min="0"
+          step="0.1"
+          value={value || 0}
+          onChange={(e) => handleMacroEdit(field, e.target.value)}
+          onKeyDown={(e) => { if (['-', 'e', 'E', '+'].includes(e.key)) e.preventDefault() }}
+          className={`font-mono font-bold text-base text-center w-full bg-transparent focus:outline-none ${color}`}
+        />
+        <p className="text-slate-500 text-[10px] font-semibold mt-0.5 text-center">{label}{unit && ` (${unit})`}</p>
+        {isPinned && (
+          <span className="absolute top-1 right-1 text-primary text-[8px]">✏️</span>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -296,14 +434,14 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
         </h2>
         <p className="text-slate-500 text-sm mb-4">
           {isEditing
-            ? `Editing "${editEntry?.name}" — adjust servings or move to a different meal.`
+            ? `Editing "${editEntry?.name}" — adjust servings or macros.`
             : customMode
               ? "Fill in the details — it'll be saved to your library for future use."
               : 'Search an item, set quantity, then pick a meal.'
           }
         </p>
 
-        {/* Past-date warning banner — shown when logging/editing for a non-today date */}
+        {/* Past-date warning banner */}
         {!isEditing && logDate && logDate !== localDateStr() && (
           <div className="flex items-start gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 mb-5">
             <span className="material-symbols-outlined text-yellow-400 text-base mt-0.5 flex-shrink-0">event</span>
@@ -319,7 +457,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
         {/* ── EDIT MODE UI ── */}
         {isEditing && (
           <div className="mb-5 space-y-4">
-            {/* Food info card — read-only */}
+            {/* Food info card */}
             <div className="bg-slate-900 border border-primary/20 rounded-xl p-4">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Editing</p>
               <div className="flex items-center gap-3">
@@ -345,24 +483,34 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
               </div>
             </div>
 
-            {/* Live calorie preview */}
+            {/* Editable macro cards */}
             <div className="grid grid-cols-4 gap-2 text-center">
-              {[
-                { label: 'Calories', val: Math.round(editEntry.unitCalories * qty), color: 'text-primary'    },
-                { label: 'Protein',  val: Math.round(editEntry.unitProtein  * qty * 10) / 10, color: 'text-blue-400'   },
-                { label: 'Carbs',    val: Math.round(editEntry.unitCarbs    * qty * 10) / 10, color: 'text-yellow-400' },
-                { label: 'Fat',      val: Math.round(editEntry.unitFat      * qty * 10) / 10, color: 'text-red-400'    },
-              ].map(m => (
-                <div key={m.label} className="bg-slate-900 rounded-xl py-2 px-1">
-                  <p className={`font-mono font-bold text-base ${m.color}`}>{m.val}</p>
-                  <p className="text-slate-500 text-[10px] font-semibold mt-0.5">{m.label}</p>
-                </div>
-              ))}
+              <MacroCard field="calories" label="Calories" value={macros.calories} color="text-primary" unit="kcal" />
+              <MacroCard field="protein"  label="Protein"  value={macros.protein}  color="text-blue-400" unit="g" />
+              <MacroCard field="carbs"    label="Carbs"    value={macros.carbs}    color="text-yellow-400" unit="g" />
+              <MacroCard field="fat"      label="Fat"      value={macros.fat}      color="text-red-400" unit="g" />
+            </div>
+
+            {/* Reset overrides */}
+            {pinnedFields.size > 0 && (
+              <button onClick={resetPins}
+                className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 px-1">
+                <span className="material-symbols-outlined text-xs">restart_alt</span>
+                Reset to recommended values
+              </button>
+            )}
+
+            {/* Estimation disclaimer */}
+            <div className="flex items-start gap-2 px-1">
+              <span className="material-symbols-outlined text-slate-600 text-sm mt-0.5 flex-shrink-0">info</span>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                These values are estimates and may not be 100% precise. Adjust to match your actual portion for better accuracy.
+              </p>
             </div>
           </div>
         )}
 
-        {/* Food / Drink toggle — hide in custom mode and edit mode */}
+        {/* Food / Drink toggle */}
         {!customMode && !isEditing && (
           <div className="flex gap-2 mb-5 p-1 bg-slate-900 border border-slate-800 rounded-xl">
             {[{ id: 'food', emoji: '🍽️', label: 'Food' }, { id: 'drink', emoji: '🥤', label: 'Drinks' }].map(t => (
@@ -394,6 +542,14 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
               )}
             </div>
 
+            {/* Search loading indicator */}
+            {searching && (
+              <div className="flex items-center gap-2 px-2 py-3 text-slate-500 text-sm">
+                <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                Searching…
+              </div>
+            )}
+
             {/* Results */}
             {results.length > 0 && (
               <div className="bg-slate-900 border border-slate-700 rounded-xl mb-4 overflow-hidden">
@@ -404,11 +560,14 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-white truncate">{food.name}</p>
-                        {food.isCustom && (
+                        {food.source === 'user' && (
                           <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full flex-shrink-0">saved</span>
                         )}
+                        {food.source === 'usda' && (
+                          <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full flex-shrink-0">USDA</span>
+                        )}
                       </div>
-                      <p className="text-xs text-slate-500">{food.brand ? `${food.brand} · ` : ''}{food.serving}</p>
+                      <p className="text-xs text-slate-500">{food.serving}</p>
                     </div>
                     <span className="font-mono text-sm text-slate-400 flex-shrink-0">{food.calories} kcal</span>
                   </div>
@@ -489,7 +648,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
                   </div>
                 ))}
 
-                {/* Calories — full width, auto or manual */}
+                {/* Calories — auto or manual */}
                 <div className="col-span-3 bg-slate-900 border border-primary/30 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Calories (kcal) *</label>
@@ -520,10 +679,10 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
                 </p>
                 <div className="grid grid-cols-4 gap-2 text-center">
                   {[
-                    { label: 'Calories', val: scaled(custom.autoCalc ? autoCalories : custom.calories), color: 'text-primary'    },
-                    { label: 'Protein',  val: scaled(custom.protein),  color: 'text-blue-400'   },
-                    { label: 'Carbs',    val: scaled(custom.carbs),    color: 'text-yellow-400' },
-                    { label: 'Fat',      val: scaled(custom.fat),      color: 'text-red-400'    },
+                    { label: 'Calories', val: customScaled(custom.autoCalc ? autoCalories : custom.calories), color: 'text-primary'    },
+                    { label: 'Protein',  val: customScaled(custom.protein),  color: 'text-blue-400'   },
+                    { label: 'Carbs',    val: customScaled(custom.carbs),    color: 'text-yellow-400' },
+                    { label: 'Fat',      val: customScaled(custom.fat),      color: 'text-red-400'    },
                   ].map(m => (
                     <div key={m.label} className="bg-slate-800 rounded-xl py-2 px-1">
                       <p className={`font-mono font-bold text-base ${m.color}`}>{m.val}</p>
@@ -533,7 +692,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
                 </div>
                 <p className="text-[10px] text-slate-600 mt-2 flex items-center gap-1">
                   <span className="material-symbols-outlined text-xs">bookmark</span>
-                  Will be saved to your library for future searches
+                  Will be saved to your food library
                 </p>
               </div>
             )}
@@ -549,10 +708,18 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
                 </div>
               </div>
             )}
+
+            {/* Estimation disclaimer */}
+            <div className="flex items-start gap-2 px-1">
+              <span className="material-symbols-outlined text-slate-600 text-sm mt-0.5 flex-shrink-0">info</span>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                These values are estimates and may not be 100% precise. Adjust to match your actual portion for better accuracy.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* ── Selected DB item card ── */}
+        {/* ── Selected DB item card with editable macros ── */}
         {selected && !customMode && !isEditing && (
           <div className="bg-slate-900 border border-primary/30 rounded-xl p-4 mb-5">
             <div className="flex items-center gap-3 mb-4">
@@ -560,12 +727,13 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-white font-bold">{selected.name}</p>
-                  {selected.isCustom && <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">saved</span>}
+                  {selected.source === 'user' && <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">saved</span>}
                 </div>
-                {selected.brand && <p className="text-slate-500 text-xs">{selected.brand}</p>}
                 <p className="text-slate-500 text-xs">{selected.serving} per serving</p>
               </div>
             </div>
+
+            {/* Qty stepper */}
             <div className="flex items-center gap-3 mb-4">
               <p className="text-slate-400 text-sm font-semibold flex-1">Servings</p>
               <div className="flex items-center gap-2">
@@ -574,18 +742,30 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
                 <button onClick={() => setQty(q => parseFloat((q + 0.5).toFixed(1)))} className="w-8 h-8 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center hover:bg-slate-700 transition-colors">+</button>
               </div>
             </div>
+
+            {/* Editable macro cards */}
             <div className="grid grid-cols-4 gap-2 text-center">
-              {[
-                { label: 'Calories', val: scaled(selected.calories),  color: 'text-primary'    },
-                { label: 'Protein',  val: scaled(selected.protein_g), color: 'text-blue-400'   },
-                { label: 'Carbs',    val: scaled(selected.carbs_g),   color: 'text-yellow-400' },
-                { label: 'Fat',      val: scaled(selected.fat_g),     color: 'text-red-400'    },
-              ].map(m => (
-                <div key={m.label} className="bg-slate-800 rounded-xl py-2 px-1">
-                  <p className={`font-mono font-bold text-base ${m.color}`}>{m.val}</p>
-                  <p className="text-slate-500 text-[10px] font-semibold mt-0.5">{m.label}</p>
-                </div>
-              ))}
+              <MacroCard field="calories" label="Calories" value={macros.calories} color="text-primary" unit="kcal" />
+              <MacroCard field="protein"  label="Protein"  value={macros.protein}  color="text-blue-400" unit="g" />
+              <MacroCard field="carbs"    label="Carbs"    value={macros.carbs}    color="text-yellow-400" unit="g" />
+              <MacroCard field="fat"      label="Fat"      value={macros.fat}      color="text-red-400" unit="g" />
+            </div>
+
+            {/* Reset overrides */}
+            {pinnedFields.size > 0 && (
+              <button onClick={resetPins}
+                className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 px-1 mt-3">
+                <span className="material-symbols-outlined text-xs">restart_alt</span>
+                Reset to recommended values
+              </button>
+            )}
+
+            {/* Estimation disclaimer */}
+            <div className="flex items-start gap-2 px-1 mt-3">
+              <span className="material-symbols-outlined text-slate-600 text-sm mt-0.5 flex-shrink-0">info</span>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                These values are estimates and may not be 100% precise. Adjust to match your actual portion for better accuracy.
+              </p>
             </div>
           </div>
         )}
@@ -615,29 +795,19 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
         {!query && !selected && !customMode && !isEditing && (
           <>
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">
-              {userLibrary.length > 0 ? 'Your Library' : (itemType === 'food' ? 'Popular Foods' : 'Popular Drinks')}
+              {itemType === 'food' ? 'Popular Foods' : 'Popular Drinks'}
             </p>
             <div className="space-y-1">
-              {(userLibrary.length > 0
-                ? userLibrary.slice(0, 8).map(f => ({
-                    id: `custom_${f.id}`, supabaseId: f.id, emoji: '⭐',
-                    name: f.name, brand: f.brand,
-                    serving: `${f.serving_size} ${f.serving_unit}`,
-                    calories: f.calories, protein_g: f.protein_g,
-                    carbs_g: f.carbs_g, fat_g: f.fat_g, fiber_g: f.fiber_g,
-                    isCustom: true,
-                  }))
-                : popularList
-              ).map(food => (
+              {popular.map(food => (
                 <div key={food.id} onClick={() => handleSelect(food)}
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors border border-transparent hover:border-slate-700">
                   <span className="text-xl w-10 text-center">{food.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-white truncate">{food.name}</p>
-                      {food.isCustom && <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full flex-shrink-0">saved</span>}
+                      {food.source === 'user' && <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full flex-shrink-0">saved</span>}
                     </div>
-                    <p className="text-xs text-slate-500">{food.brand ? `${food.brand} · ` : ''}{`P ${food.protein_g}g · C ${food.carbs_g}g · F ${food.fat_g}g`}</p>
+                    <p className="text-xs text-slate-500">{`P ${food.protein_g}g · C ${food.carbs_g}g · F ${food.fat_g}g`}</p>
                   </div>
                   <span className="font-mono text-sm text-slate-400 flex-shrink-0">{food.calories} kcal</span>
                 </div>

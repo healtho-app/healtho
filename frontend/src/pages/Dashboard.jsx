@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { WATER_SERVING_ML } from '../data/foods'
+// Drinks that count toward water tracker, mapped to ml per serving
+const WATER_SERVING_ML = {
+  'Water':           250,
+  'Sparkling Water': 355,
+  'Coconut Water':   240,
+  'Nimbu Pani':      250,
+}
 import { useProfile }  from '../contexts/ProfileContext'
 import Header            from '../components/Header'
 import CalorieRing       from '../components/CalorieRing'
