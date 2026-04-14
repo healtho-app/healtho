@@ -38,7 +38,7 @@ function bmiCategory(bmi) {
  * Male: +5, Female: -161, Other/unknown: -78 (midpoint)
  */
 function calculateBMR(weight_kg, height_cm, age, gender) {
-  const genderOffset = gender === 'male' ? 5 : gender === 'female' ? -161 : -78;
+  const genderOffset = gender === 'M' ? 5 : gender === 'F' ? -161 : -78;
   return 10 * weight_kg + 6.25 * height_cm - 5 * age + genderOffset;
 }
 

@@ -79,7 +79,7 @@ function calcBMI(weight, height) {
 
 function calcCalories(weight, height, age, activity, gender) {
   if (!weight || !height || !age || isNaN(weight) || isNaN(height) || isNaN(age)) return null
-  const genderOffset = gender === 'male' ? 5 : gender === 'female' ? -161 : -78
+  const genderOffset = gender === 'M' ? 5 : gender === 'F' ? -161 : -78
   const bmr = (10 * weight) + (6.25 * height) - (5 * age) + genderOffset
   const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
   return Math.round(bmr * (multipliers[activity] || 1.55))
@@ -794,7 +794,7 @@ export default function Profile() {
           {!editing && (
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: 'wc',             label: 'Gender', value: profile.gender === 'male' ? 'Male' : profile.gender === 'female' ? 'Female' : '—', sub: '' },
+                { icon: 'wc',             label: 'Gender', value: profile.gender === 'M' ? 'Male' : profile.gender === 'F' ? 'Female' : '—', sub: '' },
                 { icon: 'calendar_today', label: 'Age',    value: profile.age,    sub: 'years old'   },
                 { icon: 'monitor_heart',  label: 'BMI',    value: bmi || '—',     sub: bmiInfo?.label || '—', subColor: bmiInfo?.color },
                 { icon: 'height',         label: 'Height', value: profile.unit_system === 'imperial' ? `${profile.heightFt || 0}'${profile.heightIn || 0}"` : profile.height, sub: profile.unit_system === 'imperial' ? 'feet / inches' : 'centimetres' },
@@ -848,8 +848,8 @@ export default function Profile() {
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { value: 'male',   label: 'Male',   emoji: '♂️' },
-                    { value: 'female', label: 'Female', emoji: '♀️' },
+                    { value: 'M', label: 'Male',   emoji: '♂️' },
+                    { value: 'F', label: 'Female', emoji: '♀️' },
                   ].map(opt => (
                     <button key={opt.value} type="button"
                       onClick={() => {

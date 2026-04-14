@@ -579,7 +579,7 @@ export default function Register() {
       const weight_kg   = isImperial ? parseFloat(form.weight) * 0.453592 : parseFloat(form.weight)
       const totalIn4    = isImperial ? totalInchesFromFtIn(form.heightFt, form.heightIn) : 0
       const height_cm   = isImperial ? totalIn4 * 2.54 : parseFloat(form.height)
-      const genderOffset = form.gender === 'male' ? 5 : form.gender === 'female' ? -161 : -78
+      const genderOffset = form.gender === 'M' ? 5 : form.gender === 'F' ? -161 : -78
       const bmr         = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(form.age) + genderOffset
       const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
       const tdee        = Math.round(bmr * multipliers[form.activity])
@@ -893,8 +893,8 @@ export default function Register() {
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { value: 'male',   label: 'Male',   emoji: '♂️' },
-                      { value: 'female', label: 'Female', emoji: '♀️' },
+                      { value: 'M', label: 'Male',   emoji: '♂️' },
+                      { value: 'F', label: 'Female', emoji: '♀️' },
                     ].map(opt => (
                       <button key={opt.value} type="button"
                         onClick={() => {
