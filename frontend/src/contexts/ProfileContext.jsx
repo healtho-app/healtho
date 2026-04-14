@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 const ProfileContext = createContext(null)
 
 const PROFILE_COLUMNS =
-  'full_name, username, email, gender, age, height_cm, weight_kg, bmi, activity_level, fitness_goal, weekly_rate_kg, daily_calorie_goal, timezone, country, phone_number, avatar_url, unit_system'
+  'full_name, username, email, gender, age, height_cm, weight_kg, bmi, activity_level, fitness_goal, weekly_rate_kg, goal_weight_kg, daily_calorie_goal, timezone, country, phone_number, avatar_url, unit_system'
 
 // Timeout for the profile fetch. Supabase hanging indefinitely is a real failure
 // mode (seen on flaky mobile networks). Anything longer than this and we treat it

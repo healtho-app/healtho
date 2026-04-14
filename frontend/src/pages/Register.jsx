@@ -169,12 +169,43 @@ function validateStep3({ gender, age, height, heightFt, heightIn, weight, unit_s
   return errors
 }
 
-function validateStep5({ fitness_goal, weekly_rate_kg }) {
+function validateStep5({ fitness_goal, weekly_rate_kg, goal_weight, weight, height, heightFt, heightIn, unit_system }) {
   const errors = {}
   if (!fitness_goal) errors.fitness_goal = 'Please select your fitness goal'
   if (fitness_goal && fitness_goal !== 'maintain') {
     const rate = parseFloat(weekly_rate_kg)
     if (!weekly_rate_kg || isNaN(rate) || rate < 0.25 || rate > 1) errors.weekly_rate_kg = 'Please select a weekly rate'
+
+    // Goal weight validation
+    const gw = parseFloat(goal_weight)
+    const imperial = unit_system === 'imperial'
+    if (!goal_weight || isNaN(gw) || gw <= 0) {
+      errors.goal_weight = 'Enter your goal weight'
+    } else if (imperial ? (gw < 66 || gw > 660) : (gw < 30 || gw > 300)) {
+      errors.goal_weight = imperial ? 'Enter a valid weight (66–660 lb)' : 'Enter a valid weight (30–300 kg)'
+    } else {
+      // Convert to metric for BMI + direction checks
+      const goalKg    = imperial ? gw * 0.453592 : gw
+      const currentKg = imperial ? parseFloat(weight) * 0.453592 : parseFloat(weight)
+      const heightCm  = imperial ? totalInchesFromFtIn(heightFt, heightIn) * 2.54 : parseFloat(height)
+
+      // Direction check
+      if (fitness_goal === 'lose' && goalKg >= currentKg) {
+        errors.goal_weight = 'Goal weight must be less than your current weight for a weight loss goal'
+      } else if (fitness_goal === 'gain' && goalKg <= currentKg) {
+        errors.goal_weight = 'Goal weight must be more than your current weight for a weight gain goal'
+      }
+
+      // BMI floor/ceiling safety check
+      if (!errors.goal_weight && heightCm > 0) {
+        const goalBmi = goalKg / Math.pow(heightCm / 100, 2)
+        if (goalBmi < 18.5) {
+          errors.goal_weight = `This goal weight would put your BMI at ${goalBmi.toFixed(1)} (underweight). Please choose a higher target.`
+        } else if (goalBmi > 40) {
+          errors.goal_weight = `This goal weight would put your BMI at ${goalBmi.toFixed(1)}. Please choose a lower target.`
+        }
+      }
+    }
   }
   return errors
 }
@@ -299,7 +330,7 @@ export default function Register() {
     unit_system: 'metric',
     gender: '',
     age: '', height: '', heightFt: '', heightIn: '', weight: '',
-    fitness_goal: '', weekly_rate_kg: '0.5',
+    fitness_goal: '', weekly_rate_kg: '0.5', goal_weight: '',
     activity: '',
     country: '', phone: '',
   })
@@ -607,10 +638,16 @@ export default function Register() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Session expired. Please start over.')
 
+      const isImperialGoal = form.unit_system === 'imperial'
+      const goalWeightKg   = form.fitness_goal === 'maintain' ? null
+        : isImperialGoal ? parseFloat((parseFloat(form.goal_weight) * 0.453592).toFixed(2))
+        : parseFloat(form.goal_weight)
+
       const { error } = await supabase.from('profiles').upsert({
         id:              user.id,
         fitness_goal:    form.fitness_goal,
         weekly_rate_kg:  form.fitness_goal === 'maintain' ? null : parseFloat(form.weekly_rate_kg),
+        goal_weight_kg:  goalWeightKg,
       }, { onConflict: 'id' })
 
       if (error) throw error
@@ -1267,6 +1304,61 @@ export default function Register() {
                   <FieldError message={errors.weekly_rate_kg} />
                 </div>
               )}
+
+              {/* Goal weight input — only for Lose / Gain */}
+              {(form.fitness_goal === 'lose' || form.fitness_goal === 'gain') && (() => {
+                // Compute estimated weeks live
+                const imperial = form.unit_system === 'imperial'
+                const gwNum     = parseFloat(form.goal_weight)
+                const cwNum     = parseFloat(form.weight)
+                const rateKg    = parseFloat(form.weekly_rate_kg) || 0
+                const goalKg    = imperial && gwNum > 0 ? gwNum * 0.453592 : gwNum
+                const currentKg = imperial && cwNum > 0 ? cwNum * 0.453592 : cwNum
+                const diff      = Math.abs(currentKg - goalKg)
+                const weeks     = gwNum > 0 && cwNum > 0 && rateKg > 0 ? Math.ceil(diff / rateKg) : null
+
+                let estimate = null
+                if (weeks !== null && weeks > 0) {
+                  if (weeks < 12) estimate = `~${weeks} week${weeks === 1 ? '' : 's'}`
+                  else {
+                    const m = Math.floor(weeks / 4.33)
+                    const w = Math.round(weeks % 4.33)
+                    estimate = `~${m} month${m === 1 ? '' : 's'}${w > 0 ? `, ${w} week${w === 1 ? '' : 's'}` : ''}`
+                  }
+                }
+
+                return (
+                  <div className="mt-6">
+                    <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-2">
+                      <span className="material-symbols-outlined text-primary text-xl">flag</span>
+                      What's your goal weight?
+                    </label>
+                    <div className="relative">
+                      <input type="number" min="0"
+                        value={form.goal_weight}
+                        onChange={setPositiveNum('goal_weight')}
+                        onKeyDown={blockNegativeKeys}
+                        placeholder={imperial ? '154' : '65'}
+                        className={inputClass(errors, 'goal_weight', 'pr-14')}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
+                        {imperial ? 'lb' : 'kg'}
+                      </span>
+                    </div>
+                    <FieldError message={errors.goal_weight} />
+
+                    {/* Live estimated time to goal */}
+                    {estimate && !errors.goal_weight && (
+                      <div className="mt-3 flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-xl">
+                        <span className="material-symbols-outlined text-primary text-base">schedule</span>
+                        <p className="text-sm text-slate-300">
+                          <span className="font-semibold text-white">{estimate}</span> to reach your goal
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
 
               {/* "How we calculate" collapsible info box */}
               <details className="mt-6 group">
