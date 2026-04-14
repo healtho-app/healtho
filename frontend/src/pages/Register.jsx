@@ -59,16 +59,37 @@ function validatePhone(phone) {
   return ''
 }
 
-// ── Step config — 3 steps: details → metrics → activity ──────────────────────
+// ── Step config — 4 visible steps: details → metrics → goal → activity ───────
 // [OTP-REMOVED] Step 2 (email OTP verification) bypassed for pre-MVP testing.
 // Re-enable: turn "Confirm email" back ON in Supabase Auth settings. Step 2 UI
 // and verifyEmail/resendEmailCode functions are preserved below, just unreachable.
 const STEPS = {
-  1: { label: '1', pct: '33%',  width: '33%',  hint: "Let's start with your account details..." },
-  2: { label: '2', pct: '66%',  width: '66%',  hint: 'Check your inbox — enter the 8-digit code.' }, // [OTP-REMOVED] unreachable
-  3: { label: '2', pct: '66%',  width: '66%',  hint: 'Your personalised plan is taking shape...' },
-  4: { label: '3', pct: '100%', width: '100%', hint: 'Almost done — just one more thing!' },
+  1: { label: '1', pct: '25%',  width: '25%',  hint: "Let's start with your account details..." },
+  2: { label: '2', pct: '50%',  width: '50%',  hint: 'Check your inbox — enter the 8-digit code.' }, // [OTP-REMOVED] unreachable
+  3: { label: '2', pct: '50%',  width: '50%',  hint: 'Your personalised plan is taking shape...' },
+  5: { label: '3', pct: '75%',  width: '75%',  hint: 'Set your goal — we\u2019ll personalise your plan.' },
+  6: { label: '4', pct: '100%', width: '100%', hint: 'Almost done — just one more thing!' },
 }
+
+const GOAL_OPTIONS = [
+  { value: 'lose',     emoji: '🏋️', label: 'Lose Weight',     sub: 'Burn more than you eat to shed fat' },
+  { value: 'maintain', emoji: '⚖️', label: 'Maintain Weight', sub: 'Stay at your current weight' },
+  { value: 'gain',     emoji: '💪', label: 'Gain Weight',     sub: 'Build mass with a calorie surplus' },
+]
+
+const RATE_OPTIONS_KG = [
+  { value: '0.25', label: '0.25 kg/week', sub: 'Gentle' },
+  { value: '0.5',  label: '0.5 kg/week',  sub: 'Recommended' },
+  { value: '0.75', label: '0.75 kg/week', sub: 'Moderate' },
+  { value: '1',    label: '1 kg/week',    sub: 'Aggressive' },
+]
+
+const RATE_OPTIONS_LB = [
+  { value: '0.25', label: '0.5 lb/week',  sub: 'Gentle' },
+  { value: '0.5',  label: '1 lb/week',    sub: 'Recommended' },
+  { value: '0.75', label: '1.5 lb/week',  sub: 'Moderate' },
+  { value: '1',    label: '2 lb/week',    sub: 'Aggressive' },
+]
 
 const ACTIVITY_OPTIONS = [
   { value: 'sedentary',         emoji: '🪑', label: 'Sedentary',         sub: 'Little or no exercise, desk job' },
@@ -144,6 +165,16 @@ function validateStep3({ gender, age, height, heightFt, heightIn, weight, unit_s
     errors.weight = 'Enter a valid weight'
   } else if (imperial ? (w < 44 || w > 1100) : (w < 20 || w > 500)) {
     errors.weight = imperial ? 'Enter a valid weight (44–1100 lb)' : 'Enter a valid weight (20–500 kg)'
+  }
+  return errors
+}
+
+function validateStep5({ fitness_goal, weekly_rate_kg }) {
+  const errors = {}
+  if (!fitness_goal) errors.fitness_goal = 'Please select your fitness goal'
+  if (fitness_goal && fitness_goal !== 'maintain') {
+    const rate = parseFloat(weekly_rate_kg)
+    if (!weekly_rate_kg || isNaN(rate) || rate < 0.25 || rate > 1) errors.weekly_rate_kg = 'Please select a weekly rate'
   }
   return errors
 }
@@ -268,6 +299,7 @@ export default function Register() {
     unit_system: 'metric',
     gender: '',
     age: '', height: '', heightFt: '', heightIn: '', weight: '',
+    fitness_goal: '', weekly_rate_kg: '0.5',
     activity: '',
     country: '', phone: '',
   })
@@ -556,7 +588,7 @@ export default function Register() {
       }, { onConflict: 'id' })
 
       if (error) throw error
-      goTo(4)
+      goTo(5)
     } catch (err) {
       setServerError(err.message || 'Could not save your metrics. Please try again.')
     } finally {
@@ -564,7 +596,33 @@ export default function Register() {
     }
   }
 
-  // ── Step 4: Activity level — registration complete ────────────────────────
+  // ── Step 5: Fitness goal ───────────────────────────────────────────────────
+  const submitFitnessGoal = async () => {
+    const errs = validateStep5(form)
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+
+    setLoading(true)
+    setServerError('')
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Session expired. Please start over.')
+
+      const { error } = await supabase.from('profiles').upsert({
+        id:              user.id,
+        fitness_goal:    form.fitness_goal,
+        weekly_rate_kg:  form.fitness_goal === 'maintain' ? null : parseFloat(form.weekly_rate_kg),
+      }, { onConflict: 'id' })
+
+      if (error) throw error
+      goTo(6)
+    } catch (err) {
+      setServerError(err.message || 'Could not save your goal. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 6: Activity level — registration complete ────────────────────────
   const submitActivity = async () => {
     const errs = validateStep4(form)
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
@@ -584,12 +642,21 @@ export default function Register() {
       const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
       const tdee        = Math.round(bmr * multipliers[form.activity])
 
+      // Adjust calorie goal based on fitness goal:
+      // 1 kg body fat ≈ 7,700 kcal → per week ÷ 7 = 1,100 kcal/day per kg/week
+      // Lose: deficit (subtract), Gain: surplus (add), Maintain: no change
+      const rateKg  = form.fitness_goal === 'maintain' ? 0 : (parseFloat(form.weekly_rate_kg) || 0.5)
+      const goalAdj = form.fitness_goal === 'lose' ? -1 : form.fitness_goal === 'gain' ? 1 : 0
+      const adjustedGoal = Math.max(1200, Math.round(tdee + goalAdj * rateKg * 1100))
+
       const { error } = await supabase.from('profiles').upsert({
         id:                  user.id,
         full_name:           form.name.trim() || user.user_metadata?.full_name || '',
         email:               form.email.trim() || user.email || '',
         activity_level:      form.activity,
-        daily_calorie_goal:  tdee,
+        fitness_goal:        form.fitness_goal || null,
+        weekly_rate_kg:      form.fitness_goal === 'maintain' ? null : parseFloat(form.weekly_rate_kg) || null,
+        daily_calorie_goal:  adjustedGoal,
         registration_step:   3,
         is_onboarded:        true,
         is_profile_complete: true,
@@ -607,7 +674,7 @@ export default function Register() {
         age: form.age,
         height: form.unit_system === 'imperial' ? String(totalInchesFromFtIn(form.heightFt, form.heightIn)) : form.height,
         weight: form.weight,
-        activity: form.activity, daily_calorie_goal: tdee,
+        activity: form.activity, daily_calorie_goal: adjustedGoal,
       })
       navigate('/profile?' + params.toString())
     } catch (err) {
@@ -630,7 +697,7 @@ export default function Register() {
           <div className="flex flex-col gap-3 mb-10">
             <div className="flex items-center justify-between">
               <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">
-                Step {s.label} of 3
+                Step {s.label} of 4
               </p>
               <p className="text-primary text-sm font-bold">{s.pct}</p>
             </div>
@@ -1128,8 +1195,119 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── STEP 4: Activity Level ───────────────────────────────────────── */}
-          {step === 4 && (
+          {/* ── STEP 5: Fitness Goal ──────────────────────────────────────── */}
+          {step === 5 && (
+            <div>
+              <div className="mb-8">
+                <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">What's your goal?</h1>
+                <p className="text-slate-400 text-lg mt-2">We'll adjust your daily calorie target to match.</p>
+              </div>
+
+              {serverError && (
+                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
+                  <span className="material-symbols-outlined text-red-400">warning</span>
+                  <p className="text-red-400 text-sm font-semibold">{serverError}</p>
+                </div>
+              )}
+
+              {/* Goal cards */}
+              <div className="flex flex-col gap-3">
+                {GOAL_OPTIONS.map(opt => (
+                  <label key={opt.value}
+                    className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      form.fitness_goal === opt.value
+                        ? 'border-primary bg-primary/10'
+                        : errors.fitness_goal
+                          ? 'border-red-500/50 bg-slate-900 hover:border-red-500/70'
+                          : 'border-slate-800 bg-slate-900 hover:border-primary/50'
+                    }`}
+                    onClick={() => {
+                      setForm(f => ({ ...f, fitness_goal: opt.value }))
+                      if (errors.fitness_goal) setErrors(er => ({ ...er, fitness_goal: '' }))
+                    }}>
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">
+                      {opt.emoji}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-slate-100">{opt.label}</p>
+                      <p className="text-slate-500 text-sm">{opt.sub}</p>
+                    </div>
+                    <span className={`material-symbols-outlined text-primary transition-opacity ${form.fitness_goal === opt.value ? 'opacity-100' : 'opacity-0'}`}>
+                      check_circle
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <FieldError message={errors.fitness_goal} />
+
+              {/* Weekly rate selector — only for Lose / Gain */}
+              {(form.fitness_goal === 'lose' || form.fitness_goal === 'gain') && (
+                <div className="mt-6">
+                  <p className="text-slate-300 text-base font-semibold mb-3">
+                    How fast do you want to {form.fitness_goal === 'lose' ? 'lose' : 'gain'} weight?
+                  </p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(form.unit_system === 'imperial' ? RATE_OPTIONS_LB : RATE_OPTIONS_KG).map(opt => (
+                      <button key={opt.value} type="button"
+                        onClick={() => {
+                          setForm(f => ({ ...f, weekly_rate_kg: opt.value }))
+                          if (errors.weekly_rate_kg) setErrors(er => ({ ...er, weekly_rate_kg: '' }))
+                        }}
+                        className={`py-3 px-2 rounded-xl border-2 text-center transition-all ${
+                          form.weekly_rate_kg === opt.value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-slate-800 bg-slate-900 text-slate-400 hover:border-slate-600'
+                        }`}>
+                        <p className="text-sm font-bold">{opt.label.split('/')[0]}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{opt.sub}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <FieldError message={errors.weekly_rate_kg} />
+                </div>
+              )}
+
+              {/* "How we calculate" collapsible info box */}
+              <details className="mt-6 group">
+                <summary className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-300 text-sm font-semibold transition-colors">
+                  <span className="material-symbols-outlined text-primary text-base">info</span>
+                  How we calculate your Daily Calorie Goal
+                  <span className="material-symbols-outlined text-xs transition-transform group-open:rotate-180">expand_more</span>
+                </summary>
+                <div className="mt-3 p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-400 leading-relaxed space-y-2">
+                  <p><span className="text-slate-300 font-semibold">1. BMR</span> (Basal Metabolic Rate) — calories your body burns at rest.</p>
+                  <p className="font-mono text-[11px] text-slate-500">Male: 10W + 6.25H - 5A + 5 &nbsp;|&nbsp; Female: 10W + 6.25H - 5A - 161</p>
+                  <p><span className="text-slate-300 font-semibold">2. TDEE</span> = BMR × activity multiplier (1.2 – 1.9)</p>
+                  <p><span className="text-slate-300 font-semibold">3. Goal adjustment</span> — 1 kg of body fat ≈ 7,700 kcal</p>
+                  <ul className="list-disc list-inside space-y-1 ml-1">
+                    <li><span className="text-green-400">Lose:</span> TDEE - (rate × 1,100 kcal/day)</li>
+                    <li><span className="text-blue-400">Maintain:</span> TDEE (no change)</li>
+                    <li><span className="text-purple-400">Gain:</span> TDEE + (rate × 1,100 kcal/day)</li>
+                  </ul>
+                  <p className="text-slate-500 italic">Minimum floor: 1,200 kcal/day for safety.</p>
+                </div>
+              </details>
+
+              <div className="mt-10 flex flex-col gap-3">
+                <button onClick={submitFitnessGoal} disabled={loading}
+                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
+                  {loading ? (
+                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
+                  ) : (
+                    <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                  )}
+                </button>
+                <button onClick={() => goTo(3)}
+                  className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">
+                  Back
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 6: Activity Level ───────────────────────────────────────── */}
+          {step === 6 && (
             <div>
               <div className="mb-8">
                 <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">How active are you?</h1>
@@ -1185,7 +1363,7 @@ export default function Register() {
                     <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Finishing up…</>
                   ) : 'Create My Account 🎉'}
                 </button>
-                <button onClick={() => goTo(3)}
+                <button onClick={() => goTo(5)}
                   className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">
                   Back
                 </button>
