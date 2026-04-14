@@ -50,6 +50,9 @@ export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelC
     }
   }
 
+  // Can manual dots be reduced? (only when manualDots > waterLevel floor)
+  const canReset = manualDots > 0 && manualDots > Math.ceil(waterLevel)
+
   return (
     <div className={`bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4 transition-all duration-500${goalMet ? ' water-goal-glow' : ''}`}>
       <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0">
@@ -57,7 +60,17 @@ export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelC
       </div>
       <div className="flex-1">
         <p className="text-sm font-bold text-white">Water Intake</p>
-        <p className="text-xs text-slate-500 mt-0.5">{liters} / 2.5 L — tap to update</p>
+        <p className="text-xs text-slate-500 mt-0.5">
+          {liters} / 2.5 L — tap to update
+          {canReset && (
+            <button
+              onClick={() => setManualDots(Math.ceil(waterLevel))}
+              className="ml-2 text-water/70 hover:text-water underline transition-colors"
+            >
+              Reset
+            </button>
+          )}
+        </p>
       </div>
       <div className="flex gap-1.5">
         {Array.from({ length: TOTAL_DOTS }).map((_, i) => {
