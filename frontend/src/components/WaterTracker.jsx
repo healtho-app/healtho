@@ -8,7 +8,7 @@ const STORAGE_KEY  = 'healtho_water_manual'
 const localDateStr = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-export default function WaterTracker({ waterLevel = 0 }) {
+export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelChange }) {
   // waterLevel  — float 0–8 driven by food_logs (logged drinks) — persists via DB
   // manualDots  — integer 0–8 set by tapping — persists via localStorage (date-keyed)
   // The two sources are combined at render: totalLevel = max(waterLevel, manualDots)
@@ -34,6 +34,11 @@ export default function WaterTracker({ waterLevel = 0 }) {
   const totalLevel = Math.min(TOTAL_DOTS, Math.max(waterLevel, manualDots))
   const liters = ((totalLevel * ML_PER_DOT) / 1000).toFixed(1)
 
+  // Notify parent of level changes (for celebration triggers)
+  useEffect(() => {
+    onLevelChange?.(totalLevel)
+  }, [totalLevel, onLevelChange])
+
   const handleDot = (idx) => {
     const desired = idx < totalLevel ? idx : idx + 1  // toggle: unfill to idx, or fill to idx+1
     if (desired <= waterLevel) {
@@ -46,7 +51,7 @@ export default function WaterTracker({ waterLevel = 0 }) {
   }
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4">
+    <div className={`bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4 transition-all duration-500${goalMet ? ' water-goal-glow' : ''}`}>
       <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0">
         <span className="material-symbols-outlined text-water text-xl">water_drop</span>
       </div>

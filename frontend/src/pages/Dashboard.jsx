@@ -15,6 +15,8 @@ import WaterTracker      from '../components/WaterTracker'
 import MealSection       from '../components/MealSection'
 import LogFoodModal      from '../components/LogFoodModal'
 import ProfileLoadError  from '../components/ProfileLoadError'
+import CelebrationOverlay from '../components/CelebrationOverlay'
+import { useCelebration } from '../hooks/useCelebration'
 
 const MEAL_META = [
   { id: 'breakfast', emoji: '🌅', name: 'Breakfast', defaultOpen: true  },
@@ -74,6 +76,7 @@ export default function Dashboard() {
   const [streak,       setStreak]       = useState(0)
   const [selectedDate, setSelectedDate] = useState(() => localDateStr())
   const [editEntry,    setEditEntry]    = useState(null)   // item being edited
+  const [waterTotalLevel, setWaterTotalLevel] = useState(0) // from WaterTracker callback
 
   // Is the dashboard still usable in the current state?
   // - network / unknown errors: partial fallback (keep food logs, show banner)
@@ -214,6 +217,16 @@ export default function Dashboard() {
   }, 0)
   // Float level 0–8 (e.g. 0.8 for 1 glass of water = 250ml out of 312.5ml/dot)
   const waterLevel = Math.min(8, totalWaterMl / (2500 / 8))
+
+  // ── Celebration triggers ─────────────────────────────────────────────────
+  const waterGoalMet  = waterTotalLevel >= 8
+  const hasBreakfast  = logs.some(l => l.meal_type === 'breakfast')
+  const hasLunch      = logs.some(l => l.meal_type === 'lunch')
+  const hasDinner     = logs.some(l => l.meal_type === 'dinner')
+  const mealGoalMet   = hasBreakfast && hasLunch && hasDinner && totalCalories > 0 && totalCalories < calorieGoal
+
+  const waterCelebration = useCelebration('water', waterGoalMet && isToday, selectedDate)
+  const mealCelebration  = useCelebration('meals', mealGoalMet && isToday, selectedDate)
 
   // Macro % of total calories (protein/carbs = 4 kcal/g, fat = 9 kcal/g)
   const totalMacroKcal = totalProtein * 4 + totalCarbs * 4 + totalFat * 9 || 1
@@ -373,7 +386,7 @@ export default function Dashboard() {
           </div>
 
           {/* Water */}
-          <WaterTracker waterLevel={waterLevel} />
+          <WaterTracker waterLevel={waterLevel} goalMet={waterGoalMet} onLevelChange={setWaterTotalLevel} />
 
           {/* Meals header */}
           <div className="flex items-center justify-between pt-2">
@@ -488,6 +501,17 @@ export default function Dashboard() {
         editEntry={editEntry}
         onClose={() => { setLogOpen(false); setLogMeal(null); setEditEntry(null) }}
         onLogged={fetchLogs}
+      />
+
+      <CelebrationOverlay
+        visible={waterCelebration.showCelebration}
+        variant="water"
+        onDismiss={waterCelebration.dismiss}
+      />
+      <CelebrationOverlay
+        visible={mealCelebration.showCelebration}
+        variant="meals"
+        onDismiss={mealCelebration.dismiss}
       />
     </div>
   )
