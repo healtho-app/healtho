@@ -116,8 +116,9 @@ function totalInchesFromFtIn(ft, inches) {
   return (parseInt(ft) || 0) * 12 + (parseInt(inches) || 0)
 }
 
-function validateStep3({ age, height, heightFt, heightIn, weight, unit_system }) {
+function validateStep3({ gender, age, height, heightFt, heightIn, weight, unit_system }) {
   const errors = {}
+  if (!gender) errors.gender = 'Please select your gender'
   const a = parseInt(age), w = parseFloat(weight)
   const imperial = unit_system === 'imperial'
   if (!age || isNaN(a) || a < 10 || a > 120) errors.age = 'Enter a valid age between 10 and 120'
@@ -265,6 +266,7 @@ export default function Register() {
   const [form, setForm] = useState({
     name: '', username: '', email: '', password: '',
     unit_system: 'metric',
+    gender: '',
     age: '', height: '', heightFt: '', heightIn: '', weight: '',
     activity: '',
     country: '', phone: '',
@@ -543,6 +545,7 @@ export default function Register() {
       const { error } = await supabase.from('profiles').upsert({
         id:                user.id,
         unit_system:       form.unit_system,
+        gender:            form.gender || null,
         age:               parseInt(form.age),
         height_cm,
         weight_kg,
@@ -576,7 +579,8 @@ export default function Register() {
       const weight_kg   = isImperial ? parseFloat(form.weight) * 0.453592 : parseFloat(form.weight)
       const totalIn4    = isImperial ? totalInchesFromFtIn(form.heightFt, form.heightIn) : 0
       const height_cm   = isImperial ? totalIn4 * 2.54 : parseFloat(form.height)
-      const bmr         = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(form.age)
+      const genderOffset = form.gender === 'male' ? 5 : form.gender === 'female' ? -161 : -78
+      const bmr         = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(form.age) + genderOffset
       const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
       const tdee        = Math.round(bmr * multipliers[form.activity])
 
@@ -882,6 +886,34 @@ export default function Register() {
               </div>
 
               <div className="space-y-5">
+                {/* Gender */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
+                    <span className="material-symbols-outlined text-primary text-xl">wc</span>Gender
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'male',               label: 'Male',   emoji: '♂️' },
+                      { value: 'female',             label: 'Female', emoji: '♀️' },
+                      { value: 'prefer_not_to_say',  label: 'Other',  emoji: '⚧️' },
+                    ].map(opt => (
+                      <button key={opt.value} type="button"
+                        onClick={() => {
+                          setForm(f => ({ ...f, gender: opt.value }))
+                          if (errors.gender) setErrors(er => ({ ...er, gender: '' }))
+                        }}
+                        className={`h-12 rounded-xl border-2 text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                          form.gender === opt.value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-slate-800 bg-slate-900 text-slate-400 hover:border-slate-600'
+                        }`}>
+                        <span>{opt.emoji}</span> {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <FieldError message={errors.gender} />
+                </div>
+
                 {/* Age */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">

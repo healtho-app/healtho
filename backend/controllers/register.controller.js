@@ -34,11 +34,12 @@ function bmiCategory(bmi) {
 // ─── TDEE Helpers ─────────────────────────────────────────────────────────────
 
 /**
- * Harris-Benedict BMR (metric).
- * Sex-neutral approximation (Mifflin-St Jeor average).
+ * Mifflin-St Jeor BMR (metric) with gender-specific constant.
+ * Male: +5, Female: -161, Other/unknown: -78 (midpoint)
  */
-function calculateBMR(weight_kg, height_cm, age) {
-  return 10 * weight_kg + 6.25 * height_cm - 5 * age;
+function calculateBMR(weight_kg, height_cm, age, gender) {
+  const genderOffset = gender === 'male' ? 5 : gender === 'female' ? -161 : -78;
+  return 10 * weight_kg + 6.25 * height_cm - 5 * age + genderOffset;
 }
 
 /** Activity multipliers (Mifflin-St Jeor standard). */
@@ -208,7 +209,7 @@ async function registerStep3(req, res) {
   // Fetch stored metrics needed for TDEE
   const { data: profile, error: fetchError } = await supabase
     .from("profiles")
-    .select("weight_kg, height_cm, age")
+    .select("weight_kg, height_cm, age, gender")
     .eq("id", userId)
     .single();
 
@@ -219,7 +220,7 @@ async function registerStep3(req, res) {
     });
   }
 
-  const bmr = calculateBMR(profile.weight_kg, profile.height_cm, profile.age);
+  const bmr = calculateBMR(profile.weight_kg, profile.height_cm, profile.age, profile.gender);
   const tdee = calculateTDEE(bmr, activity_level);
 
   const { error: updateError } = await supabase

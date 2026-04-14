@@ -31,9 +31,10 @@ const ACTIVITY_MULTIPLIERS = {
 }
 
 function computeTDEE(profile) {
-  const { weight_kg, height_cm, age, activity_level } = profile || {}
+  const { weight_kg, height_cm, age, activity_level, gender } = profile || {}
   if (!weight_kg || !height_cm || !age || !activity_level) return null
-  const bmr  = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(age)
+  const genderOffset = gender === 'male' ? 5 : gender === 'female' ? -161 : -78
+  const bmr  = 10 * weight_kg + 6.25 * height_cm - 5 * parseInt(age) + genderOffset
   const mult = ACTIVITY_MULTIPLIERS[activity_level] ?? 1.2
   return Math.round(bmr * mult)
 }

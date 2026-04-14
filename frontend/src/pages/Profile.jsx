@@ -77,9 +77,10 @@ function calcBMI(weight, height) {
   return (weight / Math.pow(height / 100, 2)).toFixed(1)
 }
 
-function calcCalories(weight, height, age, activity) {
+function calcCalories(weight, height, age, activity, gender) {
   if (!weight || !height || !age || isNaN(weight) || isNaN(height) || isNaN(age)) return null
-  const bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5
+  const genderOffset = gender === 'male' ? 5 : gender === 'female' ? -161 : -78
+  const bmr = (10 * weight) + (6.25 * height) - (5 * age) + genderOffset
   const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
   return Math.round(bmr * (multipliers[activity] || 1.55))
 }
@@ -230,6 +231,7 @@ export default function Profile() {
     age:      params.get('age')      || '',
     height:   params.get('height')   || '',
     weight:   params.get('weight')   || '',
+    gender:   params.get('gender')   || '',
     activity: params.get('activity') || 'moderately_active',
     country:     params.get('country')     || '',
     phone:       params.get('phone')       || '',
@@ -285,7 +287,7 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, username, email, age, height_cm, weight_kg, activity_level, daily_calorie_goal, country, phone_number, avatar_url, unit_system')
+        .select('full_name, username, email, gender, age, height_cm, weight_kg, activity_level, daily_calorie_goal, country, phone_number, avatar_url, unit_system')
         .eq('id', session.user.id)
         .maybeSingle()
 
@@ -320,6 +322,7 @@ export default function Profile() {
           name:        data.full_name     || fallback.name,
           username:    data.username      || '',
           email:       data.email         || fallback.email,
+          gender:      data.gender         || '',
           age:         data.age != null   ? String(data.age) : fallback.age,
           height:      heightDisplay,
           heightFt:    heightFtDisplay,
@@ -345,7 +348,7 @@ export default function Profile() {
   const viewWeightKg = imperial ? parseFloat(view.weight) * 0.453592 : parseFloat(view.weight)
   const viewHeightCm = imperial ? totalInchesFromFtIn(view.heightFt, view.heightIn) * 2.54 : parseFloat(view.height)
   const bmi      = calcBMI(viewWeightKg, viewHeightCm)
-  const calories = calcCalories(viewWeightKg, viewHeightCm, parseInt(view.age), view.activity)
+  const calories = calcCalories(viewWeightKg, viewHeightCm, parseInt(view.age), view.activity, view.gender)
   const bmiInfo  = getBmiInfo(bmi)
   const actInfo  = ACTIVITY_MAP[view.activity] || ACTIVITY_MAP.moderately_active
   const initials = profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -584,11 +587,12 @@ export default function Profile() {
       const age       = parseInt(draft.age)
       const bmi       = calculateBMI(weight_kg, height_cm)
 
-      const newCalories = calcCalories(weight_kg, height_cm, age, draft.activity)
+      const newCalories = calcCalories(weight_kg, height_cm, age, draft.activity, draft.gender)
 
       const { error } = await supabase
         .from('profiles')
         .update({
+          gender:             draft.gender || null,
           age,
           height_cm,
           weight_kg,
@@ -790,6 +794,7 @@ export default function Profile() {
           {!editing && (
             <div className="grid grid-cols-2 gap-4">
               {[
+                { icon: 'wc',             label: 'Gender', value: profile.gender === 'male' ? 'Male' : profile.gender === 'female' ? 'Female' : profile.gender === 'prefer_not_to_say' ? 'Other' : '—', sub: '' },
                 { icon: 'calendar_today', label: 'Age',    value: profile.age,    sub: 'years old'   },
                 { icon: 'monitor_heart',  label: 'BMI',    value: bmi || '—',     sub: bmiInfo?.label || '—', subColor: bmiInfo?.color },
                 { icon: 'height',         label: 'Height', value: profile.unit_system === 'imperial' ? `${profile.heightFt || 0}'${profile.heightIn || 0}"` : profile.height, sub: profile.unit_system === 'imperial' ? 'feet / inches' : 'centimetres' },
@@ -833,6 +838,35 @@ export default function Profile() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Gender */}
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-base">wc</span>
+                  Gender
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'male',               label: 'Male',   emoji: '♂️' },
+                    { value: 'female',             label: 'Female', emoji: '♀️' },
+                    { value: 'prefer_not_to_say',  label: 'Other',  emoji: '⚧️' },
+                  ].map(opt => (
+                    <button key={opt.value} type="button"
+                      onClick={() => {
+                        setDraft(d => ({ ...d, gender: opt.value }))
+                        if (errors.gender) setErrors(er => ({ ...er, gender: '' }))
+                      }}
+                      className={`h-10 rounded-xl border-2 text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                        draft.gender === opt.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-slate-800 bg-slate-900 text-slate-400 hover:border-slate-600'
+                      }`}>
+                      <span>{opt.emoji}</span> {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <FieldError message={errors.gender} />
               </div>
 
               {/* Age */}
