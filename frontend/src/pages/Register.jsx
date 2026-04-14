@@ -891,11 +891,10 @@ export default function Register() {
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-xl">wc</span>Gender
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {[
-                      { value: 'male',               label: 'Male',   emoji: '♂️' },
-                      { value: 'female',             label: 'Female', emoji: '♀️' },
-                      { value: 'prefer_not_to_say',  label: 'Other',  emoji: '⚧️' },
+                      { value: 'male',   label: 'Male',   emoji: '♂️' },
+                      { value: 'female', label: 'Female', emoji: '♀️' },
                     ].map(opt => (
                       <button key={opt.value} type="button"
                         onClick={() => {

@@ -794,7 +794,7 @@ export default function Profile() {
           {!editing && (
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: 'wc',             label: 'Gender', value: profile.gender === 'male' ? 'Male' : profile.gender === 'female' ? 'Female' : profile.gender === 'prefer_not_to_say' ? 'Other' : '—', sub: '' },
+                { icon: 'wc',             label: 'Gender', value: profile.gender === 'male' ? 'Male' : profile.gender === 'female' ? 'Female' : '—', sub: '' },
                 { icon: 'calendar_today', label: 'Age',    value: profile.age,    sub: 'years old'   },
                 { icon: 'monitor_heart',  label: 'BMI',    value: bmi || '—',     sub: bmiInfo?.label || '—', subColor: bmiInfo?.color },
                 { icon: 'height',         label: 'Height', value: profile.unit_system === 'imperial' ? `${profile.heightFt || 0}'${profile.heightIn || 0}"` : profile.height, sub: profile.unit_system === 'imperial' ? 'feet / inches' : 'centimetres' },
@@ -846,11 +846,10 @@ export default function Profile() {
                   <span className="material-symbols-outlined text-primary text-base">wc</span>
                   Gender
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {[
-                    { value: 'male',               label: 'Male',   emoji: '♂️' },
-                    { value: 'female',             label: 'Female', emoji: '♀️' },
-                    { value: 'prefer_not_to_say',  label: 'Other',  emoji: '⚧️' },
+                    { value: 'male',   label: 'Male',   emoji: '♂️' },
+                    { value: 'female', label: 'Female', emoji: '♀️' },
                   ].map(opt => (
                     <button key={opt.value} type="button"
                       onClick={() => {
