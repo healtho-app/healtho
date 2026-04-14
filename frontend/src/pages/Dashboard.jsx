@@ -386,7 +386,7 @@ export default function Dashboard() {
           </div>
 
           {/* Water */}
-          <WaterTracker waterLevel={waterLevel} goalMet={waterGoalMet} onLevelChange={setWaterTotalLevel} />
+          <WaterTracker waterLevel={waterLevel} goalMet={waterGoalMet} onLevelChange={setWaterTotalLevel} isToday={isToday} />
 
           {/* Meals header */}
           <div className="flex items-center justify-between pt-2">

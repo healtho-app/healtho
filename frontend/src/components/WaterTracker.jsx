@@ -8,15 +8,10 @@ const STORAGE_KEY  = 'healtho_water_manual'
 const localDateStr = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelChange }) {
+export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelChange, isToday = true }) {
   // waterLevel  — float 0–8 driven by food_logs (logged drinks) — persists via DB
   // manualDots  — integer 0–8 set by tapping — persists via localStorage (date-keyed)
-  // The two sources are combined at render: totalLevel = max(waterLevel, manualDots)
-  // This means:
-  //   • Logging water raises the tracker automatically
-  //   • Deleting a water log brings it back down to the logged level
-  //   • Manual taps are always preserved through any log add/delete
-  //   • Manual taps auto-reset at midnight (localStorage date key expires)
+  //               Only used for today. Past dates show logged water only.
   const [manualDots, setManualDots] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
@@ -31,7 +26,10 @@ export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelC
     } catch { /* localStorage unavailable — silently ignore */ }
   }, [manualDots])
 
-  const totalLevel = Math.min(TOTAL_DOTS, Math.max(waterLevel, manualDots))
+  // Past dates: only show logged water level, ignore manual dots
+  const totalLevel = isToday
+    ? Math.min(TOTAL_DOTS, Math.max(waterLevel, manualDots))
+    : Math.min(TOTAL_DOTS, waterLevel)
   const liters = ((totalLevel * ML_PER_DOT) / 1000).toFixed(1)
 
   // Notify parent of level changes (for celebration triggers)
@@ -40,6 +38,7 @@ export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelC
   }, [totalLevel, onLevelChange])
 
   const handleDot = (idx) => {
+    if (!isToday) return // read-only on past dates
     const desired = idx < totalLevel ? idx : idx + 1  // toggle: unfill to idx, or fill to idx+1
     if (desired <= waterLevel) {
       // Can't go below logged level — reset manual so waterLevel takes over naturally
@@ -50,8 +49,15 @@ export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelC
     }
   }
 
-  // Can manual dots be reduced? (only when manualDots > waterLevel floor)
-  const canReset = manualDots > 0 && manualDots > Math.ceil(waterLevel)
+  // Can manual dots be reduced? (only when manualDots > waterLevel floor, today only)
+  const canReset = isToday && manualDots > 0 && manualDots > Math.ceil(waterLevel)
+
+  // Subtitle text
+  const subtitle = isToday
+    ? `${liters} / 2.5 L — tap to update`
+    : totalLevel > 0
+      ? `${liters} / 2.5 L logged`
+      : 'No water logged this day'
 
   return (
     <div className={`bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4 transition-all duration-500${goalMet ? ' water-goal-glow' : ''}`}>
@@ -61,7 +67,7 @@ export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelC
       <div className="flex-1">
         <p className="text-sm font-bold text-white">Water Intake</p>
         <p className="text-xs text-slate-500 mt-0.5">
-          {liters} / 2.5 L — tap to update
+          {subtitle}
           {canReset && (
             <button
               onClick={() => setManualDots(Math.ceil(waterLevel))}
@@ -82,7 +88,8 @@ export default function WaterTracker({ waterLevel = 0, goalMet = false, onLevelC
             <button
               key={i}
               onClick={() => handleDot(i)}
-              className="relative w-5 h-5 rounded-full border-2 overflow-hidden transition-all hover:scale-110"
+              disabled={!isToday}
+              className={`relative w-5 h-5 rounded-full border-2 overflow-hidden transition-all${isToday ? ' hover:scale-110 cursor-pointer' : ' cursor-default opacity-60'}`}
               style={{ borderColor: isEmpty ? '#334155' : '#60b8d4', backgroundColor: '#1e293b' }}
             >
               {fillPct > 0 && (
