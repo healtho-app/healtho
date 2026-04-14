@@ -353,27 +353,8 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Calorie goal banner */}
-          {loading ? (
-            <Skeleton className="h-16 w-full" />
-          ) : profileErrorPartial ? (
-            // Partial error: showing "0 kcal" would be misleading. Hide the
-            // banner entirely — the alert banner above already explains.
-            null
-          ) : (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Daily Calorie Goal</p>
-                <p className="text-white text-2xl font-extrabold mt-0.5">
-                  {calorieGoal.toLocaleString()} <span className="text-slate-400 text-sm font-medium">kcal</span>
-                </p>
-              </div>
-              <div className="text-right">
-                {profile?.bmi    && <p className="text-slate-400 text-xs">BMI <span className="text-white font-bold">{profile.bmi}</span></p>}
-                {profile?.weight_kg && <p className="text-slate-400 text-xs mt-0.5">{profile.weight_kg} kg</p>}
-              </div>
-            </div>
-          )}
+          {/* Calorie goal banner removed — CalorieRing already shows the same
+              daily_calorie_goal value. BMI + weight live on Profile page. */}
 
           {/* Calorie ring — live consumed from food_logs. Hidden during a
               partial profile error since the goal would be 0 and misleading. */}
