@@ -48,9 +48,34 @@ export default function CalorieRing({ consumed = 0, goal = 0, burned = 0 }) {
             <p className="font-mono text-2xl font-bold text-white">{consumed.toLocaleString()} <span className="text-sm text-slate-500 font-normal">kcal</span></p>
           </div>
           <div className="h-px bg-slate-800" />
-          <div>
-            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Daily Goal</p>
+          {/* Daily Goal — ? tooltip uses CSS group-hover (matches streak tooltip pattern) */}
+          <div className="relative group/goal">
+            <div className="flex items-center gap-1.5">
+              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Daily Goal</p>
+              <button
+                type="button"
+                aria-label="Calculation details"
+                aria-describedby="goal-tooltip"
+                className="w-4 h-4 rounded-full border border-slate-600 flex items-center justify-center text-slate-500 hover:text-primary hover:border-primary focus:text-primary focus:border-primary transition-colors outline-none"
+              >
+                <span className="text-[9px] font-bold leading-none">?</span>
+              </button>
+            </div>
             <p className="font-mono text-2xl font-bold text-white">{goal.toLocaleString()} <span className="text-sm text-slate-500 font-normal">kcal</span></p>
+
+            {/* Tooltip — CSS-only, visible on hover/focus within the group */}
+            <div
+              id="goal-tooltip"
+              role="tooltip"
+              className="absolute bottom-full left-0 right-0 mb-2 z-50 pointer-events-none
+                         opacity-0 group-hover/goal:opacity-100 group-focus-within/goal:opacity-100 transition-opacity duration-200"
+            >
+              <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-xl w-fit">
+                <p className="text-xs text-slate-300 font-medium whitespace-nowrap">How we calculate your Daily Goal</p>
+                <p className="text-[10px] text-slate-500 mt-0.5 whitespace-nowrap">BMR × activity level ± fitness goal</p>
+              </div>
+              <div className="w-2 h-2 bg-slate-800 border-r border-b border-slate-700 rotate-45 ml-[4.5rem] -mt-1" />
+            </div>
           </div>
           <div className="h-px bg-slate-800" />
           <div>
