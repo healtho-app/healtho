@@ -77,12 +77,16 @@ function calcBMI(weight, height) {
   return (weight / Math.pow(height / 100, 2)).toFixed(1)
 }
 
-function calcCalories(weight, height, age, activity, gender) {
+function calcCalories(weight, height, age, activity, gender, fitnessGoal, weeklyRateKg) {
   if (!weight || !height || !age || isNaN(weight) || isNaN(height) || isNaN(age)) return null
   const genderOffset = gender === 'M' ? 5 : gender === 'F' ? -161 : -78
   const bmr = (10 * weight) + (6.25 * height) - (5 * age) + genderOffset
   const multipliers = { sedentary: 1.2, lightly_active: 1.375, moderately_active: 1.55, very_active: 1.725, athlete: 1.9 }
-  return Math.round(bmr * (multipliers[activity] || 1.55))
+  const tdee = bmr * (multipliers[activity] || 1.55)
+  // Apply fitness goal adjustment: Lose -1, Gain +1, Maintain 0 (or undefined)
+  const rateKg  = fitnessGoal === 'maintain' ? 0 : (parseFloat(weeklyRateKg) || 0)
+  const goalAdj = fitnessGoal === 'lose' ? -1 : fitnessGoal === 'gain' ? 1 : 0
+  return Math.max(1200, Math.round(tdee + goalAdj * rateKg * 1100))
 }
 
 function getBmiInfo(bmi) {
@@ -233,6 +237,8 @@ export default function Profile() {
     weight:   params.get('weight')   || '',
     gender:   params.get('gender')   || '',
     activity: params.get('activity') || 'moderately_active',
+    fitness_goal:   '',
+    weekly_rate_kg: '',
     country:     params.get('country')     || '',
     phone:       params.get('phone')       || '',
     avatar:      '',
@@ -287,7 +293,7 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, username, email, gender, age, height_cm, weight_kg, activity_level, daily_calorie_goal, country, phone_number, avatar_url, unit_system')
+        .select('full_name, username, email, gender, age, height_cm, weight_kg, activity_level, fitness_goal, weekly_rate_kg, daily_calorie_goal, country, phone_number, avatar_url, unit_system')
         .eq('id', session.user.id)
         .maybeSingle()
 
@@ -328,7 +334,9 @@ export default function Profile() {
           heightFt:    heightFtDisplay,
           heightIn:    heightInDisplay,
           weight:      weightDisplay,
-          activity:    data.activity_level || fallback.activity,
+          activity:     data.activity_level || fallback.activity,
+          fitness_goal: data.fitness_goal    || '',
+          weekly_rate_kg: data.weekly_rate_kg != null ? String(data.weekly_rate_kg) : '',
           country:     data.country        || '',
           phone:       data.phone_number   || '',
           avatar:      data.avatar_url     || '',
@@ -348,7 +356,7 @@ export default function Profile() {
   const viewWeightKg = imperial ? parseFloat(view.weight) * 0.453592 : parseFloat(view.weight)
   const viewHeightCm = imperial ? totalInchesFromFtIn(view.heightFt, view.heightIn) * 2.54 : parseFloat(view.height)
   const bmi      = calcBMI(viewWeightKg, viewHeightCm)
-  const calories = calcCalories(viewWeightKg, viewHeightCm, parseInt(view.age), view.activity, view.gender)
+  const calories = calcCalories(viewWeightKg, viewHeightCm, parseInt(view.age), view.activity, view.gender, view.fitness_goal, view.weekly_rate_kg)
   const bmiInfo  = getBmiInfo(bmi)
   const actInfo  = ACTIVITY_MAP[view.activity] || ACTIVITY_MAP.moderately_active
   const initials = profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -587,7 +595,7 @@ export default function Profile() {
       const age       = parseInt(draft.age)
       const bmi       = calculateBMI(weight_kg, height_cm)
 
-      const newCalories = calcCalories(weight_kg, height_cm, age, draft.activity, draft.gender)
+      const newCalories = calcCalories(weight_kg, height_cm, age, draft.activity, draft.gender, draft.fitness_goal, draft.weekly_rate_kg)
 
       const { error } = await supabase
         .from('profiles')
