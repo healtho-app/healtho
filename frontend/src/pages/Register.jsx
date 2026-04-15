@@ -318,6 +318,7 @@ export default function Register() {
   const [errors,        setErrors]        = useState({})
   const [serverError,   setServerError]   = useState('')
   const [isDuplicate,   setIsDuplicate]   = useState(false)  // true when email already exists
+  const [summary,       setSummary]       = useState(null)   // { bmr, tdee, finalGoal } — populated after submitActivity, displayed on Step 7
 
   // Email OTP state
   const [otpDigits,   setOtpDigits]  = useState(Array(OTP_LENGTH).fill(''))
@@ -702,18 +703,10 @@ export default function Register() {
 
       if (error) throw error
 
-      // For Google OAuth users form.name/email may be empty — fall back to Google metadata
-      const displayName = form.name.trim() || user.user_metadata?.full_name || ''
-      const displayEmail = form.email.trim() || user.email || ''
-
-      const params = new URLSearchParams({
-        name: displayName, username: form.username, email: displayEmail,
-        age: form.age,
-        height: form.unit_system === 'imperial' ? String(totalInchesFromFtIn(form.heightFt, form.heightIn)) : form.height,
-        weight: form.weight,
-        activity: form.activity, daily_calorie_goal: adjustedGoal,
-      })
-      navigate('/profile?' + params.toString())
+      // Stash computed values for the Step 7 summary screen. DB write is done;
+      // the user now sees their personalised plan before navigating to dashboard.
+      setSummary({ bmr: Math.round(bmr), tdee, finalGoal: adjustedGoal })
+      goTo(7)
     } catch (err) {
       setServerError(err.message || 'Could not complete registration. Please try again.')
     } finally {
@@ -730,19 +723,21 @@ export default function Register() {
       <main className="flex-1 flex items-start justify-center px-4 py-10">
         <div className="w-full max-w-[520px]">
 
-          {/* Progress bar */}
-          <div className="flex flex-col gap-3 mb-10">
-            <div className="flex items-center justify-between">
-              <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">
-                Step {s.label} of 4
-              </p>
-              <p className="text-primary text-sm font-bold">{s.pct}</p>
+          {/* Progress bar — hidden on Step 7 (summary screen is the finale, not a form step) */}
+          {s && (
+            <div className="flex flex-col gap-3 mb-10">
+              <div className="flex items-center justify-between">
+                <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">
+                  Step {s.label} of 4
+                </p>
+                <p className="text-primary text-sm font-bold">{s.pct}</p>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: s.width }} />
+              </div>
+              <p className="text-slate-500 text-sm font-medium italic">{s.hint}</p>
             </div>
-            <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: s.width }} />
-            </div>
-            <p className="text-slate-500 text-sm font-medium italic">{s.hint}</p>
-          </div>
+          )}
 
           {/* ── STEP 1: Account Details ──────────────────────────────────────── */}
           {step === 1 && (
@@ -1450,10 +1445,12 @@ export default function Register() {
 
               <div className="mt-10 flex flex-col gap-3">
                 <button onClick={submitActivity} disabled={loading}
-                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                  className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
                   {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Finishing up…</>
-                  ) : 'Create My Account 🎉'}
+                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Crunching numbers…</>
+                  ) : (
+                    <>See Your Plan<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                  )}
                 </button>
                 <button onClick={() => goTo(5)}
                   className="w-full h-12 text-slate-400 rounded-xl font-semibold text-base hover:bg-slate-800 transition-colors">
@@ -1462,6 +1459,97 @@ export default function Register() {
               </div>
             </div>
           )}
+
+          {/* ── STEP 7: Plan Summary — BMR / TDEE / Daily Goal / Macro split ─── */}
+          {step === 7 && summary && (() => {
+            // Default macro split: 50% carbs, 25% protein, 25% fat
+            // Carbs & protein = 4 kcal/g, fat = 9 kcal/g
+            const goalKcal = summary.finalGoal
+            const carbsG   = Math.round((goalKcal * 0.5)  / 4)
+            const proteinG = Math.round((goalKcal * 0.25) / 4)
+            const fatG     = Math.round((goalKcal * 0.25) / 9)
+
+            return (
+              <div>
+                {/* Celebration heading */}
+                <div className="mb-8 text-center">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-primary text-4xl">check_circle</span>
+                  </div>
+                  <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Your plan is ready!</h1>
+                  <p className="text-slate-400 text-lg mt-2">Here's how we calculated your daily target.</p>
+                </div>
+
+                {/* BMR / TDEE / Daily Goal cards */}
+                <div className="space-y-3 mb-8">
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">BMR</p>
+                      <p className="text-slate-600 text-[11px] mt-0.5">Calories burned at rest</p>
+                    </div>
+                    <p className="font-mono text-2xl font-bold text-white">
+                      {summary.bmr.toLocaleString()} <span className="text-sm text-slate-500 font-normal">kcal</span>
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">TDEE</p>
+                      <p className="text-slate-600 text-[11px] mt-0.5">Including your activity level</p>
+                    </div>
+                    <p className="font-mono text-2xl font-bold text-white">
+                      {summary.tdee.toLocaleString()} <span className="text-sm text-slate-500 font-normal">kcal</span>
+                    </p>
+                  </div>
+
+                  <div className="bg-primary/10 border border-primary/30 rounded-xl p-5 flex items-center justify-between shadow-lg shadow-primary/10">
+                    <div>
+                      <p className="text-primary text-xs font-bold uppercase tracking-wider">Daily Calorie Goal</p>
+                      <p className="text-slate-400 text-[11px] mt-0.5">Adjusted for your fitness goal</p>
+                    </div>
+                    <p className="font-mono text-3xl font-extrabold text-white">
+                      {summary.finalGoal.toLocaleString()} <span className="text-sm text-slate-400 font-normal">kcal</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Macro split section */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-8">
+                  <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">Default Macro Split</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center">
+                      <div className="h-1.5 rounded-full bg-carbs mb-2" />
+                      <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Carbs</p>
+                      <p className="text-white font-bold text-lg mt-1">{carbsG}g</p>
+                      <p className="text-slate-600 text-[10px]">50%</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="h-1.5 rounded-full bg-protein mb-2" />
+                      <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Protein</p>
+                      <p className="text-white font-bold text-lg mt-1">{proteinG}g</p>
+                      <p className="text-slate-600 text-[10px]">25%</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="h-1.5 rounded-full bg-fat mb-2" />
+                      <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Fat</p>
+                      <p className="text-white font-bold text-lg mt-1">{fatG}g</p>
+                      <p className="text-slate-600 text-[10px]">25%</p>
+                    </div>
+                  </div>
+                  <p className="text-slate-600 text-[11px] mt-4 italic text-center">You can adjust these targets anytime from your profile.</p>
+                </div>
+
+                {/* Go to Dashboard CTA */}
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
+                >
+                  Let's Go! 🎉
+                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                </button>
+              </div>
+            )
+          })()}
 
         </div>
       </main>
