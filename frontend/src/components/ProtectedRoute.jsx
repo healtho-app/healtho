@@ -13,24 +13,43 @@ import { supabase } from '../lib/supabase'
  *   - No session → redirects to /login
  *   - Has session → renders children normally
  *
- * TODO: swap supabase.auth.getSession() stub for real call once Supabase keys are connected.
+ * Session detection strategy:
+ *   onAuthStateChange is the authoritative source — it fires after Supabase
+ *   finishes parsing the OAuth hash from the URL (Google login). getSession()
+ *   is used as a fallback after 500ms for non-OAuth flows (direct navigation,
+ *   page refresh) where onAuthStateChange might not fire at all.
+ *
+ *   This prevents the race condition where getSession() resolves null during
+ *   an OAuth redirect because the session hasn't been persisted yet.
  */
 export default function ProtectedRoute({ children }) {
   // undefined = still checking | null = no session | object = valid session
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
-    // Check current session on mount
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data?.session ?? null)
-    })
+    let authResolved = false
 
-    // Keep in sync if the user logs out in another tab
+    // Listen for auth state changes first — authoritative for OAuth redirects
+    // where the session arrives via URL hash, not localStorage.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      authResolved = true
       setSession(session)
     })
 
-    return () => subscription.unsubscribe()
+    // Fallback: if onAuthStateChange hasn't fired within 500ms (non-OAuth
+    // flows like direct navigation or page refresh), check getSession().
+    const fallbackTimer = setTimeout(() => {
+      if (!authResolved) {
+        supabase.auth.getSession().then(({ data }) => {
+          if (!authResolved) setSession(data?.session ?? null)
+        })
+      }
+    }, 500)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(fallbackTimer)
+    }
   }, [])
 
   // ── Still checking ──────────────────────────────────────────────────────────
