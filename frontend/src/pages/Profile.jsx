@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { createAvatar } from '@dicebear/core'
 import { dylan } from '@dicebear/collection'
 import Header from '../components/Header'
@@ -223,26 +223,29 @@ async function resizeImageToBlob(file, maxDim = 512) {
 }
 
 export default function Profile() {
-  const [params]  = useSearchParams()
   const navigate  = useNavigate()
   const { refreshProfile } = useProfile()
 
-  // Fallback values from URL params (passed by Register flow)
+  // Initial empty state. The real profile is loaded from Supabase in the
+  // fetchProfile effect below. Previously this used URL params as a fallback
+  // (Register used to navigate here with ?name=...&age=...), but since the
+  // onboarding summary screen was added (Step 7 → /dashboard), no caller
+  // passes query params anymore. ProfileContext carries the data now.
   const fallback = {
-    name:     params.get('name')     || '',
-    username: params.get('username') || '',
-    email:    params.get('email')    || '',
-    age:      params.get('age')      || '',
-    height:   params.get('height')   || '',
-    weight:   params.get('weight')   || '',
-    gender:   params.get('gender')   || '',
-    activity: params.get('activity') || 'moderately_active',
+    name:     '',
+    username: '',
+    email:    '',
+    age:      '',
+    height:   '',
+    weight:   '',
+    gender:   '',
+    activity: 'moderately_active',
     fitness_goal:   '',
     weekly_rate_kg: '',
-    country:     params.get('country')     || '',
-    phone:       params.get('phone')       || '',
+    country:     '',
+    phone:       '',
     avatar:      '',
-    unit_system: params.get('unit_system') || 'metric',
+    unit_system: 'metric',
   }
 
   const [profile,  setProfile]  = useState(fallback)

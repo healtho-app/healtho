@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
+import { useProfile } from '../contexts/ProfileContext'
 
 // ── Countries (US + India pinned, then alphabetical) ─────────────────────────
 const COUNTRIES = [
@@ -310,6 +311,7 @@ function OtpInput({ digits, onChange, hasError }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Register() {
   const navigate = useNavigate()
+  const { refreshProfile } = useProfile()
   const [searchParams] = useSearchParams()
   const [step,        setStep]       = useState(1)
   const [showPwd,     setShowPwd]    = useState(false)
@@ -511,6 +513,9 @@ export default function Register() {
             return
           }
         }
+        // Sync ProfileContext with the just-seeded profile row so Header + other
+        // consumers see the name/username/email immediately.
+        await refreshProfile()
         goTo(3) // skip email OTP, go straight to metrics
       } else {
         // Confirm email is ON — go to email OTP step
@@ -561,6 +566,8 @@ export default function Register() {
         console.error('[verifyEmail] verifyOtp succeeded but returned no user:', otpData)
       }
 
+      // Sync ProfileContext — same reasoning as submitStep1
+      await refreshProfile()
       goTo(3) // proceed to body metrics
     } catch (err) {
       setOtpError(err.message || 'Invalid or expired code. Please try again.')
@@ -620,6 +627,7 @@ export default function Register() {
       }, { onConflict: 'id' })
 
       if (error) throw error
+      await refreshProfile()
       goTo(5)
     } catch (err) {
       setServerError(err.message || 'Could not save your metrics. Please try again.')
@@ -652,6 +660,7 @@ export default function Register() {
       }, { onConflict: 'id' })
 
       if (error) throw error
+      await refreshProfile()
       goTo(6)
     } catch (err) {
       setServerError(err.message || 'Could not save your goal. Please try again.')
@@ -702,6 +711,12 @@ export default function Register() {
       }, { onConflict: 'id' })
 
       if (error) throw error
+
+      // Sync ProfileContext so Dashboard sees the full onboarded profile
+      // (daily_calorie_goal, activity_level, etc.) immediately on "Let's Go!".
+      // Without this, Dashboard loads with a stale pre-registration profile
+      // and shows 0 kcal for Daily Goal.
+      await refreshProfile()
 
       // Stash computed values for the Step 7 summary screen. DB write is done;
       // the user now sees their personalised plan before navigating to dashboard.
