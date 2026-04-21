@@ -17,6 +17,7 @@ import LogFoodModal      from '../components/LogFoodModal'
 import ProfileLoadError  from '../components/ProfileLoadError'
 import CelebrationOverlay from '../components/CelebrationOverlay'
 import { useCelebration } from '../hooks/useCelebration'
+import { computeMacroTargets } from '../lib/macroTargets'
 
 const MEAL_META = [
   { id: 'breakfast', emoji: '🌅', name: 'Breakfast', defaultOpen: true  },
@@ -229,13 +230,20 @@ export default function Dashboard() {
   const waterCelebration = useCelebration('water', waterGoalMet && isToday, selectedDate)
   const mealCelebration  = useCelebration('meals', mealGoalMet && isToday, selectedDate)
 
-  // Macro % of total calories (protein/carbs = 4 kcal/g, fat = 9 kcal/g)
-  const totalMacroKcal = totalProtein * 4 + totalCarbs * 4 + totalFat * 9 || 1
+  // Macro targets — default 50/25/25 split from daily_calorie_goal via helper.
+  // Null when calorieGoal is 0/missing (pre-onboarding). MacroCard hides the
+  // "/ goalg" text and keeps the bar empty in that case.
+  const macroTargets = computeMacroTargets(calorieGoal)
+  const pctOf = (consumed, target) =>
+    target && target > 0 ? Math.round((consumed / target) * 100) : 0
   const macros = [
-    { label: 'Protein', amount: Math.round(totalProtein), pct: Math.round((totalProtein * 4 / totalMacroKcal) * 100), color: 'bg-protein' },
-    { label: 'Carbs',   amount: Math.round(totalCarbs),   pct: Math.round((totalCarbs   * 4 / totalMacroKcal) * 100), color: 'bg-carbs'   },
-    { label: 'Fat',     amount: Math.round(totalFat),     pct: Math.round((totalFat     * 9 / totalMacroKcal) * 100), color: 'bg-fat'     },
-    { label: 'Fiber',   amount: Math.round(totalFiber),   pct: 0,                                                     color: 'bg-fiber'   },
+    // Protein doesn't flag red on over-goal — overeating protein is generally fine
+    { label: 'Protein', amount: Math.round(totalProtein), goal: macroTargets?.protein_g ?? null, pct: pctOf(totalProtein, macroTargets?.protein_g), color: 'bg-protein', overWarning: false },
+    // Carbs + fat flag red on over-goal (overeating these works against deficit/goal)
+    { label: 'Carbs',   amount: Math.round(totalCarbs),   goal: macroTargets?.carbs_g   ?? null, pct: pctOf(totalCarbs,   macroTargets?.carbs_g),   color: 'bg-carbs',   overWarning: true  },
+    { label: 'Fat',     amount: Math.round(totalFat),     goal: macroTargets?.fat_g     ?? null, pct: pctOf(totalFat,     macroTargets?.fat_g),     color: 'bg-fat',     overWarning: true  },
+    // Fiber: no goal yet (formula TBD). Card renders consumed-only with empty bar.
+    { label: 'Fiber',   amount: Math.round(totalFiber),   goal: null,                             pct: 0,                                            color: 'bg-fiber',   overWarning: false },
   ]
 
   // Group logs by meal_type — items include unit macros so the edit modal can recalculate

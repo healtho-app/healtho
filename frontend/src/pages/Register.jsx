@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 import { useProfile } from '../contexts/ProfileContext'
+import { computeMacroTargets } from '../lib/macroTargets'
 
 // ── Countries (US + India pinned, then alphabetical) ─────────────────────────
 const COUNTRIES = [
@@ -1477,12 +1478,12 @@ export default function Register() {
 
           {/* ── STEP 7: Plan Summary — BMR / TDEE / Daily Goal / Macro split ─── */}
           {step === 7 && summary && (() => {
-            // Default macro split: 50% carbs, 25% protein, 25% fat
-            // Carbs & protein = 4 kcal/g, fat = 9 kcal/g
-            const goalKcal = summary.finalGoal
-            const carbsG   = Math.round((goalKcal * 0.5)  / 4)
-            const proteinG = Math.round((goalKcal * 0.25) / 4)
-            const fatG     = Math.round((goalKcal * 0.25) / 9)
+            // Default macro split (50/25/25) via shared helper — same source of
+            // truth used by the Dashboard macro cards so both screens stay in sync.
+            const targets = computeMacroTargets(summary.finalGoal) || { carbs_g: 0, protein_g: 0, fat_g: 0 }
+            const carbsG   = targets.carbs_g
+            const proteinG = targets.protein_g
+            const fatG     = targets.fat_g
 
             return (
               <div>
