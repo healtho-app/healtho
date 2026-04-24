@@ -1,5 +1,22 @@
 {
+  "name": "healtho",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter healtho-web dev",
+    "build": "turbo run build --filter=healtho-web",
+    "preview": "pnpm --filter healtho-web preview",
+    "web": "pnpm --filter healtho-web",
+    "make-guide": "node make-guide.js"
+  },
   "dependencies": {
     "docx": "^9.6.1"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
   }
 }

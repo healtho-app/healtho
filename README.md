@@ -4,7 +4,7 @@
 > Track meals, log calories, monitor macros, and hit your daily goals — built for the whole family.
 
 🔗 **Live App:** https://healtho-git-main-ayushkapoor11s-projects.vercel.app
-📐 **UI Demos (GitHub Pages):** https://healtho-app.github.io/healtho/frontend/ui-demos/healtho-dashboard.html
+📐 **UI Demos (GitHub Pages):** https://healtho-app.github.io/healtho/ui-demos/healtho-dashboard.html
 
 ### Follow us
 | Platform | Handle |
@@ -57,48 +57,47 @@
 ## Folder Structure
 
 ```
-healtho/
-├── frontend/                       # React web app (Vite) — Ayush
-│   ├── src/
-│   │   ├── components/             # Shared UI components
-│   │   │   ├── Header.jsx
-│   │   │   ├── CalorieRing.jsx
-│   │   │   ├── MacroCard.jsx
-│   │   │   ├── WaterTracker.jsx
-│   │   │   ├── MealSection.jsx
-│   │   │   ├── LogFoodModal.jsx
-│   │   │   └── ProtectedRoute.jsx
-│   │   ├── pages/                  # Route-level pages
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── Profile.jsx
-│   │   │   ├── Dashboard.jsx
-│   │   │   └── NotFound.jsx
-│   │   ├── lib/
-│   │   │   └── supabase.js         # Supabase client + auth helpers
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── tailwind.config.js          # Design tokens (colors, fonts)
-│   ├── vercel.json                 # Security headers (CSP, X-Frame-Options, etc.)
-│   ├── .env.example                # Required env vars template
-│   └── package.json
-├── backend/                        # Express API — Ishaan
-│   ├── controllers/
-│   │   └── register.controller.js  # Registration logic + BMI/TDEE calculation
-│   ├── middleware/
-│   │   └── auth.middleware.js      # Supabase JWT verification
-│   ├── routes/
-│   │   └── register.routes.js      # /api/auth/register endpoints
-│   ├── validators/
-│   │   └── register.validator.js   # Joi schema validation
+healtho/                              ← repo root (pnpm workspace)
+├── apps/
+│   └── web/                          # React web app (Vite) — Ayush
+│       ├── src/
+│       │   ├── components/           # Shared UI components
+│       │   ├── pages/                # Route-level pages
+│       │   ├── lib/
+│       │   │   ├── supabase.js       # Supabase client + auth helpers
+│       │   │   └── macroTargets.js   # Macro calculation helpers
+│       │   ├── App.jsx
+│       │   └── main.jsx
+│       ├── public/                   # hero-bg.mp4, healtho-icon.svg, etc.
+│       ├── tailwind.config.js        # Design tokens (colors, fonts)
+│       ├── .env.example              # Required env vars template
+│       └── package.json              # name: "healtho-web"
+├── packages/
+│   ├── shared/                       # @healtho/shared — empty stub today
+│   │   └── index.ts                  # Populated in Prep 2 (lib extraction)
+│   └── ui/                           # @healtho/ui — empty stub today
+│       └── index.ts                  # Populated in Prep 3-5
+├── backend/                          # Express API — Ishaan (separate service)
+│   ├── controllers/, middleware/, routes/, validators/
 │   ├── server.js
 │   └── package.json
-├── docs/
-│   └── testing/                    # Internal team docs
-└── frontend/ui-demos/              # Static HTML mockups (GitHub Pages)
-    ├── healtho-dashboard.html
-    ├── healtho-register.html
-    └── healtho-profile.html
+├── automation/                       # Weekly content brief generator (GH Actions)
+│   ├── generate-content.js
+│   └── package.json
+├── ui-demos/                         # Static HTML mockups (GitHub Pages)
+│   ├── healtho-dashboard.html
+│   ├── healtho-register.html
+│   └── healtho-profile.html
+├── supabase/migrations/              # Supabase schema migrations
+├── docs/                             # Internal docs
+├── brand/                            # Content strategy + assets
+├── make-guide.js                     # Family Guide docx generator (root-level)
+├── package.json                      # Root workspace manifest (pnpm)
+├── pnpm-workspace.yaml               # Defines apps/* + packages/*
+├── turbo.json                        # Turborepo pipeline config
+├── vercel.json                       # Build settings + CSP headers
+├── .nvmrc                            # Node 20
+└── .gitattributes                    # Line-ending policy (LF)
 ```
 
 ---
@@ -123,21 +122,27 @@ healtho/
 
 ## Local Development
 
-**Frontend (Ayush)**
+**Web App (Ayush)**
 ```bash
 git clone https://github.com/healtho-app/healtho.git
-cd healtho/frontend
+cd healtho
 
-npm install
+# One-time: install pnpm globally if you don't have it
+npm install -g pnpm@latest
 
-cp .env.example .env.local
-# → Fill in VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL
+# Install all workspace deps (apps/web, packages/shared, packages/ui)
+pnpm install
 
-npm run dev
-# → Opens at http://localhost:5173
+# Set up env vars
+cp apps/web/.env.example apps/web/.env.local
+# → Fill in VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_USDA_API_KEY, VITE_API_URL
+
+# Run the web app
+pnpm dev
+# → Opens apps/web at http://localhost:5173
 ```
 
-**Backend (Ishaan)**
+**Backend (Ishaan)** — separate service, not part of the pnpm workspace
 ```bash
 cd healtho/backend
 
@@ -157,7 +162,7 @@ npm run dev
 
 ## Environment Variables
 
-Create a `.env.local` file in `frontend/` (never commit this — use `.env.example` as the template):
+Create a `.env.local` file in `apps/web/` (never commit this — use `apps/web/.env.example` as the template):
 
 ```bash
 # Supabase — get from supabase.com → your project → Settings → API
@@ -168,6 +173,10 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 # Local dev:  http://localhost:3000
 # Production: https://your-backend-url.com
 VITE_API_URL=http://localhost:3000
+
+# USDA FoodData Central API key (https://fdc.nal.usda.gov/api-key-signup.html)
+# Used by LogFoodModal for fallback food search
+VITE_USDA_API_KEY=your-usda-api-key-here
 ```
 
 > `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` come from the Supabase project dashboard (Ishaan owns this).
