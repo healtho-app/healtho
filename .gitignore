@@ -6,3 +6,9 @@ dist/
 .DS_Store
 *.log
 docs/memory-snapshot/
+
+# Turborepo cache (machine-specific)
+.turbo/
+
+# pnpm
+pnpm-debug.log*
