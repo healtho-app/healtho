@@ -484,3 +484,74 @@ File these into open questions for the session where we DO run this:
 ---
 
 *This document should be updated when the plan executes, adding actual commit SHAs, Vercel deploy URLs, and any surprises encountered for the next plan author.*
+
+---
+
+## Execution Log — 2026-04-24
+
+**Status:** Migration shipped. Production live on monorepo structure.
+
+### Final commit SHAs
+
+| Item | SHA / ID |
+|---|---|
+| Pre-migration tag (`pre-monorepo-migration`) | `a6747549172c4c4b19a48c1c74de7bf7d9277f12` |
+| Last pre-migration commit on main | `6abc23ff85d82a0c0315e0fe80e47c985e4356bd` |
+| Migration commit on feature branch | `e206fae9d27a5668250c0fbfcf05eeb54f45bd2e` |
+| .turbo cleanup follow-up | `07698a2f33e8542e08697f2c8e4fa6a630c63a95` |
+| Merge commit on main | `306d238e40d5cfd87a84e9084c63414866804eda` |
+
+### Pre-migration cleanup commits (added during execution, not in original plan)
+
+Discovered during Phase 1 investigation that the repo state required three preparatory commits before the structural migration could land cleanly:
+
+| Commit | SHA | Purpose |
+|---|---|---|
+| A | `c3c24d8` | Untrack root `node_modules/` (387 files committed despite gitignore); document `VITE_USDA_API_KEY` in `.env.example` |
+| B | `50ff479` | Add `.gitattributes` enforcing LF; eliminates phantom CRLF "modified" status on Windows pulls |
+| C | `6abc23f` | Commit pre-migration documentation (Vercel screenshots + Claude Design summary) |
+
+### Vercel deploys
+
+| Phase | Deploy ID | Commit | Notes |
+|---|---|---|---|
+| Layer 1 rollback target (pre-migration prod) | `dpl_3QSvLeyptqfd5VLdGaNhiiDNZoL5` | `6abc23f` | Promotable via dashboard if needed |
+| Failed previews (Root Dir mismatch) | `dpl_C73p9tvtgxVZ6Pq8wnzLCfMB3qQg`, `dpl_DUDzX4FF...` | `e206fae`, `07698a2` | Failed because dashboard still pointed at `frontend/`; expected |
+| First successful preview | `dpl_5T79ZGmuvjgBeybb1iNN2xuUhcwC` | `07698a2` | After dashboard Root Dir cleared to empty |
+| Production (post-merge) | `dpl_4CJ5MJoDGBgQAaKdRnhg4Gj1g42M` | `306d238` | Live |
+
+### Surprises / deltas from the plan
+
+1. **Repo state was messier than the plan anticipated.** Required three prep commits (A/B/C) before the migration commit. Plan didn't predict the tracked `node_modules/`, the CRLF noise, or the need to capture pre-migration screenshots formally.
+
+2. **`backend/`, `automation/`, `make-guide.js`, `validators/` at root** — none of these were in the plan's target structure (Section 2). Decided to leave all at repo root, **not** in the workspace. Workspace scope is strictly `apps/web` + `packages/shared` + `packages/ui`. Future reorg of the non-workspace folders is a separate plan.
+
+3. **Vercel dashboard UI changed** since the screenshots in `docs/pre-migration-vercel/`. Root Directory now has an "Override" toggle. Cleared the value to empty (= repo root) instead of toggling — Vercel respected empty value.
+
+4. **CRLF normalization was a no-op for content.** The repo's index was always LF; only Windows working trees had CRLF. Adding `.gitattributes` alone resolved the phantom-modified status — no massive renormalize commit was needed (we braced for thousands of files; final diff was 1 file, 60 insertions).
+
+5. **`.turbo/` cache leaked** into the migration commit. Required a small follow-up commit to untrack and gitignore. Worth adding `.turbo/` to any future migration plans up front.
+
+6. **Production domain is `healtho-kohl.vercel.app`**, not `healtho.vercel.app` as referenced in Sections 4 and 5 of this doc. Fixed in execution; original plan doc retains the incorrect references for historical context.
+
+7. **Node version stayed at "auto" via `engines.node: ">=20"`** rather than pinned to `20.x` in Vercel dashboard. Vercel's UI also got a toggle change. Acceptable trade-off; revisit if specific Node 20 features needed.
+
+8. **`apps/web/package.json` name kept as `"healtho-web"`** (not renamed to `@healtho/web`). Minimum-change decision per plan Section 3 Step 4.
+
+### What did NOT need to happen
+
+- No Supabase changes
+- No `apps/web/src/` code changes
+- No env var value changes (only added `VITE_USDA_API_KEY` to `.env.example` documentation)
+- No CI workflow changes (weekly-content.yml had zero `frontend/` references — plan R9 ✓)
+- No git submodule or git-lfs concerns
+- No CODEOWNERS / branch protection updates
+
+### Known follow-ups (not blocking)
+
+- `.turbo/` env var declaration (Turborepo wants `sb_publishable_*` declared in `turbo.json#env` for cache invalidation correctness — soft warning, doesn't affect runtime)
+- Add `"type": "module"` to `apps/web/package.json` to silence MODULE_TYPELESS_PACKAGE_JSON warning on every build
+- Vite chunk size warning (>500 kB) — pre-existing, code-splitting follow-up
+- Consider pinning Node to `"20.x"` strictly via Vercel dashboard or `engines` field
+- Delete `feature/monorepo-migration` branch on GitHub once we're confident in the merge
+- Ishaan pulls main → needs `npm install -g pnpm@latest` once before next `pnpm install`
