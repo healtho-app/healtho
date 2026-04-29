@@ -385,11 +385,19 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
 - **First sub-branch:** `design/01-tokens` cut from `feature/design-system@b9f1ed6`, pushed to origin.
 - **Design bundle location:** `C:\Users\ayush\Downloads\Healtho Design System-handoff\healtho-design-system\` (already decompressed from a prior session — re-fetch skipped per Phase 0 instructions). Verified structure: `project/colors_and_type.css`, `project/fonts/`, `project/frontend/`, `project/preview/`, `project/ui_kits/`, `README.md`, `SKILL.md`, `PLATFORMS.md` all present.
 - **Plan copied to repo:** `docs/design-system-execution-plan.md` (this file). Versioned alongside the work.
-- **Vercel preview verification:** _to confirm — auto-deploy expected on both new branches; capture stable preview URL for `feature/design-system` once the first build completes._
-- **Security gates:** N/A for Phase 0 (no code changes, no dependency changes). pnpm audit + secret scan baseline will run at the end of Phase 1.
+- **Vercel preview verification:**
+  - `design/01-tokens` — auto-deployed at SHA `30b9b98` to `https://healtho-git-design-01-tokens-ayushkapoor11s-projects.vercel.app/` (deploy `dpl_3rFYSkDiTcSBauhqPHG9pCfFsNgo`, state READY). Confirms no Ignored Build Step is excluding sub-branches.
+  - `feature/design-system` — pushed at SHA `b9f1ed6` (identical to current main HEAD). Vercel did **not** trigger a fresh build for the feature branch because the SHA matches the existing production main build. The stable branch-alias URL will be `https://healtho-git-feature-design-system-ayushkapoor11s-projects.vercel.app/` and will resolve once the first sub-PR merge lands a unique commit on the branch (expected end of Phase 1). No project-side exclusion to fix.
+  - Project settings inspected (`prj_z8cD0H7nDvfQs3mn0ueRdjmmNtCe`): no Ignored Build Step. `framework: vite`. **Discrepancy flagged for later:** Vercel project `nodeVersion: 24.x` while the repo's `.nvmrc` pins Node 20. Tracked as a follow-up — does not block Phase 0; will be reconciled before final merge.
+- **Security gates:** Phase 0 has no dependency changes, so `pnpm audit` was deferred to Phase 1. **Secret scan ran** on the staged diff before push:
+  - `git diff --cached -U0 | grep -iE '(secret|api[_-]?key|password|token=|bearer )'` returned 2 hits, **both meta-references** (the plan text describing the secret-scan policy itself). No actual credentials in the diff. Manually verified, push approved.
+  - Future-phase note: this scan command will produce the same false positives whenever the plan doc is touched. Consider adding `| grep -v 'docs/design-system-execution-plan.md'` or scanning only `.js,.jsx,.ts,.tsx,.css,.json,.html,.env*` files. Tracked as a Phase 1 hygiene item.
 - **Deltas vs. plan:**
   - Repo has no `CLAUDE.md` (the user's prompt referenced one); existing conventions are documented in `README.md` instead. Followed README.
-  - Bundle reused from `~/Downloads/...` rather than copied to `~/Documents/healtho-design-system/`. Saves a duplication; path is stable for the duration of the migration.
-  - Pulled 1 new commit from `origin/main` before tagging (Ishaan's automation content brief landed earlier today). Tag therefore sits at `b9f1ed6`, not `941a231` from the repo snapshot at session start.
-- **Surprises:** none.
-- **Merge SHA into feature branch:** N/A (Phase 0 commits land on `design/01-tokens` and roll into the feature branch via the Phase 1 sub-PR).
+  - Bundle reused in place at `C:\Users\ayush\Downloads\Healtho Design System-handoff\healtho-design-system\` rather than copied to `~/Documents/healtho-design-system/`. Skips a duplication; path is stable for the duration of the migration.
+  - Pulled 1 new commit from `origin/main` before tagging (Ishaan's automation content brief `b9f1ed6 🤖 Weekly content brief — 2026-04-27`). Tag therefore sits at `b9f1ed6`, not `941a231` from the repo snapshot at session start.
+  - `design/01-tokens` was pushed to origin in Phase 0 (the user's step 4 listed only `git checkout -b`, but step 7 required Vercel preview verification on "both new branches" — push was the obvious enabler). The bootstrap commit (this plan doc) lives on `design/01-tokens`; it will roll into `feature/design-system` via the Phase 1 sub-PR.
+- **Surprises:**
+  - The secret-scan grep is self-tripping on the plan doc itself. False positive, but the gate as written will flag the same lines on every doc edit. Fix in Phase 1.
+  - Vercel `nodeVersion: 24.x` ≠ `.nvmrc` Node 20. Pre-existing drift, not introduced by this work.
+- **Merge SHA into feature branch:** N/A — Phase 0 commit `30b9b98` lives on `design/01-tokens`; rolls into `feature/design-system` via the Phase 1 sub-PR.
