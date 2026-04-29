@@ -401,3 +401,63 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - The secret-scan grep is self-tripping on the plan doc itself. False positive, but the gate as written will flag the same lines on every doc edit. Fix in Phase 1.
   - Vercel `nodeVersion: 24.x` ≠ `.nvmrc` Node 20. Pre-existing drift, not introduced by this work.
 - **Merge SHA into feature branch:** N/A — Phase 0 commit `30b9b98` lives on `design/01-tokens`; rolls into `feature/design-system` via the Phase 1 sub-PR.
+
+### Phase 1 — Foundation: tokens + fonts + semantic classes
+
+- **Date:** 2026-04-29
+- **Sub-branch:** `design/01-tokens`
+- **Commits:**
+  - `8950662 feat(ui): land design-system token layer + self-hosted brand fonts` (Phase 1 work).
+  - Bootstrap doc commits `30b9b98` and `e8ecc8f` from Phase 0 also ride on this sub-branch and will roll into `feature/design-system` together with the Phase 1 PR.
+- **Files added:**
+  - `packages/ui/tokens.css` (365 lines, verbatim copy of `project/colors_and_type.css`).
+  - `packages/ui/fonts/*.ttf` (15 files: 9 Lexend weights + 6 DM Mono cuts).
+- **Files modified:**
+  - `packages/ui/package.json` — added `sideEffects: ["*.css"]` plus `./tokens.css` and `./fonts/*` exports. Kept `main`/`types` pointing at the empty `./index.ts` stub for Phase 2 primitives.
+  - `apps/web/package.json` — single new dep entry `"@healtho/ui": "workspace:*"`. Lockfile delta is exactly that one workspace link line; zero new external packages.
+  - `apps/web/src/index.css` — `@import '@healtho/ui/tokens.css';` at the top of the file (above the Tailwind directives so CSS vars are available everywhere downstream).
+  - `apps/web/index.html` — removed the `https://fonts.googleapis.com/css2?family=Lexend...&family=DM+Mono...` `<link>`. Material Symbols Outlined `<link>` kept.
+- **Files NOT modified (and why):**
+  - `apps/web/tailwind.config.js` — design-system's `project/frontend/tailwind.config.js` is byte-identical to the in-repo file. No merge needed.
+  - `apps/web/vite.config.js` — pnpm workspaces resolve `@healtho/ui` natively in Vite. The plan called this "optional flexibility"; skipped to keep the surface area small. Confirmed by the symlink at `apps/web/node_modules/@healtho/ui` resolving cleanly and `pnpm build` emitting all 15 TTFs into `dist/assets/`.
+  - `vercel.json` — CSP already permits `font-src 'self'` (covers self-hosted) and `https://fonts.googleapis.com` / `https://fonts.gstatic.com` (covers Material Symbols + the in-token-file `@import url(...)`). Untouched.
+- **Build verification:**
+  - `pnpm install` → `Already up to date` (single workspace link added).
+  - `pnpm build` → green in 6s; Vite emitted all 15 TTFs to `dist/assets/` with content hashes (e.g. `Lexend-Regular-peUU6jwM.ttf`). CSS bundle is 44.91 kB (gzip 8.92 kB) — accommodates the token layer.
+  - Build emitted two **pre-existing** warnings (not introduced by this commit): `MODULE_TYPELESS_PACKAGE_JSON` for `apps/web/postcss.config.js` and the >500 kB JS chunk advisory. Both already tracked in the monorepo-migration follow-ups.
+- **Vercel preview:**
+  - Sub-branch deploy `dpl_CN2hcLNZAt1cdu1d11fQT9GUqNH4` at SHA `8950662` reached READY in ~15 s of build time. Stable alias: `https://healtho-git-design-01-tokens-ayushkapoor11s-projects.vercel.app/`.
+  - `feature/design-system` still has no unique commits, so its `healtho-git-feature-design-system-...` alias is unbuilt — activates as soon as this sub-PR merges.
+- **Browser smoke test (to perform on the preview URL):** load Landing → Login → Dashboard → Profile → trigger a calorie-goal celebration. Open DevTools → Network and confirm Lexend + DM Mono TTFs load from `/assets/...` (same-origin), not `fonts.gstatic.com`. Material Symbols may still load from Google Fonts (intentional). _Browser-side verification handed to the user — running tool can't sign in to Vercel preview-auth._
+- **Security gates:**
+  - `pnpm audit --audit-level=high` → "No known vulnerabilities found".
+  - Lockfile delta inspected: only the `@healtho/ui` workspace link added; no new external packages.
+  - Secret-scan grep run with `:!docs/design-system-execution-plan.md ':!packages/ui/fonts/*' ':!packages/ui/tokens.css'` exclusions → PASS.
+  - SHA-256 baselines for the 15 self-hosted TTFs (integrity reference for future commits — any change without explanation is a red flag):
+    - `a15c5f16fbfc45b97168f8cedd959149298639bc93e95c0f7be44f7de7508d5b  DMMono-Italic.ttf`
+    - `23ed35b5229d8a55d15949efe2f7c4c817833edd82d03b241b3618640b417aa4  DMMono-Light.ttf`
+    - `afb110e4fbc514e4bec9ba03d568b5088dccbe38f7046762db853f4c9318d73c  DMMono-LightItalic.ttf`
+    - `8055df2253a84993c7f16586fac775f2f7fcf1bfd191fa23bc1058a58969782a  DMMono-Medium.ttf`
+    - `f6b7a415ecfb6ab07c148fe53c9b03409ca1969c1d49758122a9515b93fdfe91  DMMono-MediumItalic.ttf`
+    - `f98ada968dc3b6b2c08d3f5caaf266977df0bfe0929372b93df5a06cf2ace450  DMMono-Regular.ttf`
+    - `073a809f89c38e2c0c475c14b891a7c7e7b20f193b04f1f4c3ffab1cb180391f  Lexend-Black.ttf`
+    - `db820d3ccf6b1175e9c96d03e4f093835cb7525e1ae3289702362e43f82b24b3  Lexend-Bold.ttf`
+    - `5779982cd883de4921cc64c4b99dc118e0c9817bbd191ef32f9033901d8e7370  Lexend-ExtraBold.ttf`
+    - `7c7d62890f50b8299a10f33095dbb1086b6915d98d84adffcd9384378338352d  Lexend-ExtraLight.ttf`
+    - `2a1322b3349ed31caa626125f1e820e2c11f549f7081e994858a3d2170e14f43  Lexend-Light.ttf`
+    - `18086a9d53eb5e5f8afea3454d79e3b4df811c9f72500b872b8859e12f7ff374  Lexend-Medium.ttf`
+    - `5f9ed62e28658e53a02cc8751566821e8515af753f18b02014669ed0341c9f5b  Lexend-Regular.ttf`
+    - `6bf2212e71f48f136f59ad9583a68c0d323cd89801f35d5193927996c452ba8d  Lexend-SemiBold.ttf`
+    - `e3b0c6e4290da959257cc5aba5f2de39c3f6426d39d6d1f9d9e9d1822461f648  Lexend-Thin.ttf`
+- **Deltas vs. plan:**
+  - **Tailwind config and `apps/web/src/index.css` keyframes/utilities were already byte-identical to the design-system source.** The plan listed them as "merge any missing tokens" / "merge any custom keyframes" — turns out nothing was missing. The current `index.css` keyframes (`ringFill`, `fadeUp`, `float`, `waterGlow`, `celebrationFadeIn`) duplicate identical definitions in `tokens.css`; identical, harmless, no override conflict. **Cleanup deferred to Phase 6 per the plan.**
+  - The plan called for a `packages/ui/index.css` re-export wrapper that registers `@font-face` paths relative to the package. That wrapper is unnecessary because `colors_and_type.css` already contains the `@font-face` declarations with `fonts/...` paths, and Vite resolves those paths relative to the imported file's location automatically. **Skipped — saves a layer of indirection.** Anyone consuming `@healtho/ui/tokens.css` gets fonts registered for free.
+  - The plan called for a `tokens.ts` TS const re-export for future React Native consumption. Plan flagged it as Phase-1.5 / deferrable; **not created.** RN consumption isn't in scope until Phase 4 of the product roadmap (separate from this design-system work).
+  - The plan called for adding a `resolve.alias` for `@healtho/ui` in `vite.config.js`. **Skipped** — pnpm workspace symlink at `apps/web/node_modules/@healtho/ui → packages/ui` resolves natively; the build proves it. Adding the alias would have been redundant.
+  - **`Lexend-VariableFont_wght.ttf` excluded** from the copy. The `colors_and_type.css` `@font-face` table only references the 9 static Lexend weights; the variable file would have shipped ~78 kB of dead bytes. Re-add later if any consumer references `font-variation-settings`.
+- **Surprises / things to flag:**
+  - **Material Symbols Outlined still loads from `fonts.googleapis.com`** — both via the kept `<link>` in `apps/web/index.html` AND via the verbatim `@import url(...)` at the top of `tokens.css`. Two parallel CDN paths to the same resource. This matches the inherited plan ("keep MS CDN for now") but contradicts the user's "same-origin assets only" hard rule. **Action item for a later phase:** decide whether to self-host MS (a 100-300 kB font, downloadable from Google) and strip the CDN — or accept the deviation, document it, and lock the CSP to those exact origins. Not a blocker for Phase 1 since brand fonts (Lexend + DM Mono) are now same-origin.
+  - The verbatim `@import url('https://fonts.googleapis.com/...')` at the top of `tokens.css` means every consumer of the package implicitly fetches Material Symbols. If `packages/ui` ever feeds React Native, RN's CSS pipeline won't honor the `@import` (probably fine — RN renders icons differently — but worth noting).
+  - The `Vercel project nodeVersion: 24.x` vs `.nvmrc: 20` drift noted in Phase 0 did NOT cause build issues — Vite/Tailwind on Node 24 worked. Still worth reconciling before Phase 7.
+- **Merge SHA into feature branch:** _to be set at end-of-phase merge of `design/01-tokens` → `feature/design-system`._
+- **Next:** open internal PR `design/01-tokens` → `feature/design-system`, run user-side smoke test on the preview URL, merge once green, then cut `design/02-primitives` off the updated `feature/design-system`.
