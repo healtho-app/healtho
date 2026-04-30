@@ -621,4 +621,51 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - Mobile viewport (390 px) — header doesn't overflow, "Sign out" text hides, hamburger-style works
 - **Deltas vs. plan:**
   - **Avatar bumped 32 → 36 px.** Spec didn't explicitly call for this; rationale: visual symmetry with the wordmark icon (also 36 px) and consistency with the Primitives.jsx `AppHeader` round-button affordance size on the right. Doesn't change the touch-target floor. Document so we don't churn it back.
-- **Pending:** user visual + functional QA on the design/03b-header preview URL across all 5 routes, then merge into `feature/design-system` (PR coming next), then cut `design/03c-celebration` for Phase 3c.
+- **Visual + functional QA:** PASS. User reviewed all routes across the design/03b-header preview, approved as-is.
+- **PR:** [#11](https://github.com/healtho-app/healtho/pull/11), merged 2026-04-30 via `gh pr merge --merge`.
+- **Merge SHA into feature branch:** `cdbde278610d5091c0e3c091a4df98f2d9027248`.
+- **Sub-branch closed at:** `819da89`.
+- **Vercel alias confirmation:** `healtho-git-design-03b-header-...vercel.app` resolved cleanly without hashing — naming heuristic confirmed for all remaining sub-branches.
+
+### Phase 3c — CelebrationOverlay reskin (wires reward keyframes)
+
+- **Date:** 2026-04-30
+- **Sub-branch:** `design/03c-celebration` cut from `feature/design-system@cdbde27`.
+- **Phase 3c commit:** `feat(app): Phase 3c — CelebrationOverlay reskin` (SHA appended below post-push).
+- **File modified:** `apps/web/src/components/CelebrationOverlay.jsx`.
+- **Visual changes (per `project/ui_kits/app/ProfileCelebration.jsx` `CelebrationScreen` + `comp-celebration.html`):**
+  - **Card:** `bg-surface` (`#0e0b1e`) with `border-slate-700/50`, `border-radius: 20px` (between Card primitive's xl=12 and 2xl=16; explicit inline `borderRadius: 20`), custom `boxShadow: 0 25px 50px -12px rgba(0,0,0,0.7), 0 0 80px rgba(<variant>,0.25)` per-variant glow.
+  - **Badge:** 80×80 round, `bg-{variant}/20` + dual-ring shadow `0 0 0 5px rgba(<variant>,0.25), 0 0 30px rgba(<variant>,0.4)` (replaces the prior single `ring-4` Tailwind utility).
+  - **Decorative burst behind badge:** new 128×128 round element with radial-gradient (`rgba(<variant>,0.45) 0%, transparent 60%`), runs `rewardBurst` keyframe once on mount (Phase 1 token wiring goal).
+  - **Title:** 26 px font-extrabold `tracking-[-0.015em]` (was 24 px `tracking-tight`), with a brighter-white-to-violet-to-white gradient swept via `rewardShimmer` keyframe + `background-clip: text` once on mount. Sits over a transparent fill so the gradient shows through the glyphs.
+  - **Subtitle:** `text-slate-300` (was `text-slate-400`) at 14 px line-height 1.55.
+  - **Static decorative confetti:** 12 fixed-position rectangles (per ProfileCelebration spec), brand palette only, each with `box-shadow: 0 0 8px ${color}80` glow, `transform: rotate(...)`. Layered around the card during entry, in addition to the existing canvas-confetti dynamic bursts.
+  - **3 raw `<span class="material-symbols-outlined">`** (only one in the original) → `MaterialIcon` primitive with `fill={1}` (filled icon).
+- **Reward animations wired (Phase 3c's main brief goal):**
+  - `rewardPop` on the badge — entry pop, scale 0.6 → 1.12 → 0.96 → 1, duration `var(--dur-reward)`, easing `var(--ease-spring)`.
+  - `rewardBurst` on the decorative gradient circle — 0.1s delay, runs once, `cubic-bezier(0.16, 1, 0.3, 1)`.
+  - `rewardShimmer` on the title text — 0.4s delay (after badge pop), runs once, `ease-out`.
+  - All three durations reference `var(--dur-reward)` so `prefers-reduced-motion` (which sets `--dur-reward: 0ms` in `tokens.css`) collapses them automatically. SKILL.md non-negotiable §15 honored without extra plumbing.
+- **Behavior preservation (verified line-by-line):**
+  - Props (`visible`, `variant`, `onDismiss`) — unchanged.
+  - VARIANTS map — same 'water' and 'meals' keys, same icon/title/subtitle copy. Added per-variant fields for badgeShadow, burstGradient, cardGlow.
+  - canvas-confetti library calls — verbatim. Same particle counts (120 + 60), same spread (80, 100), same origins, same `disableForReducedMotion: true`, same `BRAND_COLORS` palette.
+  - Audio chime — verbatim try/catch around `new Audio('/sounds/celebration.wav')`, volume 0.5, silent failure.
+  - Auto-dismiss — same 5000 ms timer with cleanup.
+  - Click-anywhere-to-dismiss — preserved (root onClick + inner stopPropagation).
+  - "Tap anywhere to dismiss" hint button — preserved with new focus ring via `--tap-ring`.
+  - `hasPlayed` ref guard preventing duplicate confetti / chime on re-renders — preserved.
+- **Primitives consumed:** `MaterialIcon` (1 usage with `fill={1}` + `size={40}` + className for color). `Modal` deliberately NOT used — its `bg-slate-900` / `rounded-2xl` / `--shadow-2xl` defaults don't match the celebration's `bg-surface` / 20-px-radius / per-variant glow shadow, and overriding via `className` is fragile without `tailwind-merge`. `Card` deliberately NOT used — needs 20-px radius which the Phase 3.5 prop set doesn't expose (closest is xl=12 or 2xl=16).
+- **Build:** `pnpm build` green in 3.7 s.
+- **Security gates:** `pnpm audit` clean, zero new deps, hardened secret-scan to be verified pre-push, no XSS sinks (zero `dangerouslySetInnerHTML` / `eval` / inline event-handler strings), `vercel.json` not touched, Supabase / `.env` not touched. canvas-confetti library was already present (pre-Phase-3 dep).
+- **Smoke-test scope:**
+  - **Trigger the celebration on `/dashboard`** (hit calorie goal in test data OR fill 8 water glasses) — confirm the overlay appears, badge pops in, decorative burst fades behind, title shimmers, confetti library bursts fire.
+  - **Variant `water`** (8 glasses filled) — cyan dual-ring + cyan glow + water_drop icon + "Hydration Goal Complete!" title.
+  - **Variant `meals`** (calorie goal hit) — violet dual-ring + violet glow + emoji_events icon + "Daily Goal Met!" title.
+  - **Click anywhere** dismisses; auto-dismiss fires after 5 s if untouched.
+  - **`prefers-reduced-motion: reduce`** — overlay still appears with all elements in their final state, but the rewardPop/rewardBurst/rewardShimmer animations don't play (durations collapse to 0). Verify in macOS System Preferences → Accessibility → Display → Reduce Motion, or DevTools → Rendering → "Emulate CSS prefers-reduced-motion".
+  - **Audio chime** — fires once per celebration (or silently fails if browser blocks autoplay).
+- **Deltas vs. plan:**
+  - **Card primitive not used for the celebration card.** Spec wants 20 px radius which the Phase 3.5 `radius` prop doesn't expose (the prop has none/lg/xl/2xl mapping to standard Tailwind values 0/8/12/16; 20 is non-standard). Keeping raw `<div>` with explicit `borderRadius: 20`. **Pickup candidate**: Card primitive could expose a `radius="3xl"` (24 px) or accept arbitrary numeric values, but that's primitive-design churn for one consumer; flagging for awareness, not requesting.
+  - **Modal primitive not used for the overlay.** Modal's hardcoded `bg-slate-900 / rounded-2xl / shadow-[var(--shadow-2xl)]` doesn't fit the celebration's `bg-surface / 20-px / per-variant glow`. Overriding via `className` is unreliable without `tailwind-merge`. Keeping the explicit overlay logic — it's only ~20 lines of JSX and matches the spec exactly.
+- **Pending:** user visual + functional QA on the design/03c-celebration preview URL — specifically trigger BOTH variants (water + meals), verify all three reward keyframes fire, then merge into `feature/design-system`. After 3c lands, the 3-series is complete and Phase 4 (page-level reskins: Dashboard, Auth, Profile, LogFoodModal) can begin.
