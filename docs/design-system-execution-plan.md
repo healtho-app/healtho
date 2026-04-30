@@ -581,4 +581,44 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - `apps/web/src/pages/_design-preview.jsx` — adds a `radius` demo row to the Card section showing all four options side-by-side for QA.
 - **Build:** `pnpm build` green in 3.3 s. Main bundle 598.07 kB (essentially unchanged from Phase 3a `598.04 kB`). CSS bundle 46.86 kB (+0.03 kB). `_design-preview` chunk +0.6 kB for the new demo row.
 - **Security gates:** pnpm audit clean, zero new deps, refined secret-scan PASS, no XSS sinks introduced, `vercel.json` not touched.
-- **Pending:** user visual QA on the `/dashboard` (MacroCard renders identically) and `/_design-preview` Card section (new radius row visible). Then merge into `feature/design-system`. Then cut `design/03b-header` for Phase 3b.
+- **Visual QA:** PASS. User reviewed `/dashboard` (MacroCard + MealSection identical to Phase 3a) and `/_design-preview` Card section (new radius demo row showing 4 variants). Approved.
+- **PR:** [#10](https://github.com/healtho-app/healtho/pull/10), merged 2026-04-30 via `gh pr merge --merge`.
+- **Merge SHA into feature branch:** `53539f9409c0ddd9a2984ee501f6809493498a1f`.
+- **Sub-branch closed at:** `4a8a97a`.
+- **Next:** user greenlit Phase 3b (Header reskin) immediately after.
+
+### Phase 3b — Header reskin
+
+- **Date:** 2026-04-30
+- **Sub-branch:** `design/03b-header` (short name per the Phase 3a Vercel-hashing learning) cut from `feature/design-system@53539f9`.
+- **Phase 3b commit:** `feat(app): Phase 3b — Header reskin` (SHA appended below post-push).
+- **File modified:** `apps/web/src/components/Header.jsx`.
+- **Visual changes:**
+  - Header height now driven by `--nav-height` token via `style={{ minHeight: 'var(--nav-height)' }}` — yields 72 px on web, 56 px on mobile (per `data-platform="mobile"` swap). Replaces the previous `py-4` (≈56 px).
+  - Horizontal padding now `px-[var(--page-gutter)]` — fluid `clamp(1rem, 4vw, 3rem)` on web. Replaces the previous fixed `px-6 lg:px-10`.
+  - Wordmark: `text-xl font-extrabold tracking-[-0.015em]` — matches Primitives.jsx `AppHeader` spec (was `font-bold tracking-tight`).
+  - Right-link hover-underline pattern per SKILL.md web nav: `hover:underline underline-offset-4 decoration-primary/60`. Same affordance for keyboard users via `focus-visible:shadow-[var(--tap-ring)]`.
+  - Avatar bumped from 32 → 36 px (`w-8 h-8` → `w-9 h-9`) so the avatar visually pairs with the wordmark icon (also 36 px) and matches the Primitives.jsx `AppHeader` round-button right-side affordance size.
+  - Logout button: same icon+text layout, but icon is now via `MaterialIcon` primitive and the focus ring uses the brand `--tap-ring` token.
+  - 3 raw `<span class="material-symbols-outlined">` instances → `MaterialIcon` primitive (rightIcon, logout icon, progress_activity spinner).
+- **Behavior preserved (verified line-by-line):**
+  - All four props (`rightLabel`, `rightTo`, `rightIcon`, `showLogout`) unchanged.
+  - `useEffect` auth-state setup: `getSession` then `onAuthStateChange` subscription, unsubscribe on unmount — verbatim.
+  - `handleLogout` flow: setSigningOut → `supabase.auth.signOut()` → `navigate('/login', { replace: true })` — verbatim.
+  - Logo route logic: `/dashboard` if session, `/login` otherwise — verbatim.
+  - Avatar fallback: `avatar_url` image if present, else two-letter initials from `full_name` — verbatim.
+  - Mobile-hidden "Sign out" text via `hidden sm:inline` — preserved.
+- **Primitives consumed:** `MaterialIcon` (3 usages). `IconButton` / `Badge` / `Card` deliberately NOT used — the rightLabel link has icon+text, the logout has icon+text, the avatar is a `<Link>` wrapping an image/initials, and the header surface is a `<header>` not a card. Forcing a primitive into any of these would create a worse fit than the explicit markup.
+- **Build verification:** `pnpm build` green in 4.0 s. Bundle deltas to be filled in post-build (typical: main bundle within ±1 kB, lazy chunk unchanged, CSS bundle minor +).
+- **Security gates** (to be verified pre-push): `pnpm audit` clean, no new deps, hardened secret-scan clean, no XSS sinks (zero dangerouslySetInnerHTML/eval/inline event-handler strings), Supabase auth flow `auth.getSession` + `auth.signOut` + `auth.onAuthStateChange` UNCHANGED — same call sites, same arguments, same handlers — only the visual frame around them differs. `vercel.json` not touched. `.env` not touched.
+- **Smoke-test scope** (wider than Phase 3a — Header is everywhere):
+  - `/` (landing) — public header (no profile, no logout, no rightLabel) renders correctly
+  - `/login` — auth header renders
+  - `/register` — auth header renders
+  - `/dashboard` — authenticated header renders, profile avatar visible, logout button visible, all auth-state transitions still work
+  - `/profile` — authenticated header renders, "My Profile" link target context (already on the profile page — link should behave correctly)
+  - LogFoodModal trigger from `/dashboard` — modal opens, header still visible behind backdrop
+  - Mobile viewport (390 px) — header doesn't overflow, "Sign out" text hides, hamburger-style works
+- **Deltas vs. plan:**
+  - **Avatar bumped 32 → 36 px.** Spec didn't explicitly call for this; rationale: visual symmetry with the wordmark icon (also 36 px) and consistency with the Primitives.jsx `AppHeader` round-button affordance size on the right. Doesn't change the touch-target floor. Document so we don't churn it back.
+- **Pending:** user visual + functional QA on the design/03b-header preview URL across all 5 routes, then merge into `feature/design-system` (PR coming next), then cut `design/03c-celebration` for Phase 3c.
