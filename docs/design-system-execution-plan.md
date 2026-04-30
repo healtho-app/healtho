@@ -464,3 +464,19 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
 - **Browser smoke test result:** PASS. User verified Lexend + DM Mono load same-origin from `/assets/...`, Material Symbols still on Google CDN (expected), no FOUT, no console regressions, dashboard / log-food / profile-edit flows render identically to production.
 - **Process delta:** internal PR was **not** opened on GitHub — `gh` CLI is not installed on the dev machine and the user authorized a direct local `--no-ff` merge as a one-time deviation since the smoke test had already validated the work on the Vercel preview. The merge commit message and this log section preserve everything a PR description would carry. Future sub-PRs (Phase 2 onward) should install `gh` or open the PR via web UI to keep the GitHub audit trail intact. _Tracked as a Phase 2 setup item._
 - **Next:** Phase 2 starts on `design/02-primitives` (already cut off `feature/design-system@d7a74e7` and pushed). Build the primitives package (Button, Card, Input, Modal, Badge, IconButton, MealAvatar, MaterialIcon) in `packages/ui/components/`.
+
+### Sync gate #1 — main → feature/design-system → design/02-primitives
+
+- **Date:** 2026-04-30
+- **Trigger:** PR #7 (`fix: add worker-src 'self' blob: to CSP for avatar Web Worker`) squash-merged into `main` at `efafab8`. Parallel hotfix to a pre-existing prod bug (Web Worker spawn from `blob:` blocked by CSP `script-src` fallback). NOT introduced by this migration. First invocation of the weekly sync gate the inherited plan calls for.
+- **Pre-sync state:** `main` @ `efafab8`, `feature/design-system` @ `d7a74e7`, `design/02-primitives` @ `282d6b4`.
+- **Step 1 — `main → feature/design-system`:** clean three-way merge via `ort` strategy. Only `vercel.json` changed (CSP `script-src` directive gained `worker-src 'self' blob:`). New head `4057ae4`. Pushed to origin.
+- **Step 2 — `feature/design-system → design/02-primitives`:** identical clean merge. New head `dc1c0a9`. Pushed to origin.
+- **Verification:** `grep -c "worker-src" vercel.json` returns `1` on `design/02-primitives` working tree — CSP fix absorbed.
+- **Conflicts:** none. Phase 1 didn't touch `vercel.json`, so the hotfix lands cleanly.
+- **Vercel preview rebuild:** sub-branch and feature-branch aliases will rebuild on push.
+- **Surprises:** none.
+
+### Phase 2 — Primitives package
+
+_Sub-branch synced to `dc1c0a9` and ready, but no primitive code shipped yet as of 2026-04-30. Awaiting user greenlight to begin building Button / Card / Input / Modal / Badge / IconButton / MealAvatar / MaterialIcon._
