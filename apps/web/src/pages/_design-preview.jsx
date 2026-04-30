@@ -124,6 +124,20 @@ export default function DesignPreview() {
               <p className="label-xs">padding lg</p>
             </Card>
           </div>
+          <Row label="radius">
+            <Card radius="lg" padding="sm" className="min-w-[120px] text-center">
+              <p className="label-xs">lg · 8px</p>
+            </Card>
+            <Card radius="xl" padding="sm" className="min-w-[120px] text-center">
+              <p className="label-xs">xl · 12px</p>
+            </Card>
+            <Card radius="2xl" padding="sm" className="min-w-[120px] text-center">
+              <p className="label-xs">2xl · 16px (default)</p>
+            </Card>
+            <Card radius="none" padding="sm" className="min-w-[120px] text-center">
+              <p className="label-xs">none · flat</p>
+            </Card>
+          </Row>
         </Section>
 
         <Section
