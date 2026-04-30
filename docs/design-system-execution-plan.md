@@ -562,4 +562,23 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - **`prefers-reduced-motion` already honored** for the rewardPop animation via `var(--dur-reward)` — no extra plumbing needed. The token collapses to 0 ms automatically per `tokens.css`.
 - **Surprises / things to flag:**
   - **Vercel hashed the branch alias.** Branch name `design/03a-readonly-components` was longer than Vercel's internal limit, so the alias became `healtho-git-design-03a-readonly-479b75-...vercel.app` (a `479b75` hash replaces the rest of the name). The `_design-preview` route's hostname gate (`startsWith('healtho-git-')`) still passes. **Heads-up for Phases 3b, 3c, 4a–4d, 5**: shorter sub-branch names give cleaner aliases. Not a blocker.
-- **Pending:** user visual QA on the preview URL (specifically `/dashboard` logged in for the reskinned components, plus the verification checklist in the PR body), then PR merge into `feature/design-system`, then cut `design/03b-header` for Phase 3b.
+- **Visual QA:** PASS. User reviewed reskins on `/dashboard`, approved as-is.
+- **PR:** [#9](https://github.com/healtho-app/healtho/pull/9), merged 2026-04-30 via `gh pr merge --merge`.
+- **Merge SHA into feature branch:** `1878f636b2406a230f37d1fa48576eb47017971d`.
+- **Sub-branch closed at:** `d49e13a`.
+- **Next:** user requested Phase 3.5 (close pickup #1) before Phase 3b.
+
+### Phase 3.5 — Close pickup #1: extend Card primitive with `radius` prop
+
+- **Date:** 2026-04-30
+- **Sub-branch:** `design/03.5-card-radius` cut from `feature/design-system@1878f63`.
+- **Phase 3.5 commit:** `942acb6 feat(ui): Phase 3.5 — extend Card with radius prop, retrofit MacroCard + MealSection`
+- **Why:** Phase 3a flagged that the `Card` primitive only supported `rounded-2xl` (16 px), so `MacroCard` and `MealSection`'s container kept raw `<div>` shells with `rounded-xl` (12 px) per the chip-card spec. Closing the deviation now while context is fresh, before Phase 3b lands more chip-card consumers (Header notification chip, etc.).
+- **Files modified:**
+  - `packages/ui/components/Card.jsx` — adds `radius` prop with values `"none" | "lg" | "xl" | "2xl"`. Default stays `"2xl"` for backward compat — Phase 2 callers (CalorieRing, WaterTracker via Phase 3a, Modal, all `_design-preview` Card usages) render identically.
+  - `apps/web/src/components/MacroCard.jsx` — wraps content in `<Card padding="sm" radius="xl">`, drops the raw `<div className="bg-slate-900 border ...">` shell. Visual output unchanged — identical surface, border, radius, padding.
+  - `apps/web/src/components/MealSection.jsx` — wraps in `<Card padding="none" radius="xl">` (header + body retain their own padding via inner divs). Visual unchanged.
+  - `apps/web/src/pages/_design-preview.jsx` — adds a `radius` demo row to the Card section showing all four options side-by-side for QA.
+- **Build:** `pnpm build` green in 3.3 s. Main bundle 598.07 kB (essentially unchanged from Phase 3a `598.04 kB`). CSS bundle 46.86 kB (+0.03 kB). `_design-preview` chunk +0.6 kB for the new demo row.
+- **Security gates:** pnpm audit clean, zero new deps, refined secret-scan PASS, no XSS sinks introduced, `vercel.json` not touched.
+- **Pending:** user visual QA on the `/dashboard` (MacroCard renders identically) and `/_design-preview` Card section (new radius row visible). Then merge into `feature/design-system`. Then cut `design/03b-header` for Phase 3b.
