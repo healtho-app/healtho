@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MaterialIcon } from '@healtho/ui'
+import { Card, MaterialIcon } from '@healtho/ui'
 
 // MealSection — collapsible meal row with item list and inline add.
 //
@@ -31,7 +31,7 @@ export default function MealSection({
   }
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+    <Card padding="none" radius="xl">
       <div
         className="flex items-center gap-3 px-4 py-4 cursor-pointer select-none"
         onClick={() => setOpen(o => !o)}
@@ -130,6 +130,6 @@ export default function MealSection({
           )}
         </div>
       )}
-    </div>
+    </Card>
   )
 }
