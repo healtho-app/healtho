@@ -520,4 +520,9 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
 - **Surprises / things to flag:**
   - **Secret-scan command needs hardening.** Discussed under "Security gates" above. Will affect every future phase that touches form code (Register reskin, LogFoodModal, Profile). Recommended fix: scope the grep to credential-shaped patterns or to env/config file paths. Tracking as a Phase 2.5 chore.
   - **`peerDependenciesMeta` not declared.** Some consumers might prefer `peerDependenciesMeta.react.optional = false`. Skipped because we control all consumers in this monorepo. Re-evaluate if `@healtho/ui` ever publishes externally.
-- **Pending:** user visual QA on the preview URL, then PR merge into `feature/design-system`, then cut `design/03a-readonly-components` for Phase 3.
+- **Visual QA:** PASS. User reviewed `/_design-preview`, approved as-is.
+- **PR:** [#8](https://github.com/healtho-app/healtho/pull/8), merged 2026-04-30 via `gh pr merge --merge` (preserves all sub-branch commits).
+- **Merge SHA into feature branch:** `4e98a85bde5d052e30c633a9755f71856f29b75d` (merge commit on `feature/design-system`).
+- **Sub-branch closed at:** `4e36318` (last commit on `design/02-primitives` before merge).
+- **Process delta vs. Phase 1:** internal PR opened via `gh` this time (installed at end of 2026-04-29 session). Audit trail now lives at GitHub.com/PR#8 in addition to the in-repo log. Remote sub-branch retained (not auto-deleted) for the audit trail; can be cleaned up at the end of the migration.
+- **Next:** Phase 3 starts on `design/03a-readonly-components` (cut off `feature/design-system@4e98a85` and pushed). First sub-PR reskins `MacroCard`, `WaterTracker`, `CalorieRing`, `MealSection` to use the Phase 2 primitives. Sub-PRs 3b (`Header`) and 3c (`CelebrationOverlay`) follow on their own branches.
