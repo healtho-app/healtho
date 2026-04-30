@@ -2,14 +2,18 @@
   "name": "@healtho/ui",
   "version": "0.0.0",
   "private": true,
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "type": "module",
+  "main": "./index.js",
   "sideEffects": [
     "*.css"
   ],
   "exports": {
-    ".": "./index.ts",
+    ".": "./index.js",
     "./tokens.css": "./tokens.css",
     "./fonts/*": "./fonts/*"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   }
 }

@@ -459,5 +459,65 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - **Material Symbols Outlined still loads from `fonts.googleapis.com`** — both via the kept `<link>` in `apps/web/index.html` AND via the verbatim `@import url(...)` at the top of `tokens.css`. Two parallel CDN paths to the same resource. This matches the inherited plan ("keep MS CDN for now") but contradicts the user's "same-origin assets only" hard rule. **Action item for a later phase:** decide whether to self-host MS (a 100-300 kB font, downloadable from Google) and strip the CDN — or accept the deviation, document it, and lock the CSP to those exact origins. Not a blocker for Phase 1 since brand fonts (Lexend + DM Mono) are now same-origin.
   - The verbatim `@import url('https://fonts.googleapis.com/...')` at the top of `tokens.css` means every consumer of the package implicitly fetches Material Symbols. If `packages/ui` ever feeds React Native, RN's CSS pipeline won't honor the `@import` (probably fine — RN renders icons differently — but worth noting).
   - The `Vercel project nodeVersion: 24.x` vs `.nvmrc: 20` drift noted in Phase 0 did NOT cause build issues — Vite/Tailwind on Node 24 worked. Still worth reconciling before Phase 7.
-- **Merge SHA into feature branch:** _to be set at end-of-phase merge of `design/01-tokens` → `feature/design-system`._
-- **Next:** open internal PR `design/01-tokens` → `feature/design-system`, run user-side smoke test on the preview URL, merge once green, then cut `design/02-primitives` off the updated `feature/design-system`.
+- **Merge SHA into feature branch:** `d7a74e7f70dde15adc31bdbb2e5dc276ff7329d2` (merge commit on `feature/design-system`, `--no-ff` to preserve all 4 sub-branch commits).
+- **Sub-branch closed at:** `adef60e` (last commit on `design/01-tokens` before merge).
+- **Browser smoke test result:** PASS. User verified Lexend + DM Mono load same-origin from `/assets/...`, Material Symbols still on Google CDN (expected), no FOUT, no console regressions, dashboard / log-food / profile-edit flows render identically to production.
+- **Process delta:** internal PR was **not** opened on GitHub — `gh` CLI is not installed on the dev machine and the user authorized a direct local `--no-ff` merge as a one-time deviation since the smoke test had already validated the work on the Vercel preview. The merge commit message and this log section preserve everything a PR description would carry. Future sub-PRs (Phase 2 onward) should install `gh` or open the PR via web UI to keep the GitHub audit trail intact. _Tracked as a Phase 2 setup item._
+- **Next:** Phase 2 starts on `design/02-primitives` (already cut off `feature/design-system@d7a74e7` and pushed). Build the primitives package (Button, Card, Input, Modal, Badge, IconButton, MealAvatar, MaterialIcon) in `packages/ui/components/`.
+
+### Sync gate #1 — main → feature/design-system → design/02-primitives
+
+- **Date:** 2026-04-30
+- **Trigger:** PR #7 (`fix: add worker-src 'self' blob: to CSP for avatar Web Worker`) squash-merged into `main` at `efafab8`. Parallel hotfix to a pre-existing prod bug (Web Worker spawn from `blob:` blocked by CSP `script-src` fallback). NOT introduced by this migration. First invocation of the weekly sync gate the inherited plan calls for.
+- **Pre-sync state:** `main` @ `efafab8`, `feature/design-system` @ `d7a74e7`, `design/02-primitives` @ `282d6b4`.
+- **Step 1 — `main → feature/design-system`:** clean three-way merge via `ort` strategy. Only `vercel.json` changed (CSP `script-src` directive gained `worker-src 'self' blob:`). New head `4057ae4`. Pushed to origin.
+- **Step 2 — `feature/design-system → design/02-primitives`:** identical clean merge. New head `dc1c0a9`. Pushed to origin.
+- **Verification:** `grep -c "worker-src" vercel.json` returns `1` on `design/02-primitives` working tree — CSP fix absorbed.
+- **Conflicts:** none. Phase 1 didn't touch `vercel.json`, so the hotfix lands cleanly.
+- **Vercel preview rebuild:** sub-branch and feature-branch aliases will rebuild on push.
+- **Surprises:** none.
+
+### Phase 2 — Primitives package
+
+- **Date:** 2026-04-30
+- **Sub-branch:** `design/02-primitives`
+- **Phase 2 commit:** `20f6c43 feat(ui): land Phase 2 primitives — Button, Card, Input, Modal, Badge, IconButton, MealAvatar, MaterialIcon`
+- **Files added (8 primitives + barrel + preview page):**
+  - `packages/ui/components/Button.jsx` — primary / secondary / ghost × sm / md / lg, fully round, focus ring `var(--tap-ring)`, height `var(--btn-h-*)`. Supports `as="a"` for anchor-styled buttons.
+  - `packages/ui/components/Card.jsx` — default / elevated × padding sm / md / lg, optional decorative corner glow blob (`aria-hidden`, `pointer-events: none`).
+  - `packages/ui/components/Input.jsx` — slate-900 surface, hairline border, brand focus ring (state-based, `useState` + `onFocus` / `onBlur` handlers), `forwardRef`, auto `useId`, optional leading icon + trailing `suffix` / `right` slot.
+  - `packages/ui/components/Modal.jsx` — web centered modal, `createPortal(document.body)`, ESC handler, click-outside-to-dismiss, body-scroll lock, initial focus on dialog. Mobile bottom-sheet deferred per `PLATFORMS.md`.
+  - `packages/ui/components/Badge.jsx` — gradient / pop / ok / warn / soft, optional leading icon. Uses `bg-primary/[0.15]`, `bg-fiber/[0.15]`, `bg-carbs/[0.15]` Tailwind opacity arbitrary values.
+  - `packages/ui/components/IconButton.jsx` — circular icon-only, ghost / primary / plain × sm / md / lg, dev-only console warning when `aria-label` is missing.
+  - `packages/ui/components/MealAvatar.jsx` — emoji avatar (meal types + activity-level pickers per the design rubric), supports custom child node (e.g. inner `MaterialIcon`), default + `gradient` variants. Inline `style={{ width, height, fontSize }}` because Tailwind can't take dynamic prop values for arbitrary classes.
+  - `packages/ui/components/MaterialIcon.jsx` — renders icon name as text content `{name}` inside a `<span>`. **Never via `dangerouslySetInnerHTML` or any innerHTML sink.** FILL / wght / grade axes via `font-variation-settings`.
+- **Files added (consumer):**
+  - `apps/web/src/pages/_design-preview.jsx` — Storybook-style page rendering every primitive in every variant. Wires two Modal demos via `useState`. Uses semantic typography classes (`.h1`, `.body`, `.label-xs`, `.eyebrow`) shipped in Phase 1 tokens.
+- **Files modified:**
+  - `packages/ui/index.ts` — **deleted** (was the empty `export {}` stub from the monorepo migration).
+  - `packages/ui/index.js` — **created** as the new barrel re-exporting all 8 primitives. Switched the package to ESM (`"type": "module"`), `main` → `./index.js`, `exports["."]` → `./index.js`. Added `peerDependencies` on `react ^18 || ^19` and `react-dom ^18 || ^19` so consumers wire React themselves; **zero new external packages downloaded** (`pnpm install` reported `Already up to date`; lockfile delta is purely the new internal `packages/ui` entry referencing the existing react/react-dom in `apps/web`).
+  - `apps/web/src/App.jsx` — added `/_design-preview` route, lazy-loaded via `React.lazy()` so the chunk is only fetched when the gate allows it. Gate: `import.meta.env.DEV || hostname.startsWith('healtho-git-')`. Production hostnames fall through to `<NotFound />`.
+- **Build verification:**
+  - `pnpm install` → `Already up to date` (only the internal `packages/ui` lockfile entry changed).
+  - `pnpm build` → green in 3.2 s. **511 modules transformed** (was 500 in Phase 1, +11 = primitives + barrel + preview page + lazy loader). Main bundle `+1.45 kB` (now 591.61 kB / 166.89 kB gzip) — primitives live in the lazy chunk, not the main one. **`_design-preview-UxFW3CFS.js` chunk** split out at **15.08 kB / 4.69 kB gzip** — exactly what `lazy()` should produce. CSS bundle `+0.52 kB` (now 45.43 kB / 9.01 kB gzip) for the new Tailwind utilities.
+- **Vercel preview:**
+  - `dpl_AZ5FXozbNoniLfSKECQuuKzieFLW` at SHA `20f6c43` reached READY.
+  - Branch alias: `https://healtho-git-design-02-primitives-ayushkapoor11s-projects.vercel.app/`
+  - Preview page: `https://healtho-git-design-02-primitives-ayushkapoor11s-projects.vercel.app/_design-preview`
+- **Security gates:**
+  - `pnpm audit --audit-level=high` → "No known vulnerabilities found".
+  - **Zero new npm deps.** Lockfile delta is internal-only — `packages/ui` declaring peer deps on `react` / `react-dom` versions that were already resolved by `apps/web`. No download.
+  - **No XSS sinks.** Verified: zero `dangerouslySetInnerHTML`, zero `eval`, zero `new Function`, zero inline event-handler attribute strings (`onclick=...`, `onload=...`). All event handlers wired through React's synthetic event system. `MaterialIcon` passes the icon name as a JSX text child, **never** as innerHTML.
+  - **Secret-scan grep flagged one false positive** on `apps/web/src/pages/_design-preview.jsx` line: `<Input label="Password" icon="lock" type="password" placeholder="Enter your password" />`. This is the demo placeholder for the password Input variant in the preview page — UI demo text, not a credential. Manually verified clean. **The grep needs refining for Phase 3+** (it now also trips on legitimate UI strings around input/registration components). Suggested refinement: scan only `.env*`, `.json`, `.yaml`, `.yml`, `.toml` files (where credentials actually leak), or look for assignment-shaped patterns like `password\s*[:=]\s*['"]\S{6,}`.
+  - **Same-origin assets only.** No new fonts / images / scripts loaded from external origins. Material Symbols continues to load from Google Fonts CDN per the inherited deviation flagged in Phase 1.
+  - `vercel.json` — **not touched** (CSP fix already absorbed via sync gate #1).
+  - Supabase RLS / auth / `.env` — **not touched**.
+- **Deltas vs. plan:**
+  - **`packages/ui/index.ts` → `packages/ui/index.js`.** The plan called for a "TypeScript const re-export" or `index.ts` barrel; the original stub was a `.ts` file. Switched to plain `.js` because the package contains zero TypeScript code and there's no `tsconfig.json` in `packages/ui` — keeping `.ts` would have been misleading metadata. `package.json`'s `main` updated to match.
+  - **Added `peerDependencies` on `react` / `react-dom`.** Plan didn't explicitly call for this; rationale: future-proofing for downstream consumers (RN, Storybook host, npm-publish someday) and signals to pnpm/npm that the package expects React to come from the host. Costs nothing — pnpm doesn't install peers automatically here, and apps/web already provides them.
+  - **Code-split `_design-preview` via `React.lazy`.** Plan said "gitignored or behind a flag — not shipped". Lazy loading + hostname/env gate is stronger than a flag because production users never even fetch the chunk. Gate also returns `<NotFound />` if someone manually navigates to `/_design-preview` on production. Plan's intent satisfied with cleaner bundle behavior.
+  - **Modal close button uses `IconButton` with `variant="plain"`.** Adds an internal dependency between primitives (Modal → IconButton). Acceptable: keeps the modal's close affordance consistent with the rest of the icon-button vocabulary.
+- **Surprises / things to flag:**
+  - **Secret-scan command needs hardening.** Discussed under "Security gates" above. Will affect every future phase that touches form code (Register reskin, LogFoodModal, Profile). Recommended fix: scope the grep to credential-shaped patterns or to env/config file paths. Tracking as a Phase 2.5 chore.
+  - **`peerDependenciesMeta` not declared.** Some consumers might prefer `peerDependenciesMeta.react.optional = false`. Skipped because we control all consumers in this monorepo. Re-evaluate if `@healtho/ui` ever publishes externally.
+- **Pending:** user visual QA on the preview URL, then PR merge into `feature/design-system`, then cut `design/03a-readonly-components` for Phase 3.
