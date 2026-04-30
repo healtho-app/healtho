@@ -526,3 +526,40 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
 - **Sub-branch closed at:** `4e36318` (last commit on `design/02-primitives` before merge).
 - **Process delta vs. Phase 1:** internal PR opened via `gh` this time (installed at end of 2026-04-29 session). Audit trail now lives at GitHub.com/PR#8 in addition to the in-repo log. Remote sub-branch retained (not auto-deleted) for the audit trail; can be cleaned up at the end of the migration.
 - **Next:** Phase 3 starts on `design/03a-readonly-components` (cut off `feature/design-system@4e98a85` and pushed). First sub-PR reskins `MacroCard`, `WaterTracker`, `CalorieRing`, `MealSection` to use the Phase 2 primitives. Sub-PRs 3b (`Header`) and 3c (`CelebrationOverlay`) follow on their own branches.
+
+### Phase 3a — Read-only display components
+
+- **Date:** 2026-04-30
+- **Sub-branch:** `design/03a-readonly-components`
+- **Phase 3a commit:** `9fe6a56 feat(app): Phase 3a — reskin read-only display components to spec`
+- **Files reskinned:**
+  - `apps/web/src/components/CalorieRing.jsx` — substantial visual redesign per `project/preview/comp-calorie-ring.html`. 130×130 → 160×160. **Remaining-first arc**: gradient stroke shows REMAINING calories; inner hairline arc shows consumed for context. Tick marks at 12 / 3 / 6 / 9 o'clock. Pink + cyan glow blobs in opposite corners. Stats now have inline mini progress bars + colored dots. State colors (brand gradient default, amber when remaining < 15%, green when met). **Reward animation**: `rewardPop` keyframe (from `@healtho/ui` tokens.css) fires once per goal-met transition via `useEffect` + transient state. Duration `var(--dur-reward)` honors `prefers-reduced-motion` automatically. Wraps in `Card` primitive. Tooltip preserved on Daily Goal label.
+  - `apps/web/src/components/WaterTracker.jsx` — substantial visual redesign per `project/preview/comp-water-tracker.html`. 8 dots → 8 SVG glasses (tapered tumbler with proportional water gradient fill, surface highlight ellipse on partial fills, top reflection on full glasses, hover lift). Goal-met state: cyan border + cyan glow + linear-gradient bg + `Badge variant="ok" icon="check_circle"`. Title row gains `MaterialIcon` water_drop + "X / 8 glasses" count with proper `½` display. Wraps in `Card` primitive. All localStorage / waterLevel / manual-override / past-date logic preserved verbatim.
+  - `apps/web/src/components/MealSection.jsx` — minimal: swapped 4 raw `<span class="material-symbols-outlined">` instances for the `MaterialIcon` primitive (single XSS-safe icon source). Spec already matched structurally.
+- **Files INTENTIONALLY NOT modified:**
+  - `apps/web/src/components/MacroCard.jsx` — current code byte-matches `project/preview/comp-macrocards.html` spec (slate-900 surface, hairline border, `rounded-xl`, colored dot, label, value/goal, bar). No structural or visual change needed. Logged as no-op-by-design rather than a forced reskin.
+- **Build verification:**
+  - `pnpm build` → green in 3.4 s.
+  - Main bundle: 598.04 kB / 168.89 kB gzip (+6.43 kB vs Phase 2) — Card / Badge / MaterialIcon primitives are now imported by app components on `/dashboard`, so they live in the main bundle instead of the lazy `_design-preview` chunk.
+  - `_design-preview` lazy chunk: 13.68 kB / 4.22 kB gzip (was 15.08 kB) — shrunk because primitives moved out via deduplication.
+  - CSS bundle: 46.83 kB / 9.32 kB gzip (+1.40 kB) — new arbitrary-value Tailwind utilities (`-top-[60px]`, `w-[220px]`, `tracking-[0.14em]`, etc.).
+- **Vercel preview:**
+  - `dpl_9eXL2D3PcUbn2uzWivcr4V5T7PdV` at SHA `9fe6a56` reached READY.
+  - Branch alias (Vercel hashed because branch name is long): `https://healtho-git-design-03a-readonly-479b75-ayushkapoor11s-projects.vercel.app/`
+  - The hostname-gate for `_design-preview` (`startsWith('healtho-git-')`) still passes on the hashed alias.
+- **Security gates:**
+  - `pnpm audit --audit-level=high` → "No known vulnerabilities found".
+  - **Zero new npm deps.** Lockfile unchanged this commit.
+  - **No XSS sinks.** Verified: zero `dangerouslySetInnerHTML`, zero `eval` / `new Function`, zero inline event-handler attribute strings. All event handlers wired through React's synthetic event system. `MaterialIcon` continues to pass icon names as JSX text children.
+  - **Refined secret-scan grep** (`(secret|api[_-]?key|access[_-]?token|bearer)\s*[:=]\s*['"]\S{12,}['"]|password\s*[:=]\s*['"][^'"]{6,}['"]|-----BEGIN\s+(RSA|OPENSSH|PRIVATE)`) → PASS. **First phase using the hardened pattern**; no false positives despite the components touching form state and Input primitive demos.
+  - **Same-origin assets only.** No new external origins.
+  - `vercel.json` — **not touched** (`worker-src` CSP fix already absorbed via sync gate #1).
+  - Supabase RLS / auth / `.env` — **not touched**. CalorieRing / WaterTracker / MealSection don't talk to Supabase directly; they consume props from the Dashboard parent.
+- **Deltas vs. plan:**
+  - **MacroCard left untouched.** Plan listed it as one of four reskins; the comp-macrocards.html spec is already met by the current implementation. Forcing a no-op rewrite would have introduced risk for zero visual gain. Documented above.
+  - **`Card` primitive doesn't expose a `radius` prop.** Spec uses `rounded-xl` (12 px) for tight chip cards (MacroCard, MealSection container) and `rounded-2xl` (16 px) for major data cards (CalorieRing, WaterTracker). I used `Card` for the latter two and kept raw `<div>` for the former. **Pickup for Phase 3.5 or earlier**: extend `Card` with a `radius="xl" | "2xl"` prop so all four cases can consume the primitive consistently. Minor — current Tailwind cascade (no `tailwind-merge`) makes className-based override unreliable.
+  - **Tooltip preserved on `Daily Goal`.** Spec has no tooltip but the pre-Phase-3 `CalorieRing` had a `?` button explaining the BMR × activity ± fitness-goal calculation. Kept it because the user explicitly asked to preserve every prop / callback / data-flow contract; the tooltip is an accessibility-positive affordance whose removal would be a regression. Adapted to the new layout next to the "Daily Goal" stat label.
+  - **`prefers-reduced-motion` already honored** for the rewardPop animation via `var(--dur-reward)` — no extra plumbing needed. The token collapses to 0 ms automatically per `tokens.css`.
+- **Surprises / things to flag:**
+  - **Vercel hashed the branch alias.** Branch name `design/03a-readonly-components` was longer than Vercel's internal limit, so the alias became `healtho-git-design-03a-readonly-479b75-...vercel.app` (a `479b75` hash replaces the rest of the name). The `_design-preview` route's hostname gate (`startsWith('healtho-git-')`) still passes. **Heads-up for Phases 3b, 3c, 4a–4d, 5**: shorter sub-branch names give cleaner aliases. Not a blocker.
+- **Pending:** user visual QA on the preview URL (specifically `/dashboard` logged in for the reskinned components, plus the verification checklist in the PR body), then PR merge into `feature/design-system`, then cut `design/03b-header` for Phase 3b.
