@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 import { useProfile } from '../contexts/ProfileContext'
@@ -220,8 +221,8 @@ function validateStep4({ activity }) {
 function FieldError({ message }) {
   if (!message) return null
   return (
-    <p className="flex items-center gap-1.5 text-red-400 text-xs font-semibold mt-1">
-      <span className="material-symbols-outlined text-sm">error</span>
+    <p className="flex items-center gap-1.5 text-red-400 text-xs font-semibold mt-1 font-display">
+      <MaterialIcon name="error" size={14} />
       {message}
     </p>
   )
