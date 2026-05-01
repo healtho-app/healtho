@@ -740,19 +740,30 @@ export default function Register() {
       <main className="flex-1 flex items-start justify-center px-4 py-10">
         <div className="w-full max-w-[520px]">
 
-          {/* Progress bar — hidden on Step 7 (summary screen is the finale, not a form step) */}
+          {/* Progress bar — hidden on Step 7 (summary screen is the finale, not a form step).
+              4 segments per AuthScreens.jsx RegisterScreen spec: completed segments use the
+              primary color + soft violet glow, pending segments use the slate-800 border color. */}
           {s && (
             <div className="flex flex-col gap-3 mb-10">
-              <div className="flex items-center justify-between">
-                <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">
-                  Step {s.label} of 4
-                </p>
-                <p className="text-primary text-sm font-bold">{s.pct}</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex gap-1.5">
+                  {[1, 2, 3, 4].map(i => {
+                    const completed = i <= parseInt(s.label, 10)
+                    return (
+                      <div
+                        key={i}
+                        className={`flex-1 h-1 rounded-full transition-all duration-500 ${
+                          completed
+                            ? 'bg-primary shadow-[0_0_8px_rgba(139,92,246,0.4)]'
+                            : 'bg-slate-800'
+                        }`}
+                      />
+                    )
+                  })}
+                </div>
+                <p className="label text-slate-500 whitespace-nowrap">Step {s.label}/4</p>
               </div>
-              <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: s.width }} />
-              </div>
-              <p className="text-slate-500 text-sm font-medium italic">{s.hint}</p>
+              <p className="text-slate-500 text-sm font-medium italic font-display">{s.hint}</p>
             </div>
           )}
 
@@ -766,7 +777,7 @@ export default function Register() {
 
               {isDuplicate ? (
                 <div role="alert" className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl mb-6">
-                  <span className="material-symbols-outlined text-amber-400 mt-0.5">person_check</span>
+                  <MaterialIcon name="person_check" size={20} className="text-amber-400 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-amber-300 text-sm font-bold">This email is already registered.</p>
                     <p className="text-amber-400/80 text-xs mt-0.5">An account with this email already exists.</p>
@@ -774,14 +785,14 @@ export default function Register() {
                       onClick={() => navigate('/login', { state: { prefillEmail: form.email.trim().toLowerCase() } })}
                       className="mt-2 text-xs font-bold text-amber-300 hover:text-white bg-amber-500/20 hover:bg-amber-500/40 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5"
                     >
-                      <span className="material-symbols-outlined text-sm">login</span>
+                      <MaterialIcon name="login" size={14} />
                       Log in instead
                     </button>
                   </div>
                 </div>
               ) : serverError ? (
                 <div role="alert" className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
-                  <span className="material-symbols-outlined text-red-400">warning</span>
+                  <MaterialIcon name="warning" size={20} className="text-red-400" />
                   <p className="text-red-400 text-sm font-semibold">{serverError}</p>
                 </div>
               ) : null}
@@ -790,7 +801,7 @@ export default function Register() {
                 {/* Full Name */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">person</span>Full Name
+                    <MaterialIcon name="person" size={20} className="text-primary" />Full Name
                   </label>
                   <input type="text" value={form.name} onChange={set('name')}
                     onKeyDown={e => e.key === 'Enter' && submitStep1()}
@@ -801,7 +812,7 @@ export default function Register() {
                 {/* Username */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">alternate_email</span>Username
+                    <MaterialIcon name="alternate_email" size={20} className="text-primary" />Username
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-base select-none">@</span>
@@ -817,7 +828,7 @@ export default function Register() {
                 {/* Email */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">mail</span>Email
+                    <MaterialIcon name="mail" size={20} className="text-primary" />Email
                   </label>
                   <input type="email" value={form.email} onChange={set('email')}
                     onKeyDown={e => e.key === 'Enter' && submitStep1()}
@@ -828,7 +839,7 @@ export default function Register() {
                 {/* Password */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">lock</span>Password
+                    <MaterialIcon name="lock" size={20} className="text-primary" />Password
                   </label>
                   <div className="relative">
                     <input type={showPwd ? 'text' : 'password'} value={form.password} onChange={set('password')}
@@ -837,7 +848,7 @@ export default function Register() {
                       className={inputClass(errors, 'password', 'pr-12')} />
                     <button type="button" onClick={() => setShowPwd(v => !v)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
-                      <span className="material-symbols-outlined">{showPwd ? 'visibility_off' : 'visibility'}</span>
+                      <MaterialIcon name={showPwd ? 'visibility_off' : 'visibility'} size={20} />
                     </button>
                   </div>
                   <FieldError message={errors.password} />
@@ -857,7 +868,7 @@ export default function Register() {
                 className="w-full flex items-center justify-center gap-3 h-12 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors mb-8"
               >
                 {googleLoading ? (
-                  <span className="material-symbols-outlined animate-spin text-slate-400 text-xl">progress_activity</span>
+                  <MaterialIcon name="progress_activity" size={20} className="animate-spin text-slate-400" />
                 ) : (
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -874,9 +885,9 @@ export default function Register() {
               <button onClick={submitStep1} disabled={loading}
                 className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
                 {loading ? (
-                  <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Creating account…</>
+                  <><MaterialIcon name="progress_activity" size={20} className="animate-spin" />Creating account…</>
                 ) : (
-                  <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                  <>Continue<MaterialIcon name="arrow_forward" size={20} className="transition-transform group-hover:translate-x-1" /></>
                 )}
               </button>
 
@@ -898,7 +909,7 @@ export default function Register() {
             <div>
               <div className="flex justify-center mb-6">
                 <div className="w-20 h-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-4xl">mark_email_unread</span>
+                  <MaterialIcon name="mark_email_unread" size={36} className="text-primary" />
                 </div>
               </div>
 
@@ -918,14 +929,14 @@ export default function Register() {
                 />
                 {otpError && (
                   <p className="flex items-center justify-center gap-1.5 text-red-400 text-xs font-semibold mt-3">
-                    <span className="material-symbols-outlined text-sm">error</span>
+                    <MaterialIcon name="error" size={14} />
                     {otpError}
                   </p>
                 )}
               </div>
 
               <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3 mb-8">
-                <span className="material-symbols-outlined text-primary flex-shrink-0 text-base mt-0.5">info</span>
+                <MaterialIcon name="info" size={16} className="text-primary flex-shrink-0 mt-0.5" />
                 <p className="text-slate-400 text-xs leading-relaxed">
                   Can't find it? Check your <span className="text-slate-300 font-semibold">spam or junk folder</span>. The code expires in <span className="text-slate-300 font-semibold">10 minutes</span>.
                 </p>
@@ -935,9 +946,9 @@ export default function Register() {
                 <button onClick={verifyEmail} disabled={loading || otpDigits.join('').length < OTP_LENGTH}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
                   {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Verifying…</>
+                    <><MaterialIcon name="progress_activity" size={20} className="animate-spin" />Verifying…</>
                   ) : (
-                    <><span className="material-symbols-outlined">mark_email_read</span>Verify Email</>
+                    <><MaterialIcon name="mark_email_read" size={20} />Verify Email</>
                   )}
                 </button>
 
@@ -950,8 +961,8 @@ export default function Register() {
                     <button onClick={resendEmailCode} disabled={resending}
                       className="flex items-center gap-1.5 text-primary text-sm font-semibold hover:underline disabled:opacity-50">
                       {resending
-                        ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>Resending…</>
-                        : <><span className="material-symbols-outlined text-sm">refresh</span>Resend code</>
+                        ? <><MaterialIcon name="progress_activity" size={14} className="animate-spin" />Resending…</>
+                        : <><MaterialIcon name="refresh" size={14} />Resend code</>
                       }
                     </button>
                   )}
@@ -959,7 +970,7 @@ export default function Register() {
 
                 <button onClick={() => goTo(1)}
                   className="w-full h-12 text-slate-500 rounded-xl font-semibold text-sm hover:bg-slate-900 transition-colors flex items-center justify-center gap-1.5">
-                  <span className="material-symbols-outlined text-base">edit</span>
+                  <MaterialIcon name="edit" size={16} />
                   Wrong email? Go back
                 </button>
               </div>
@@ -976,7 +987,7 @@ export default function Register() {
 
               {serverError && (
                 <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
-                  <span className="material-symbols-outlined text-red-400">warning</span>
+                  <MaterialIcon name="warning" size={20} className="text-red-400" />
                   <p className="text-red-400 text-sm font-semibold">{serverError}</p>
                 </div>
               )}
@@ -1005,7 +1016,7 @@ export default function Register() {
                 {/* Gender */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">wc</span>Gender
+                    <MaterialIcon name="wc" size={20} className="text-primary" />Gender
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
@@ -1032,7 +1043,7 @@ export default function Register() {
                 {/* Age */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">calendar_today</span>Age
+                    <MaterialIcon name="calendar_today" size={20} className="text-primary" />Age
                   </label>
                   <input type="number" min="10" max="120" value={form.age}
                     onChange={setPositiveNum('age')} onKeyDown={blockNegativeKeys}
@@ -1044,7 +1055,7 @@ export default function Register() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
                     <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
-                      <span className="material-symbols-outlined text-primary text-xl">height</span>Height
+                      <MaterialIcon name="height" size={20} className="text-primary" />Height
                     </label>
                     {form.unit_system === 'imperial' ? (
                       <div className="flex gap-2">
@@ -1076,7 +1087,7 @@ export default function Register() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
-                      <span className="material-symbols-outlined text-primary text-xl">monitor_weight</span>Weight
+                      <MaterialIcon name="monitor_weight" size={20} className="text-primary" />Weight
                     </label>
                     <div className="relative">
                       <input type="number" min="0" value={form.weight}
@@ -1094,7 +1105,7 @@ export default function Register() {
                 {/* Country — searchable dropdown (optional) */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">location_on</span>
+                    <MaterialIcon name="location_on" size={20} className="text-primary" />
                     Country <span className="text-slate-600 font-normal text-xs">(optional)</span>
                   </label>
                   <div className="relative" ref={countryRef}>
@@ -1144,7 +1155,7 @@ export default function Register() {
                           }}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                         >
-                          <span className="material-symbols-outlined text-sm">close</span>
+                          <MaterialIcon name="close" size={14} />
                         </button>
                       )}
                     </div>
@@ -1186,7 +1197,7 @@ export default function Register() {
                 {/* Phone number (optional) */}
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">phone</span>
+                    <MaterialIcon name="phone" size={20} className="text-primary" />
                     Phone Number <span className="text-slate-600 font-normal text-xs">(optional)</span>
                   </label>
                   <input
@@ -1208,7 +1219,7 @@ export default function Register() {
                 <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-primary">calculate</span>
+                      <MaterialIcon name="calculate" size={20} className="text-primary" />
                       <span className="text-slate-300 text-sm font-semibold">Estimated BMI</span>
                     </div>
                     <span className={`text-xl font-extrabold font-mono ${bmiInfo.text}`}>{bmi}</span>
@@ -1224,9 +1235,9 @@ export default function Register() {
                 <button onClick={submitMetrics} disabled={loading}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
                   {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
+                    <><MaterialIcon name="progress_activity" size={20} className="animate-spin" />Saving…</>
                   ) : (
-                    <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                    <>Continue<MaterialIcon name="arrow_forward" size={20} className="transition-transform group-hover:translate-x-1" /></>
                   )}
                 </button>
                 <button onClick={() => goTo(1)}
@@ -1236,7 +1247,7 @@ export default function Register() {
               </div>
 
               <div className="mt-6 p-4 bg-slate-900 border border-slate-800 rounded-xl flex gap-3">
-                <span className="material-symbols-outlined text-primary flex-shrink-0">info</span>
+                <MaterialIcon name="info" size={20} className="text-primary flex-shrink-0" />
                 <p className="text-sm text-slate-400 leading-relaxed">
                   Your data is stored securely and only used to personalise your nutrition and health goals.
                 </p>
@@ -1254,7 +1265,7 @@ export default function Register() {
 
               {serverError && (
                 <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
-                  <span className="material-symbols-outlined text-red-400">warning</span>
+                  <MaterialIcon name="warning" size={20} className="text-red-400" />
                   <p className="text-red-400 text-sm font-semibold">{serverError}</p>
                 </div>
               )}
@@ -1281,9 +1292,11 @@ export default function Register() {
                       <p className="font-bold text-slate-100">{opt.label}</p>
                       <p className="text-slate-500 text-sm">{opt.sub}</p>
                     </div>
-                    <span className={`material-symbols-outlined text-primary transition-opacity ${form.fitness_goal === opt.value ? 'opacity-100' : 'opacity-0'}`}>
-                      check_circle
-                    </span>
+                    <MaterialIcon
+                      name="check_circle"
+                      size={20}
+                      className={`text-primary transition-opacity ${form.fitness_goal === opt.value ? 'opacity-100' : 'opacity-0'}`}
+                    />
                   </label>
                 ))}
               </div>
@@ -1342,7 +1355,7 @@ export default function Register() {
                 return (
                   <div className="mt-6">
                     <label className="text-slate-300 text-base font-semibold flex items-center gap-2 mb-2">
-                      <span className="material-symbols-outlined text-primary text-xl">flag</span>
+                      <MaterialIcon name="flag" size={20} className="text-primary" />
                       What's your goal weight?
                     </label>
                     <div className="relative">
@@ -1362,7 +1375,7 @@ export default function Register() {
                     {/* Live estimated time to goal */}
                     {estimate && !errors.goal_weight && (
                       <div className="mt-3 flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-xl">
-                        <span className="material-symbols-outlined text-primary text-base">schedule</span>
+                        <MaterialIcon name="schedule" size={16} className="text-primary" />
                         <p className="text-sm text-slate-300">
                           <span className="font-semibold text-white">{estimate}</span> to reach your goal
                         </p>
@@ -1375,9 +1388,9 @@ export default function Register() {
               {/* "How we calculate" collapsible info box */}
               <details className="mt-6 group">
                 <summary className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-300 text-sm font-semibold transition-colors">
-                  <span className="material-symbols-outlined text-primary text-base">info</span>
+                  <MaterialIcon name="info" size={16} className="text-primary" />
                   How we calculate your Daily Calorie Goal
-                  <span className="material-symbols-outlined text-xs transition-transform group-open:rotate-180">expand_more</span>
+                  <MaterialIcon name="expand_more" size={12} className="transition-transform group-open:rotate-180" />
                 </summary>
                 <div className="mt-3 p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-400 leading-relaxed space-y-2">
                   <p><span className="text-slate-300 font-semibold">1. BMR</span> (Basal Metabolic Rate) — calories your body burns at rest.</p>
@@ -1397,9 +1410,9 @@ export default function Register() {
                 <button onClick={submitFitnessGoal} disabled={loading}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
                   {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
+                    <><MaterialIcon name="progress_activity" size={20} className="animate-spin" />Saving…</>
                   ) : (
-                    <>Continue<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                    <>Continue<MaterialIcon name="arrow_forward" size={20} className="transition-transform group-hover:translate-x-1" /></>
                   )}
                 </button>
                 <button onClick={() => goTo(3)}
@@ -1439,23 +1452,25 @@ export default function Register() {
                       <p className="font-bold text-slate-100">{opt.label}</p>
                       <p className="text-slate-500 text-sm">{opt.sub}</p>
                     </div>
-                    <span className={`material-symbols-outlined text-primary transition-opacity ${form.activity === opt.value ? 'opacity-100' : 'opacity-0'}`}>
-                      check_circle
-                    </span>
+                    <MaterialIcon
+                      name="check_circle"
+                      size={20}
+                      className={`text-primary transition-opacity ${form.activity === opt.value ? 'opacity-100' : 'opacity-0'}`}
+                    />
                   </label>
                 ))}
               </div>
 
               {errors.activity && (
                 <div className="flex items-center gap-1.5 mt-3">
-                  <span className="material-symbols-outlined text-red-400 text-sm">error</span>
+                  <MaterialIcon name="error" size={14} className="text-red-400" />
                   <p className="text-red-400 text-xs font-semibold">{errors.activity}</p>
                 </div>
               )}
 
               {serverError && (
                 <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mt-6">
-                  <span className="material-symbols-outlined text-red-400">warning</span>
+                  <MaterialIcon name="warning" size={20} className="text-red-400" />
                   <p className="text-red-400 text-sm font-semibold">{serverError}</p>
                 </div>
               )}
@@ -1464,9 +1479,9 @@ export default function Register() {
                 <button onClick={submitActivity} disabled={loading}
                   className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
                   {loading ? (
-                    <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Crunching numbers…</>
+                    <><MaterialIcon name="progress_activity" size={20} className="animate-spin" />Crunching numbers…</>
                   ) : (
-                    <>See Your Plan<span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span></>
+                    <>See Your Plan<MaterialIcon name="arrow_forward" size={20} className="transition-transform group-hover:translate-x-1" /></>
                   )}
                 </button>
                 <button onClick={() => goTo(5)}
@@ -1491,7 +1506,7 @@ export default function Register() {
                 {/* Celebration heading */}
                 <div className="mb-8 text-center">
                   <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-primary text-4xl">check_circle</span>
+                    <MaterialIcon name="check_circle" size={36} className="text-primary" />
                   </div>
                   <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">Your plan is ready!</h1>
                   <p className="text-slate-400 text-lg mt-2">Here's how we calculated your daily target.</p>
@@ -1562,7 +1577,7 @@ export default function Register() {
                   className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
                 >
                   Let's Go! 🎉
-                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                  <MaterialIcon name="arrow_forward" size={20} className="transition-transform group-hover:translate-x-1" />
                 </button>
               </div>
             )
