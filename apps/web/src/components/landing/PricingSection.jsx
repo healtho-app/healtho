@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 
 const plans = [
   {
@@ -100,7 +101,7 @@ export default function PricingSection() {
               <ul className="flex-1 space-y-3 mb-6">
                 {features.map(f => (
                   <li key={f} className="flex items-start gap-2.5 text-sm text-white">
-                    <span className="material-symbols-outlined text-primary text-base mt-0.5">check_circle</span>
+                    <MaterialIcon name="check_circle" size={16} className="text-primary mt-0.5" />
                     {f}
                   </li>
                 ))}

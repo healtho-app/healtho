@@ -968,4 +968,52 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - **B1 left intact per guardrail.** The edit-as-INSERT data corruption bug remains in this PR; fixing it in a reskin PR would muddy review and violate the user's "B1 stays out" rule.
   - **Submit buttons preserved as raw `<button>`** — same call as Register's submit-button preservation. Each has unique conditional content (Saving… / Save Changes / Log Food / Log Drink / Log Custom Food). Wrapping in `Button` primitive would change DOM structure across 4-5 distinct text contents with high regression risk. Buttons already use brand-primary background + soft violet shadow.
   - **Internal `MacroCard` helper component** (line ~111 in LogFoodModal.jsx) shares its name with `apps/web/src/components/MacroCard.jsx`. Naming collision is pre-existing; renaming would be a refactor. Phase 6 cleanup candidate.
-- **Pending:** user visual + functional QA on the design/04d-logfood preview URL — every flow listed in the smoke-test scope above. Then merge. After 4d lands, **Phase 4 page-level series is complete** and the path to Phase 5 (Landing — already same-spec per Phase 1 finding) and Phase 6 (polish) opens up.
+- **Visual + functional QA:** PASS. User exercised LogFoodModal end-to-end on the preview, including a USDA search that surfaced a 400 (Bread (White) parens-rejection — verified pre-existing API quirk, NOT a Phase 4d regression since the diff didn't touch USDA fetch logic). User merged after the verification.
+- **PR:** [#17](https://github.com/healtho-app/healtho/pull/17), merged 2026-05-02 via `gh pr merge --merge`.
+- **Merge SHA into feature branch:** `42109ea7d5cc1892f91c211c51df6fe30cbbfbd7`.
+- **Sub-branch closed at:** `40d612d`.
+- **Phase 4 page-level series ✅ COMPLETE** — Dashboard + Login + Register + Profile + LogFoodModal all reskinned with zero behavioral regressions. **B1 intentionally not bundled per the user's locked-in guardrail** — separate ticket in HLTH backlog. New cleanup candidate surfaced: USDA-API parens-rejection quirk (separate ticket, not in design-system migration scope).
+
+### Phase 5 — Landing polish (standalone)
+
+- **Date:** 2026-05-02
+- **Sub-branch:** `design/05-landing` cut from `feature/design-system@42109ea`. No overnight activity on main; sync gate #2 deferred to Phase 6 tomorrow per the master-agent brief (which noted PR #18 — Node 22 LTS bump — is in flight off main and will be absorbed at Phase 6 entry).
+- **Phase 5 commit:** `feat(app): Phase 5 — landing polish` (SHA appended below post-push).
+- **Pre-work verified before this phase started:** all 9 landing JSX components in `apps/web/src/components/landing/` are byte-identical to the design-system spec at `project/frontend/src/components/landing/` (HeroSection, FeaturesSection, BenefitsSection, PricingSection, Footer, LandingNavbar, BackgroundMedia, DashboardPreview, StatsBar — 0 diff lines each). So the structural reskin Phase 5 was originally framed for is already done.
+- **Files modified:**
+  - `apps/web/src/components/landing/FeaturesSection.jsx` — 1 raw span → MaterialIcon (the dynamic feature-card icon, `name={icon}`)
+  - `apps/web/src/components/landing/LandingNavbar.jsx` — 1 raw span → MaterialIcon (mobile hamburger toggle, `name={menuOpen ? 'close' : 'menu'}`); also added `aria-expanded={menuOpen}` for accessibility
+  - `apps/web/src/components/landing/DashboardPreview.jsx` — 1 raw span → MaterialIcon (`local_fire_department` in the streak card)
+  - `apps/web/src/components/landing/PricingSection.jsx` — 1 raw span → MaterialIcon (`check_circle` in feature lists, ×3 plans)
+  - `apps/web/src/components/landing/BackgroundMedia.jsx` — added `prefers-reduced-motion` autoplay suppression. Uses `window.matchMedia('(prefers-reduced-motion: reduce)')` with a live-tracking listener so OS-level toggles take effect mid-page. Falls through to poster image when reduce is set. SKILL.md non-negotiable §15 honored.
+  - `apps/web/src/index.css` — landing animation reduce-motion guards:
+    - `.landing-fade-up` duration changed from hardcoded `0.7s` to `var(--dur-reveal)` (tokens.css collapses to 0 ms on `prefers-reduced-motion: reduce`).
+    - `.landing-float` (continuous decorative idle animation) wrapped in a `@media (prefers-reduced-motion: reduce) { animation: none; }` rule so it stops entirely on reduce.
+    - `.landing-delay-1..4` zero out their delay on reduce so content appears immediately in final state without flicker.
+- **Behavior preservation (verified):**
+  - All 9 landing components functionally unchanged — same Link routes, same `BackgroundMedia` API, same `useState` mobile-menu toggle, same supabase RPC call in StatsBar, same Footer structure. Only icon swaps, autoplay-on-reduce-motion guard, and CSS animation timing changes.
+- **Primitives consumed:** `MaterialIcon` (4 usages across 4 landing files).
+- **Build:** `pnpm build` green in 3.85 s.
+- **Security gates:** `pnpm audit` clean, zero new deps, hardened secret-scan to be verified pre-push, no XSS sinks introduced (`MaterialIcon` continues to receive icon names as JSX text-children), `vercel.json` not touched, Supabase / `.env` not touched, `package.json` / `.nvmrc` not touched (PR #18 owns the Node bump off main).
+- **Token consumption audit (findings flagged for awareness — NOT fixed in this phase per scope):**
+  - **Page gutters** across landing components use raw Tailwind classes (`px-6 lg:px-10`, `max-w-7xl mx-auto`) instead of the `var(--page-gutter)` token. The token's `clamp(1rem, 4vw, 3rem)` formula doesn't cleanly substitute for the responsive `px-6 lg:px-10` pattern (which jumps from 24 px to 40 px at the lg breakpoint). The marketing page intentionally uses `max-w-7xl` (1280 px wide) which is wider than the in-app `max-w-[520px]` mobile-shaped container, so the page-gutter token's role is different here. **Conclusion: not a real gap; landing is intentionally a different layout context.** No change recommended.
+  - **Typography** uses raw Tailwind utilities (`text-3xl sm:text-4xl font-bold`, `text-xl font-semibold`, `text-xs font-semibold uppercase tracking-[0.2em]`) instead of semantic classes (`.h-display`, `.h1`, `.h2`, `.label`, `.body`, etc.) shipped in tokens.css. The semantic classes use `clamp()` for fluid type, while landing copy uses Tailwind's responsive-prefix pattern with discrete breakpoints. Either approach is valid; landing's responsive-prefix pattern gives more designer control over breakpoint behavior. **Conclusion: stylistic choice, not a regression.** Could migrate in a future structural Phase 5.5 if the design-system shifts to fluid-type-only.
+  - **Colors** mostly use Tailwind tokens (`text-white`, `text-primary`, `bg-brand-gradient`, `text-brand-cyan`, `text-brand-pink`, `bg-protein/15`, etc.) — already token-driven. No raw hex values found in landing components. ✅
+  - **One observation:** `BenefitsSection.jsx:48` uses `text-white/[0.06]` for the giant decorative number. That's an arbitrary opacity, not a token. Acceptable for a decorative numeric flourish; not flagging.
+- **SKILL.md voice rubric audit (findings flagged for awareness — NOT changed in this phase):**
+  - Sentence case: ✅ all headlines and CTAs use sentence case ("Build healthy habits", "Start tracking smarter today", "Get Started Free" — Title Case is acceptable for CTAs per the rubric's CTA pattern).
+  - Emoji rules: 1 emoji in landing — the 🚀 in the hero badge "Now Available for Web". Per SKILL.md §8 emojis are restricted to meal-types and activity-pickers. **Borderline:** the 🚀 is in a Pop badge, not a headline / CTA / celebration line. Marketing-page badge feels like a third acceptable context but it's not explicitly green-lit by the rubric. **Flagging for awareness, not fixing** — designer / marketing call.
+  - Voice (warm, data-first, second person): mostly compliant. "Lose weight with clarity" is data-first ✓. "Build healthy habits" is action-oriented ✓. Hero subheadline "Track calories, monitor nutrition, and achieve your fitness goals with intelligent insights and personalized recommendations" leans more aspirational/SaaS-marketing than data-first. **Acceptable for a marketing hero**; in-app copy follows the rubric more strictly.
+  - **Conclusion: voice is compliant enough for landing's marketing context.** No surgical edits needed.
+- **Reduce-motion audit results:**
+  - **`landing-fade-up`** (entrance fade on hero copy + dashboard preview) — now uses `var(--dur-reveal)` which collapses to 0 ms on reduce. Content appears immediately in final state. ✅
+  - **`landing-float`** (subtle bob on the right-side dashboard preview card) — now `animation: none` on reduce. Card sits still. ✅
+  - **`landing-delay-1..4`** — zero out on reduce so the staggered entrance happens instantly. ✅
+  - **`BackgroundMedia` video autoplay** — suppressed on reduce; poster image renders instead. Live media-query listener tracks runtime toggles. ✅
+  - **HeroSection / FeaturesSection / BenefitsSection / StatsBar / PricingSection / Footer / LandingNavbar** — no other animations beyond the four covered above. No scroll-triggered animations on landing currently. ✅
+  - **`celebration-enter`, `water-goal-glow`, `ring-animate`** — celebration / dashboard animations, NOT on landing. Already handled by Phase 1 motion tokens.
+- **Deltas vs. plan:**
+  - **Page-gutter token usage in landing flagged as not-applicable** rather than fixed. Landing's `max-w-7xl + px-6 lg:px-10` pattern is intentionally a different layout context (1280 px content frame for marketing) than the in-app `max-w-[520px]` mobile-shaped container (where `--page-gutter` makes more sense). Documented above; no change recommended.
+  - **Typography raw utilities flagged as stylistic, not a regression.** Could migrate in a future structural pass; not in Phase 5 scope.
+  - **🚀 emoji in hero badge flagged as borderline rubric compliance.** Not changing — designer / marketing call.
+- **Pending:** user visual + functional QA on the design/05-landing preview URL — landing renders cleanly across desktop/tablet/mobile, all 4 migrated icons visible, animations fire normally with reduce-motion OFF, animations collapse to final state with reduce-motion ON (test via macOS System Preferences → Accessibility → Display → Reduce Motion). Then merge. **After 5 lands, only Phase 6 (polish) and Phase 7 (final merge) remain.**
