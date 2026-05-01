@@ -1,3 +1,4 @@
+import { MaterialIcon } from '@healtho/ui'
 import BackgroundMedia from './BackgroundMedia'
 
 const features = [
@@ -62,7 +63,7 @@ export default function FeaturesSection() {
               className="group bg-black/40 backdrop-blur-md border border-white/[0.08] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1"
             >
               <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center mb-4 group-hover:bg-primary/25 transition-colors duration-300">
-                <span className="material-symbols-outlined text-primary text-xl">{icon}</span>
+                <MaterialIcon name={icon} size={20} className="text-primary" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
               <p className="text-sm text-white leading-relaxed">{desc}</p>
