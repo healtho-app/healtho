@@ -907,4 +907,65 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - **Step-internal Profile edit-mode form layouts NOT restructured.** Country picker autocomplete, BMI live preview, gender selector, activity-level picker all kept their existing structures with just icon swaps. Same reasoning as Register: tightly bound to form state machines, restructuring risks regressions for marginal visual gain.
   - **Avatar section visuals NOT restructured.** The current `border-2 border-primary/40` solid border could become a brand-gradient ring per the spec, but the avatar upload/picker/dicebear flows are interconnected; a visual restructure risks breaking the camera-button position or the dicebear picker layout. Phase 6 polish candidate if visual upgrade is desired.
 - **Pickup E officially CLOSED** — `apps/web/src/components/{ProtectedRoute,ProfileLoadError}.jsx` raw spans migrated to MaterialIcon. Both files now go through the primitive's text-content XSS guarantee.
-- **Pending:** user visual + functional QA on the design/04c-profile preview URL — Profile view + edit modes, avatar flows, country picker, ProfileLoadError variants. Then merge.
+- **Visual + functional QA:** PASS. User reviewed the design/04c-profile preview, approved.
+- **PR:** [#16](https://github.com/healtho-app/healtho/pull/16), merged 2026-05-01 via `gh pr merge --merge`.
+- **Merge SHA into feature branch:** `caf0c394d5ef8cc35b4a64c7a9a308769a9b3edb`.
+- **Sub-branch closed at:** `377b3ed`.
+- **Pickup E officially CLOSED.**
+
+### Phase 4d — LogFoodModal reskin (closes Phase 4 page-level series)
+
+- **Date:** 2026-05-02 (continuing from work begun 2026-05-01)
+- **Sub-branch:** `design/04d-logfood` cut from `feature/design-system@caf0c39`. No overnight activity on main; sync gate #2 not needed.
+- **Phase 4d commit:** `feat(app): Phase 4d — LogFoodModal reskin (closes Phase 4)` (SHA appended below post-push).
+- **File modified:** `apps/web/src/components/LogFoodModal.jsx` (1,019 lines).
+- **The biggest-risk reskin in the migration.** LogFoodModal is the most-used modal in the app — every food log goes through it. It hosts USDA food search, custom-food creation, edit-mode entry hydration, drink logging, and the save flow. The mounting parent (Dashboard) consumes `unitCalories/Protein/Carbs/Fat/Fiber` derivations specifically for edit-mode rehydration (in the `meals[].items[]` array). Per the user's locked-in guardrail: **B1 (the edit-as-INSERT data corruption bug) STAYS OUT of this reskin PR.** Separate ticket; visual reskin only.
+- **Changes:**
+  - Added `import { MaterialIcon } from '@healtho/ui'`.
+  - **`MEAL_TYPES` emojis updated** to match SKILL.md non-negotiable §8 rubric (🌅/☀️/🌙/🍎 → 🍳/🥗/🍽️/🍎). Same change Dashboard's `MEAL_META` adopted in Phase 4a. Database `meal_type` keys (`breakfast`/`lunch`/`dinner`/`snacks`) untouched.
+  - **All 16 raw `<span class="material-symbols-outlined">` instances → `MaterialIcon` primitive.** Includes:
+    - `event` (date warning when logging into a non-today date)
+    - `restart_alt` × 2 (custom-food reset buttons)
+    - `info` × 3 (helper hints throughout)
+    - `search` (search input leading icon — preserves the absolute positioning via className)
+    - `close` (close button)
+    - `progress_activity` × 2 (search loading + save loading)
+    - `add_circle` × 2 ("Add custom food" inline + Log CTA)
+    - `arrow_back` (back from custom-food mode)
+    - `bookmark` (saved-foods badge)
+    - `warning` (error banner)
+    - `check_circle` (Save Changes CTA in edit mode)
+- **Behavior preservation (verified line-by-line):**
+  - Every state hook unchanged (`open`, `view`, `query`, `results`, `selectedFood`, `quantity`, `unit`, `customMode`, `customForm`, `pinnedField`, `errors`, `saving`, etc.).
+  - All Supabase calls verbatim (`food_logs.insert`, `food_logs.update`, `custom_foods.upsert`, recent-logs query).
+  - USDA fetch flow verbatim (`searchUSDA`, `usdaNutrient`, debounced query, `USDA_API_KEY` + `USDA_SEARCH_URL` constants).
+  - **Edit-mode entry hydration verbatim** — the prop `editEntry` and its handling logic untouched. This is where B1 lives; left exactly as-is per the guardrail.
+  - **Save flow verbatim** — both insert-new and update-existing branches preserved exactly. B1 fix ticket separate.
+  - Custom-food form (`EMPTY_CUSTOM` const, `calcCalories` helper for the 4/4/9 rule, autoCalc logic, pinned-field overrides) untouched.
+  - `MacroCard` internal helper component (different from `apps/web/src/components/MacroCard.jsx` — naming collision noted but not refactored; would be a Phase 6 cleanup).
+  - Debounced search `useDebounce` hook untouched.
+  - Mounting / unmounting via `open` prop unchanged.
+- **Primitives consumed:** `MaterialIcon` (16 usages). `Modal` deliberately NOT used — LogFoodModal is a heavy, multi-view modal with bespoke layouts (search list / custom-food form / detail view) that exceed the Modal primitive's centered-card shape. Wrapping in `Modal` would create an inner-scroll / outer-scroll conflict. Same delta as `CelebrationOverlay` from Phase 3c.
+- **Build:** `pnpm build` green in 3.5 s.
+- **Security gates:** `pnpm audit` clean, zero new deps, hardened secret-scan to be verified pre-push, no XSS sinks introduced (`MaterialIcon` continues to receive icon names as JSX text-children — never via innerHTML), `vercel.json` not touched, Supabase RLS / auth / `.env` not touched, USDA API key handling unchanged (still read from `import.meta.env.VITE_USDA_API_KEY`).
+- **Smoke-test scope (extra QA per user's guardrail — most-used modal in the app):**
+  - Open from Dashboard `+ Log food` button (no meal preset)
+  - Open from each MealSection's `+` button (meal preset = breakfast/lunch/dinner/snacks)
+  - Search USDA: type query → debounced search fires → results render with new MaterialIcon glyphs (search, close)
+  - Select a USDA result → detail view shows nutrients, quantity controls work
+  - Custom-food mode: click `+ Add custom food` → form renders → fill fields → autoCalc toggles between calculated/manual calories → save adds to `custom_foods` and logs the entry
+  - Drink logging: select a drink type, log it, confirm WaterTracker on Dashboard updates accordingly
+  - Edit-mode hydration (B1 territory — DO NOT BREAK): from MealSection click pencil on existing entry → modal opens with `editEntry` prefilled → save updates the existing row (the prior INSERT-instead-of-UPDATE bug is B1; keep current behavior, don't try to fix here)
+  - Date warning: log into a non-today date via past-date Dashboard view → yellow `event` warning banner appears
+  - Save success: modal closes, dashboard refetches logs, macros recalc
+  - Save error: red `warning` banner shows
+  - Mobile viewport (390 px): no overflow, save button reachable
+  - Console clean apart from the known vercel.live preview-toolbar block
+- **Deltas vs. plan:**
+  - **MEAL_TYPES emoji rubric update** (🌅/☀️/🌙/🍎 → 🍳/🥗/🍽️/🍎). Display-only constant; database keys untouched. Same change Dashboard's MEAL_META got in Phase 4a.
+  - **Modal primitive NOT used** to wrap the LogFoodModal overlay — multi-view layouts (search / custom / detail) don't fit Modal's centered-card shape. Matches the same call made in Phase 3c for CelebrationOverlay.
+  - **Step-internal layouts NOT restructured** — search results list, USDA detail view, custom-food form, quantity selector all kept their existing structures with just icon swaps. Same reasoning as Register / Profile: tightly bound to state machines + USDA data shape; restructuring risks regressions for marginal visual gain. Phase 6 polish candidate if specific complaints surface.
+  - **B1 left intact per guardrail.** The edit-as-INSERT data corruption bug remains in this PR; fixing it in a reskin PR would muddy review and violate the user's "B1 stays out" rule.
+  - **Submit buttons preserved as raw `<button>`** — same call as Register's submit-button preservation. Each has unique conditional content (Saving… / Save Changes / Log Food / Log Drink / Log Custom Food). Wrapping in `Button` primitive would change DOM structure across 4-5 distinct text contents with high regression risk. Buttons already use brand-primary background + soft violet shadow.
+  - **Internal `MacroCard` helper component** (line ~111 in LogFoodModal.jsx) shares its name with `apps/web/src/components/MacroCard.jsx`. Naming collision is pre-existing; renaming would be a refactor. Phase 6 cleanup candidate.
+- **Pending:** user visual + functional QA on the design/04d-logfood preview URL — every flow listed in the smoke-test scope above. Then merge. After 4d lands, **Phase 4 page-level series is complete** and the path to Phase 5 (Landing — already same-spec per Phase 1 finding) and Phase 6 (polish) opens up.
