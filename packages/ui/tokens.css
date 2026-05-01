@@ -10,7 +10,21 @@
      4. MOTION       — shared primitives + explosive reward keyframes
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
+/* ─── Material Symbols Outlined (self-hosted variable font) ─────────────
+   Sourced from google/material-design-icons @ commit
+   481507587f1bdfe712939398c4dc0ecc2079ea7c (variablefont/ directory).
+   Apache-2.0; LICENSE preserved alongside at fonts/MaterialSymbolsOutlined-LICENSE.txt.
+   Variation axes: FILL 0..1, wght 100..700, GRAD -50..200, opsz 20..48 —
+   exposed to consumers via the .material-symbols-outlined class +
+   font-variation-settings overrides on individual icons. */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url('fonts/MaterialSymbolsOutlined-Variable.woff2') format('woff2-variations'),
+       url('fonts/MaterialSymbolsOutlined-Variable.woff2') format('woff2');
+}
 
 /* ─── DM Mono (self-hosted brand files) ──────────────── */
 @font-face { font-family: 'DM Mono'; font-style: normal;  font-weight: 300; font-display: swap; src: url('fonts/DMMono-Light.ttf')         format('truetype'); }

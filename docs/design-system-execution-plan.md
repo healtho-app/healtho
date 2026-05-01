@@ -668,4 +668,62 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
 - **Deltas vs. plan:**
   - **Card primitive not used for the celebration card.** Spec wants 20 px radius which the Phase 3.5 `radius` prop doesn't expose (the prop has none/lg/xl/2xl mapping to standard Tailwind values 0/8/12/16; 20 is non-standard). Keeping raw `<div>` with explicit `borderRadius: 20`. **Pickup candidate**: Card primitive could expose a `radius="3xl"` (24 px) or accept arbitrary numeric values, but that's primitive-design churn for one consumer; flagging for awareness, not requesting.
   - **Modal primitive not used for the overlay.** Modal's hardcoded `bg-slate-900 / rounded-2xl / shadow-[var(--shadow-2xl)]` doesn't fit the celebration's `bg-surface / 20-px / per-variant glow`. Overriding via `className` is unreliable without `tailwind-merge`. Keeping the explicit overlay logic — it's only ~20 lines of JSX and matches the spec exactly.
-- **Pending:** user visual + functional QA on the design/03c-celebration preview URL — specifically trigger BOTH variants (water + meals), verify all three reward keyframes fire, then merge into `feature/design-system`. After 3c lands, the 3-series is complete and Phase 4 (page-level reskins: Dashboard, Auth, Profile, LogFoodModal) can begin.
+- **Visual + functional QA:** PASS. User verified both variants (water + meals) on the design/03c-celebration preview, all three reward keyframes fired, approved.
+- **PR:** [#12](https://github.com/healtho-app/healtho/pull/12), merged 2026-04-30 via `gh pr merge --merge`.
+- **Merge SHA into feature branch:** `c6ab246186fd15588553a00d1490b184bccc8c75`.
+- **Sub-branch closed at:** `6f5f579`.
+- **Closes the 3-series.** Six in-app components reskinned across PRs #9 / #10 / #11 / #12; one primitive prop added (Card `radius`); all three Phase 1 reward keyframes now firing in real surfaces.
+
+### Phase 3d — Self-host Material Symbols Outlined (closes Pickup A)
+
+- **Date:** 2026-05-01
+- **Sub-branch:** `design/03d-self-host-ms` cut from `feature/design-system@c6ab246` (no overnight activity on main; sync gate #2 not needed).
+- **Phase 3d commit:** `feat(ui): Phase 03d — self-host Material Symbols Outlined` (SHA appended below post-push).
+- **Why:** Closes Pickup A from earlier briefs. Eliminates the last third-party font CDN. Honors the same-origin hard rule.
+- **Font source:**
+  - **Repo:** `google/material-design-icons`
+  - **Pinned commit SHA:** `481507587f1bdfe712939398c4dc0ecc2079ea7c` (master HEAD on 2026-05-01; the repo's tagged releases are stale — last tag `4.0.0` is from 2020-08-31, predates Material Symbols).
+  - **Path in repo:** `variablefont/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].woff2`
+  - **Source URL:** `https://raw.githubusercontent.com/google/material-design-icons/481507587f1bdfe712939398c4dc0ecc2079ea7c/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.woff2`
+  - **Size:** 3,924,340 bytes (3.92 MB)
+  - **License:** Apache-2.0. Preserved at `packages/ui/fonts/MaterialSymbolsOutlined-LICENSE.txt` (downloaded from the same SHA's repo root `LICENSE`).
+- **Files added:**
+  - `packages/ui/fonts/MaterialSymbolsOutlined-Variable.woff2` (3.92 MB).
+  - `packages/ui/fonts/MaterialSymbolsOutlined-LICENSE.txt` (11.1 KB).
+- **Files modified:**
+  - `packages/ui/tokens.css` — replaced the `@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0')` line with a self-hosted `@font-face` block:
+    - `font-family: 'Material Symbols Outlined'` (exactly the same name so all `.material-symbols-outlined` class consumers + every `MaterialIcon` primitive call keep working without code changes)
+    - `font-weight: 100 700` (variable axis range; the other three axes — FILL 0..1, GRAD -50..200, opsz 20..48 — are accessed via `font-variation-settings` on individual icons, no `@font-face` shorthand exists)
+    - `format('woff2-variations'), format('woff2')` dual src for browsers that don't support variable-font format hint
+    - `font-display: swap` (consistent with other brand fonts)
+  - `apps/web/index.html` — removed the Google-Fonts `<link>` for Material Symbols AND the now-unused `<link rel="preconnect">` lines for `fonts.googleapis.com` and `fonts.gstatic.com`. Replaced with a comment explaining all brand fonts now load self-hosted via `@healtho/ui/tokens.css`.
+- **SHA-256 baselines (integrity reference, alongside the 15 brand-font baselines from Phase 1):**
+  - `18a28007e1ed51425059d3ceed5629ed48977e2a894d90e8f0a38e76880fce19  MaterialSymbolsOutlined-Variable.woff2`
+  - `58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd  MaterialSymbolsOutlined-LICENSE.txt`
+- **Build verification:**
+  - `pnpm build` → green in 3.9 s.
+  - Vite emitted `dist/assets/MaterialSymbolsOutlined-Variable-OqZILbjW.woff2` (3,924.34 kB — matches source byte-for-byte; Vite copies as-is, woff2 is already compressed).
+  - Main JS bundle: 600.63 kB / 169.94 kB gzip (+2.6 kB vs Phase 3c — picks up the woff2 asset reference).
+  - CSS bundle: 46.94 kB / 9.34 kB gzip (essentially unchanged).
+- **Codebase audit (grep for residual external references):**
+  - `apps/web/index.html`, `packages/ui/tokens.css` — clean (no Google-Fonts URLs).
+  - `vercel.json` CSP still whitelists `fonts.googleapis.com` (style-src) and `fonts.gstatic.com` (font-src). No longer needed but **not touched per the user's hard rule.** Tightening the CSP to drop these is a Phase 6 polish candidate.
+  - `ui-demos/healtho-register.html` + `ui-demos/healtho-profile.html` — static GitHub Pages mockups outside the React app, NOT in the migration's scope. Still load Google Fonts; intentionally untouched.
+  - `apps/web/src/components/ProtectedRoute.jsx` + `apps/web/src/components/ProfileLoadError.jsx` — use raw `<span class="material-symbols-outlined">` instead of the `MaterialIcon` primitive. **They still render correctly** because the `.material-symbols-outlined` CSS class in `tokens.css` continues to resolve to `font-family: 'Material Symbols Outlined'`, and our self-hosted `@font-face` uses the exact same family name. Migrating these to the `MaterialIcon` primitive is a future cleanup (not in 3d's scope; may roll into Phase 4c when Profile gets reskinned).
+- **Security gates:**
+  - `pnpm audit --audit-level=high` → "No known vulnerabilities found".
+  - **Zero new npm deps.** Pure asset + CSS change. Lockfile unchanged.
+  - **No XSS sinks.** Verified: zero `dangerouslySetInnerHTML` / `eval` / inline event-handler strings introduced.
+  - **Hardened secret-scan** to be verified pre-push.
+  - **Same-origin assets:** the font now bundles into Vite's `/assets/` and Vercel serves it from the same origin. **Verification depends on user's DevTools Network-tab QA on the preview** — confirm zero requests to `fonts.googleapis.com` or `fonts.gstatic.com` after reload.
+  - `vercel.json` not touched.
+  - Supabase RLS / auth / `.env` not touched.
+- **Variable-font axes verified to match what the app uses:**
+  - `MaterialIcon.jsx` sets `font-variation-settings: 'FILL' ${fill}, 'wght' ${weight}, 'GRAD' ${grade}, 'opsz' 24` — all four axes are present in the variable WOFF2 (filename literally encodes `[FILL,GRAD,opsz,wght]`).
+- **Deltas vs. plan:**
+  - **Pinned to a master commit SHA, not a tagged release.** Plan suggested "tagged release of google/material-design-icons on GitHub" but the repo's last tag is `4.0.0` from 2020-08-31, which predates Material Symbols entirely. Master HEAD is the only place the variable font lives. Pinned to the exact SHA `481507587f1bdfe712939398c4dc0ecc2079ea7c` — equally reproducible (commits are immutable on Git), just not tagged.
+  - **Removed the unused preconnect `<link>`s** as well as the Material Symbols `<link>` from `apps/web/index.html`. Plan only called out the Material Symbols `<link>`; the preconnects to `fonts.googleapis.com` and `fonts.gstatic.com` were redundant once all three font families self-host (Lexend + DM Mono since Phase 1, Material Symbols now). Cleanup-on-the-way.
+- **Surprises / things to flag:**
+  - **`vercel.json` CSP entries for `fonts.googleapis.com` (style-src) and `fonts.gstatic.com` (font-src) are now dead permissions.** Tightening the CSP is a Phase 6 polish candidate (with user approval, since the hard rule restricts CSP changes).
+  - **`ProtectedRoute.jsx` and `ProfileLoadError.jsx` not migrated to `MaterialIcon` primitive yet.** They render correctly with the self-hosted font (CSS class continues to work) but they bypass the primitive's XSS-safe text-content guarantee. Worth picking up during Phase 4c (Profile reskin) since `ProfileLoadError` lives near the Profile flow.
+- **Pending:** user visual QA on the design/03d-self-host-ms preview URL — specifically Network-tab evidence (zero `fonts.googleapis.com` / `fonts.gstatic.com` requests) + side-by-side icon-rendering parity vs the feature/design-system preview (which still serves CDN). Then merge.
