@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 import { supabase } from '../lib/supabase'
 
 /**
@@ -57,9 +58,7 @@ export default function ProtectedRoute({ children }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background-dark">
         <div className="flex flex-col items-center gap-4">
-          <span className="material-symbols-outlined animate-spin text-primary text-4xl">
-            progress_activity
-          </span>
+          <MaterialIcon name="progress_activity" size={36} className="animate-spin text-primary" />
           <p className="text-slate-500 text-sm font-semibold">Checking session…</p>
         </div>
       </div>
