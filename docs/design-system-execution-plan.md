@@ -726,4 +726,64 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
 - **Surprises / things to flag:**
   - **`vercel.json` CSP entries for `fonts.googleapis.com` (style-src) and `fonts.gstatic.com` (font-src) are now dead permissions.** Tightening the CSP is a Phase 6 polish candidate (with user approval, since the hard rule restricts CSP changes).
   - **`ProtectedRoute.jsx` and `ProfileLoadError.jsx` not migrated to `MaterialIcon` primitive yet.** They render correctly with the self-hosted font (CSS class continues to work) but they bypass the primitive's XSS-safe text-content guarantee. Worth picking up during Phase 4c (Profile reskin) since `ProfileLoadError` lives near the Profile flow.
-- **Pending:** user visual QA on the design/03d-self-host-ms preview URL — specifically Network-tab evidence (zero `fonts.googleapis.com` / `fonts.gstatic.com` requests) + side-by-side icon-rendering parity vs the feature/design-system preview (which still serves CDN). Then merge.
+- **Visual + same-origin QA:** PASS. User confirmed via DevTools Network tab on the design/03d-self-host-ms preview that ZERO requests hit `fonts.googleapis.com` or `fonts.gstatic.com`. All four font assets — three Lexend cuts + the new `MaterialSymbolsOutlined-Variable-OqZILbjW.woff2` — load from the same Vercel origin (`/assets/`). The "same-origin assets only" hard rule is now fully honored.
+- **PR:** [#13](https://github.com/healtho-app/healtho/pull/13), merged 2026-05-01 via `gh pr merge --merge`.
+- **Merge SHA into feature branch:** `9c54d1f471bfb899dc891a966e6a6eed9db465eb`.
+- **Sub-branch closed at:** `9c8e4a4`.
+- **Pickup A is officially CLOSED.** All three brand-font families (Lexend, DM Mono, Material Symbols Outlined) self-hosted with no third-party CDN dependencies remaining in the React app.
+
+### Phase 4a — Dashboard page reskin
+
+- **Date:** 2026-05-01
+- **Sub-branch:** `design/04a-dashboard` cut from `feature/design-system@9c54d1f` (no overnight activity on main; sync gate #2 not needed).
+- **Phase 4a commit:** `feat(app): Phase 4a — Dashboard page reskin` (SHA appended below post-push).
+- **File modified:** `apps/web/src/pages/Dashboard.jsx` (508 lines pre-reskin).
+- **Why:** Highest-traffic screen. Page-level chrome + section composition + typography hierarchy now match `project/ui_kits/app/Dashboard.jsx` spec while leaving every state hook, callback, supabase query, and computed value verbatim. Visual reskin only — props in, same data out.
+- **Visual changes (page-level only — components themselves were reskinned in Phase 3):**
+  - **MEAL_META emojis updated** to match SKILL.md non-negotiable §8 (emoji only in meal-types and activity-pickers, with a fixed palette). Was `🌅 / ☀️ / 🌙 / 🍎`, now `🍳 / 🥗 / 🍽️ / 🍎` per the rubric. This is a constant local to the file; no API/data-shape impact.
+  - **Greeting block** retitled to match Primitives.jsx-derived spec: `text-3xl font-extrabold tracking-[-0.02em]` (was `text-4xl tracking-tight`); first name now wrapped in `text-gradient` semantic class (Phase 1 token); subtitle changed from `text-slate-500` to `text-slate-400` per spec body color.
+  - **Date navigator** chevrons swapped from raw buttons to `IconButton variant="plain" size="sm"` primitive consumers; "Today" quick-jump styled to match `Badge variant="pop"` shape (raw button retained because Badge isn't a clickable primitive — see deltas).
+  - **Meals header** "+ Log food" inline trigger uses `MaterialIcon` for the `add` icon plus the SKILL.md hover-underline pattern with `--tap-ring` focus ring (matches Header's right-link affordance).
+  - **Empty-state card** (no entries on past dates) now wraps in `Card padding="lg" radius="xl"` primitive consumer; replaces the prior raw `<div>` shell. Same visual, primitive consumption is consistent.
+  - **Streak card** is the biggest single change: brand-gradient flame circle replaces the slate emoji box. 44 px round, `bg-brand-gradient` fill, `MaterialIcon name="local_fire_department" fill={1}` icon, soft violet shadow `shadow-[0_8px_20px_-6px_rgba(139,92,246,0.5)]`. Streak title moves from display font to DM Mono (`font-mono text-base font-bold`) per Primitives.jsx spec. Subtitle color shifts from `text-green-400` to `text-fiber` (the design-system green token, `#4caf7d`). Right-side trophy icon swaps from raw `<span>` to `MaterialIcon`.
+  - **Log Food CTA** (bottom of page) replaces the prior solid-primary `<button>` with `Button variant="primary" size="lg"` (brand-gradient fill + soft violet shadow + rounded-full per Phase 2 primitive). Leading `MaterialIcon name="add_circle" fill={1}`.
+  - 4 raw `<span class="material-symbols-outlined">` instances → `MaterialIcon` primitive (chevron_left, chevron_right via IconButton; emoji_events; add_circle via Button child).
+- **Behavior preservation (verified line-by-line):**
+  - Every `useState` hook signature unchanged: `logOpen, logMeal, logs, streak, selectedDate, editEntry, waterTotalLevel`.
+  - `useProfile()` hook contract unchanged.
+  - `fetchLogs` callback unchanged — same supabase query, same `selectedDate` dependency, same error logging.
+  - Streak `useEffect` unchanged — same dedup-by-date logic, same yesterday-cutoff check, same loop.
+  - `handleDelete` and `handleEdit` flows unchanged.
+  - All derived totals (`totalCalories / Protein / Carbs / Fat / Fiber`, `calorieGoal`, `waterLevel`, `waterGoalMet`, `mealGoalMet`) computed identically.
+  - `useCelebration` hook calls unchanged with identical args.
+  - `computeMacroTargets` and `pctOf` and `macros` array unchanged.
+  - `meals` array mapping unchanged (including `unitCalories / unitProtein / unitCarbs / unitFat / unitFiber` derivations needed by the edit modal).
+  - Date navigator state machine unchanged — `goBack`, `goForward`, `isToday`, `isAtEarliest`, `dateLabel` all verbatim.
+  - Profile error fallback (blocks vs partial vs none) unchanged.
+  - Footer copy unchanged.
+  - LogFoodModal + 2 CelebrationOverlay instances at the bottom of the tree mounted with the same props.
+- **Primitives consumed:** `Button` (1), `Card` (1, on the empty-state for past dates), `IconButton` (2, for date chevrons), `MaterialIcon` (4 usages in this page; the Streak card's flame, the Streak card's trophy, the meals-header `add`, and the empty-state's `add`).
+- **Build:** `pnpm build` green in 2.9 s. Bundle deltas to be filled in post-push.
+- **Security gates:** `pnpm audit` clean, zero new deps, hardened secret-scan to be verified pre-push, no XSS sinks (zero `dangerouslySetInnerHTML` / `eval` / inline event-handler strings; the only inline-style usage is on the `aria-hidden` wrapper for the forward-chevron's hide-when-today state, which is just an opacity toggle), `vercel.json` not touched, Supabase RLS / auth / `.env` not touched.
+- **Smoke-test scope** (highest-traffic screen, deeper than 3-series):
+  - `/dashboard` logged in: page loads, all sections render, greeting reads correctly with first name + 👋
+  - Date navigator: back/forward chevrons toggle, "Today" pill appears when off-today, history floor at 30 days disables back chevron
+  - CalorieRing: live consumed/goal/burned, reward animation fires on goal-met transition
+  - MacroCard strip: 4 cards, over-warning red on carbs/fat
+  - WaterTracker: log a glass via tap → visual update + persistence
+  - Meal sections: add via "+", edit, delete-with-confirm; all four meal types use the rubric emojis (🍳 / 🥗 / 🍽️ / 🍎)
+  - Empty state: navigate to a past date with no logs → Card-wrapped empty state with "Add an entry for this day" link
+  - Streak card: gradient flame circle, mono "X day streak" title, green subtitle, trophy icon right-side; tooltip still appears on hover with the streak rules
+  - Log Food CTA: `Button` primary triggers LogFoodModal with no defaultMeal preset
+  - LogFoodModal: opens, every interaction works (food log persists, modal closes)
+  - CelebrationOverlay: hit calorie goal in test data → reward animations fire (rewardPop on badge, rewardBurst behind, rewardShimmer on title)
+  - Header (Phase 3b reskin): wordmark gradient, profile avatar, Sign out — all still working
+  - Profile menu in Header: opens, navigates to /profile
+  - Mobile viewport (390 px in DevTools): no layout breaks
+  - Tablet viewport (768 px): layout adapts cleanly
+  - Console clean apart from the known vercel.live preview-toolbar CSP block
+- **Deltas vs. plan:**
+  - **MEAL_META emojis updated.** Plan said "behavioral preservation: every prop, every callback, every data-flow contract stays the same." MEAL_META is a local constant; the emoji field is purely display. Updated to match SKILL.md §8 rubric (which is a non-negotiable). Database `meal_type` keys (`breakfast`, `lunch`, `dinner`, `snacks`) are untouched.
+  - **"Today" quick-jump kept as a raw button styled to match Badge.** Badge primitive has no `onClick` / `aria-pressed` semantics; making it clickable would either require extending the primitive or wrapping Badge in a button. Either fight is bigger than the styling gain. Used the same color tokens (bg-primary/[0.15], text-violet-300, border-primary/35, font-display) so the visual matches Badge variant="pop" exactly. Documented.
+  - **Streak card stayed as raw `<div>` with the inner card surface inlined.** Card primitive has `overflow-hidden` baked in, which would clip the streak card's tooltip (positioned absolute outside the card's bounds). Tooltip is a sibling of the card-shape, both children of an outer `relative group` wrapper. Decision: don't extend Card with an `overflow` prop in this phase per the "don't fabricate primitives in this phase" rule; keep raw div for streak only. Pickup candidate: add `overflow="visible"` prop to Card for tooltip-friendly card surfaces.
+- **Pending:** user visual + functional QA on the design/04a-dashboard preview URL across the full smoke-test scope above. Then merge.
