@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { createAvatar } from '@dicebear/core'
 import { dylan } from '@dicebear/collection'
+import { Button, MaterialIcon } from '@healtho/ui'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 import { useProfile } from '../contexts/ProfileContext'
@@ -137,7 +138,7 @@ function FieldError({ message }) {
   if (!message) return null
   return (
     <p className="flex items-center gap-1 text-red-400 text-xs font-semibold mt-1">
-      <span className="material-symbols-outlined text-sm">error</span>
+      <MaterialIcon name="error" size={14} />
       {message}
     </p>
   )
@@ -642,7 +643,7 @@ export default function Profile() {
       <main className="flex-1 flex items-start justify-center px-4 py-10">
         {loading ? (
           <div className="flex flex-col items-center gap-4 pt-20">
-            <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
+            <MaterialIcon name="progress_activity" size={36} className="animate-spin text-primary" />
             <p className="text-slate-500 text-sm font-semibold">Loading profile...</p>
           </div>
         ) : (
@@ -651,7 +652,7 @@ export default function Profile() {
           {/* Saved banner */}
           {saved && (
             <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-              <span className="material-symbols-outlined text-green-400">check_circle</span>
+              <MaterialIcon name="check_circle" size={20} className="text-green-400" />
               <p className="text-green-400 font-bold text-sm">Profile updated successfully!</p>
             </div>
           )}
@@ -678,9 +679,9 @@ export default function Profile() {
                 title={profile.avatar ? 'Change photo' : 'Upload photo'}
               >
                 {uploading ? (
-                  <span className="material-symbols-outlined text-primary text-base animate-spin">progress_activity</span>
+                  <MaterialIcon name="progress_activity" size={16} className="text-primary animate-spin" />
                 ) : (
-                  <span className="material-symbols-outlined text-slate-400 text-base">photo_camera</span>
+                  <MaterialIcon name="photo_camera" size={16} className="text-slate-400" />
                 )}
               </button>
               <input
@@ -698,7 +699,7 @@ export default function Profile() {
                 disabled={uploading}
                 className="text-primary text-xs font-semibold hover:text-primary/80 transition-colors flex items-center gap-1 disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                <MaterialIcon name="auto_awesome" size={14} />
                 Generate avatar
               </button>
               {profile.avatar && !uploading && (
@@ -706,14 +707,14 @@ export default function Profile() {
                   onClick={handleAvatarRemove}
                   className="text-red-400 text-xs font-semibold hover:text-red-300 transition-colors flex items-center gap-1"
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <MaterialIcon name="delete" size={14} />
                   Remove photo
                 </button>
               )}
             </div>
             {avatarError && (
               <p className="flex items-center gap-1 text-red-400 text-xs font-semibold mb-2">
-                <span className="material-symbols-outlined text-sm">error</span>
+                <MaterialIcon name="error" size={14} />
                 {avatarError}
               </p>
             )}
@@ -723,7 +724,7 @@ export default function Profile() {
               <div className="w-full bg-slate-900 border border-primary/30 rounded-xl p-4 mb-3">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-slate-300 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-primary text-base">auto_awesome</span>
+                    <MaterialIcon name="auto_awesome" size={16} className="text-primary" />
                     Pick an avatar
                   </p>
                   <button
@@ -731,7 +732,7 @@ export default function Profile() {
                     className="text-slate-500 hover:text-slate-300"
                     title="Close"
                   >
-                    <span className="material-symbols-outlined text-base">close</span>
+                    <MaterialIcon name="close" size={16} />
                   </button>
                 </div>
                 <div className="grid grid-cols-4 gap-2 mb-3">
@@ -750,7 +751,7 @@ export default function Profile() {
                   onClick={shufflePicker}
                   className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <span className="material-symbols-outlined text-sm">shuffle</span>
+                  <MaterialIcon name="shuffle" size={14} />
                   Shuffle
                 </button>
                 <p className="text-slate-600 text-[10px] mt-2 text-center">
@@ -768,13 +769,13 @@ export default function Profile() {
               <div className="flex items-center gap-3 mt-1.5 flex-wrap justify-center">
                 {profile.country && (
                   <span className="text-slate-500 text-xs flex items-center gap-1">
-                    <span className="material-symbols-outlined text-slate-600 text-sm">location_on</span>
+                    <MaterialIcon name="location_on" size={14} className="text-slate-600" />
                     {profile.country}
                   </span>
                 )}
                 {profile.phone && (
                   <span className="text-slate-500 text-xs flex items-center gap-1">
-                    <span className="material-symbols-outlined text-slate-600 text-sm">phone</span>
+                    <MaterialIcon name="phone" size={14} className="text-slate-600" />
                     {profile.phone}
                   </span>
                 )}
@@ -787,7 +788,7 @@ export default function Profile() {
                 onClick={startEdit}
                 className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
               >
-                <span className="material-symbols-outlined text-base">edit</span>
+                <MaterialIcon name="edit" size={16} />
                 Edit profile
               </button>
             ) : (
@@ -795,7 +796,7 @@ export default function Profile() {
                 onClick={cancelEdit}
                 className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-slate-200 transition-colors"
               >
-                <span className="material-symbols-outlined text-base">close</span>
+                <MaterialIcon name="close" size={16} />
                 Cancel
               </button>
             )}
@@ -813,7 +814,7 @@ export default function Profile() {
               ].map(s => (
                 <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-1">
                   <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                    <span className="material-symbols-outlined text-primary text-base">{s.icon}</span>
+                    <MaterialIcon name={s.icon} size={16} className="text-primary" />
                     {s.label}
                   </div>
                   <p className="text-white text-3xl font-extrabold font-mono mt-1">{s.value}</p>
@@ -827,7 +828,7 @@ export default function Profile() {
           {editing && (
             <div className="bg-slate-900 border border-primary/30 rounded-xl p-5 space-y-5">
               <p className="text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-base">edit</span>
+                <MaterialIcon name="edit" size={16} className="text-primary" />
                 Edit your metrics
               </p>
 
@@ -854,7 +855,7 @@ export default function Profile() {
               {/* Gender */}
               <div className="flex flex-col gap-1">
                 <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">wc</span>
+                  <MaterialIcon name="wc" size={16} className="text-primary" />
                   Gender
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -882,7 +883,7 @@ export default function Profile() {
               {/* Age */}
               <div className="flex flex-col gap-1">
                 <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">calendar_today</span>
+                  <MaterialIcon name="calendar_today" size={16} className="text-primary" />
                   Age
                 </label>
                 <input
@@ -900,7 +901,7 @@ export default function Profile() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-base">height</span>
+                    <MaterialIcon name="height" size={16} className="text-primary" />
                     Height
                   </label>
                   {draft.unit_system === 'imperial' ? (
@@ -942,7 +943,7 @@ export default function Profile() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-base">monitor_weight</span>
+                    <MaterialIcon name="monitor_weight" size={16} className="text-primary" />
                     Weight
                   </label>
                   <div className="relative">
@@ -965,7 +966,7 @@ export default function Profile() {
                 <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-slate-400 text-xs font-semibold flex items-center gap-1">
-                      <span className="material-symbols-outlined text-primary text-sm">calculate</span>
+                      <MaterialIcon name="calculate" size={14} className="text-primary" />
                       Live BMI preview
                     </span>
                     <span className={`text-lg font-extrabold font-mono ${bmiInfo.color}`}>{bmi}</span>
@@ -980,7 +981,7 @@ export default function Profile() {
               {/* Activity level */}
               <div className="flex flex-col gap-2">
                 <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">directions_run</span>
+                  <MaterialIcon name="directions_run" size={16} className="text-primary" />
                   Activity Level
                 </label>
                 {Object.entries(ACTIVITY_MAP).map(([value, opt]) => (
@@ -998,9 +999,11 @@ export default function Profile() {
                       <p className="text-slate-100 text-sm font-bold">{opt.label}</p>
                       <p className="text-slate-500 text-xs">{opt.sub}</p>
                     </div>
-                    <span className={`material-symbols-outlined text-primary text-base transition-opacity ${draft.activity === value ? 'opacity-100' : 'opacity-0'}`}>
-                      check_circle
-                    </span>
+                    <MaterialIcon
+                      name="check_circle"
+                      size={16}
+                      className={`text-primary transition-opacity ${draft.activity === value ? 'opacity-100' : 'opacity-0'}`}
+                    />
                   </label>
                 ))}
               </div>
@@ -1008,7 +1011,7 @@ export default function Profile() {
               {/* Country — searchable dropdown */}
               <div className="flex flex-col gap-1">
                 <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">location_on</span>
+                  <MaterialIcon name="location_on" size={16} className="text-primary" />
                   Country <span className="text-slate-600 font-normal text-xs">(optional)</span>
                 </label>
                 <div className="relative" ref={countryRef}>
@@ -1058,7 +1061,7 @@ export default function Profile() {
                         }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                       >
-                        <span className="material-symbols-outlined text-sm">close</span>
+                        <MaterialIcon name="close" size={14} />
                       </button>
                     )}
                   </div>
@@ -1100,7 +1103,7 @@ export default function Profile() {
               {/* Phone number */}
               <div className="flex flex-col gap-1">
                 <label className="text-slate-300 text-sm font-semibold flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">phone</span>
+                  <MaterialIcon name="phone" size={16} className="text-primary" />
                   Phone Number <span className="text-slate-600 font-normal text-xs">(optional)</span>
                 </label>
                 <input
@@ -1124,12 +1127,12 @@ export default function Profile() {
               >
                 {saving ? (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+                    <MaterialIcon name="progress_activity" size={20} className="animate-spin" />
                     Saving changes…
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-xl">save</span>
+                    <MaterialIcon name="save" size={20} />
                     Save changes
                   </>
                 )}
@@ -1141,7 +1144,7 @@ export default function Profile() {
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-5 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">
-                <span className="material-symbols-outlined text-primary text-base">local_fire_department</span>
+                <MaterialIcon name="local_fire_department" size={16} className="text-primary" />
                 Daily Calorie Goal
                 {editing && <span className="text-primary text-xs normal-case font-normal italic">— updating live</span>}
               </div>
@@ -1149,7 +1152,7 @@ export default function Profile() {
               <p className="text-slate-500 text-xs mt-1">kcal / day · calculated for your profile</p>
             </div>
             <div className="w-16 h-16 rounded-full border-4 border-primary/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-3xl">bolt</span>
+              <MaterialIcon name="bolt" size={28} className="text-primary" />
             </div>
           </div>
 
@@ -1164,27 +1167,31 @@ export default function Profile() {
                 <p className="text-white text-lg font-bold">{actInfo.label}</p>
                 <p className="text-slate-500 text-xs">{actInfo.sub}</p>
               </div>
-              <span className="material-symbols-outlined text-primary ml-auto">check_circle</span>
+              <MaterialIcon name="check_circle" size={20} className="text-primary ml-auto" />
             </div>
           )}
 
           {/* Save error */}
           {errors.save && (
             <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
-              <span className="material-symbols-outlined text-red-400">warning</span>
+              <MaterialIcon name="warning" size={20} className="text-red-400" />
               <p className="text-red-400 text-sm font-semibold">{errors.save}</p>
             </div>
           )}
 
-          {/* CTA */}
+          {/* CTA — Button primitive primary variant. as={Link} so React Router
+              navigates without a full page reload (was previously a raw <a href>). */}
           {!editing && (
-            <a
-              href="/dashboard"
-              className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
+            <Button
+              as={Link}
+              to="/dashboard"
+              variant="primary"
+              size="lg"
+              className="w-full"
             >
               Go to my Dashboard
-              <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
-            </a>
+              <MaterialIcon name="arrow_forward" size={20} />
+            </Button>
           )}
 
         </div>

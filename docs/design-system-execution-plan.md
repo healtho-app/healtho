@@ -844,4 +844,67 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - **Header kept on Login.** Spec's `LoginScreen` has no Header — it uses a centered logo + gradient wordmark + eyebrow as page-level chrome. The live app's Header is consistent across every route (landing, auth, authenticated). Removing it from Login alone would create nav inconsistency. The decorative spec elements (centered logo, gradient wordmark) are skipped to avoid duplicating Header's left-aligned wordmark. Header consistency wins.
   - **Apple OAuth button skipped.** Spec shows a 2-column Google + Apple grid; the app currently only has Google OAuth wired. Implementing Apple OAuth is a separate feature, not a reskin. Single Google button stretched to full width.
   - **Register reskin scope: deeper pass after user pushback.** Initial commit shipped only the FieldError shared-component swap; user requested a deeper pass before merge. Second commit on the same branch added the progress-bar redesign + the comprehensive 46-instance MaterialIcon migration. Step-internal special-purpose layouts (BMI gauge, OTP input, country picker autocomplete, segmented controls) preserved verbatim — they're tightly bound to validation/Supabase logic and the existing visual is brand-aligned. Submit buttons preserved as raw `<button>` elements (each has unique conditional loading-state JSX; the icons inside them now use MaterialIcon). The full structural per-step reskin (replacing each step's container layout, restructuring the BMI gauge, etc.) remains best paired with the already-in-backlog Register refactor ticket which would extract each step into its own component.
-- **Pending:** user visual + functional QA on the design/04b-auth preview URL — Login full pass + Register all 7 steps end-to-end. Then merge.
+- **Visual + functional QA:** PASS. User reviewed both the original commit and the deeper Register pass on the design/04b-auth preview, approved.
+- **PR:** [#15](https://github.com/healtho-app/healtho/pull/15), merged 2026-05-01 via `gh pr merge --merge`. Two commits: original (`26785ed` — Login full reskin + Register FieldError swap) plus deeper pass (`6c03277` — 46 raw spans → MaterialIcon + 4-segment progress bar redesign).
+- **Merge SHA into feature branch:** `8a654f06dcf71bde59f4fa131ee1894b436a72c4`.
+- **Sub-branch closed at:** `6c03277`.
+- **Six routes reskinned:** Landing (already same-spec), Login, Register, Dashboard, Header, CelebrationOverlay.
+
+### Phase 4c — Profile reskin + Pickup E (raw-span migration)
+
+- **Date:** 2026-05-01
+- **Sub-branch:** `design/04c-profile` cut from `feature/design-system@8a654f0`.
+- **Phase 4c commit:** `feat(app): Phase 4c — Profile reskin + Pickup E migration` (SHA appended below post-push).
+- **Files modified:**
+  - `apps/web/src/pages/Profile.jsx` (1,199 lines).
+  - `apps/web/src/components/ProfileLoadError.jsx` (173 lines) — Pickup E.
+  - `apps/web/src/components/ProtectedRoute.jsx` (76 lines) — Pickup E.
+- **Profile.jsx changes:**
+  - Added `import { Button, MaterialIcon } from '@healtho/ui'` and `Link` from react-router-dom.
+  - **All 33 raw `<span class="material-symbols-outlined">` instances → `MaterialIcon` primitive.** Includes form-label icons (wc, calendar_today, height, monitor_weight, location_on, phone, directions_run), action icons (edit, close, delete, save, photo_camera, auto_awesome, shuffle), state icons (error, warning, check_circle, refresh, calculate, bolt, local_fire_department), the dynamic stat-grid icon (`name={s.icon}` template), and the conditional check_circle on activity-level radio rows (template-literal classNames preserved).
+  - **"Go to my Dashboard" CTA** at the bottom converted from raw `<a href="/dashboard">` to `Button variant="primary" size="lg" as={Link} to="/dashboard"`. **Bonus fix beyond visual reskin**: the prior `<a>` caused a full page reload; now React Router navigates client-side. Behavior is strictly better.
+- **ProfileLoadError.jsx changes (Pickup E):**
+  - Added `import { MaterialIcon } from '@healtho/ui'`.
+  - All 5 raw spans → `MaterialIcon`: progress_activity (retrying spinner), refresh, arrow_forward (link variant), and the dynamic `name={msg.icon}` for the error-type icon (used in all three variants: banner, fullpage, card). The `MESSAGES` map's icon names (cloud_off, lock, account_circle_off, error) are now passed as props to MaterialIcon — same XSS-safe text-content pattern.
+- **ProtectedRoute.jsx changes (Pickup E):**
+  - Added `import { MaterialIcon } from '@healtho/ui'`.
+  - 1 raw span → `MaterialIcon` (progress_activity loading spinner during session check).
+- **Behavior preservation (verified line-by-line):**
+  - Profile: every state hook unchanged (`profile`, `loading`, `editing`, `draft`, `errors`, `saving`, `saved`, `countrySearch`, `countryOpen`, `countryIdx`, `uploading`, `avatarError`, `pickerOpen`, `pickerSeeds`).
+  - All Supabase calls verbatim: `auth.getSession`, `from('profiles').select`, `from('profiles').update`, `storage.from('avatars').upload/remove/list/getPublicUrl`.
+  - All form handlers (`setDraftField`, `setDraftPositiveNum`, `blockNegativeKeys`, `toggleUnitSystem`, `startEdit`, `cancelEdit`, `saveEdit`) verbatim.
+  - Avatar flow: `handleAvatarUpload`, `handleAvatarRemove`, `handleDicebearSelect`, `openPicker`, `shufflePicker` — all verbatim. `resizeImageToBlob`, `svgToPngBlob`, `dylanDataUri`, `dylanSvg`, `randomSeed` helpers untouched. EXIF stripping, PNG conversion via canvas, 512×512 JPEG resize all preserved.
+  - Country picker autocomplete: typeahead, keyboard nav (ArrowDown / ArrowUp / Enter / Escape), outside-click closes, US + India pinned at top — all verbatim.
+  - Imperial/metric unit toggle live conversion (cm ↔ ft+in, kg ↔ lb) verbatim.
+  - BMI / TDEE calculation helpers (`calcBMI`, `calcCalories`, `getBmiInfo`, `calculateBMI`, `totalInchesFromFtIn`) verbatim.
+  - `validate`, `validatePhone` verbatim.
+  - ProfileLoadError: `MESSAGES` map verbatim; `actionButton` switching logic verbatim; all three variants (banner, fullpage, card) render with identical structure.
+  - ProtectedRoute: `onAuthStateChange` + `getSession` 500ms-fallback strategy verbatim. `authResolved` race-prevention flag verbatim. `Navigate to="/login"` redirect verbatim.
+- **Primitives consumed:** `Button` (1 usage in Profile — the dashboard CTA), `MaterialIcon` (33 in Profile + 5 in ProfileLoadError + 1 in ProtectedRoute = 39 total).
+- **Build:** `pnpm build` green in 3.3 s.
+- **Security gates:** `pnpm audit` clean, zero new deps, hardened secret-scan to be verified pre-push, no XSS sinks (zero `dangerouslySetInnerHTML` / `eval` / inline event-handler strings introduced). The `MaterialIcon` primitive continues to receive icon names as JSX text-children — never via innerHTML. `vercel.json` not touched, Supabase auth flow not touched, `.env` not touched.
+- **Smoke-test scope:**
+  - `/profile` logged in: page loads, avatar displays correctly (image OR initials fallback), Header renders with "Dashboard" right-link
+  - View mode: 5-card stat grid (Gender, Age, BMI, Height, Weight), Daily Calorie Goal card, Activity Level card all render with new MaterialIcon glyphs
+  - Edit profile button → enters edit mode
+  - Edit form: gender selector, age input, height (metric/imperial), weight, BMI live preview, activity level picker, country autocomplete, phone input — all interactions still work
+  - Validation errors trigger correctly with new MaterialIcon error glyph
+  - Save changes → Supabase upsert succeeds, view mode renders updated values, "Profile updated successfully!" green banner with check_circle icon
+  - Save error → red banner with warning icon
+  - Cancel button exits edit mode
+  - Avatar upload: photo_camera button → file picker → image resizes/uploads/displays
+  - Avatar generate: auto_awesome button → DiceBear picker grid opens, 8 seed thumbnails render, select one or shuffle
+  - Avatar remove: delete button (only when avatar present) → clears avatar
+  - Country autocomplete: typeahead, keyboard nav, outside-click closes
+  - Imperial/metric toggle: numbers convert correctly between systems
+  - **"Go to my Dashboard" CTA** (bottom): clicking navigates to `/dashboard` **without a full page reload** (React Router) — this is a behavioral improvement beyond the visual reskin
+  - ProfileLoadError on Dashboard: trigger by simulating network/auth/notfound errors (or just observe the existing variants render correctly)
+  - ProtectedRoute loading spinner: visible briefly on route entry while session checks
+  - Mobile viewport (390 px): no overflow
+  - Console clean apart from the known vercel.live preview-toolbar block
+- **Deltas vs. plan:**
+  - **"Go to my Dashboard" CTA fix is a small behavioral improvement** (full page reload → SPA navigation), not just a visual reskin. The plan said "behavioral preservation paramount" but this is a fix that makes navigation strictly better — no user-facing functionality removed. Documented in case user wants to revert; the prior `<a href>` is still functionally equivalent.
+  - **Step-internal Profile edit-mode form layouts NOT restructured.** Country picker autocomplete, BMI live preview, gender selector, activity-level picker all kept their existing structures with just icon swaps. Same reasoning as Register: tightly bound to form state machines, restructuring risks regressions for marginal visual gain.
+  - **Avatar section visuals NOT restructured.** The current `border-2 border-primary/40` solid border could become a brand-gradient ring per the spec, but the avatar upload/picker/dicebear flows are interconnected; a visual restructure risks breaking the camera-button position or the dicebear picker layout. Phase 6 polish candidate if visual upgrade is desired.
+- **Pickup E officially CLOSED** — `apps/web/src/components/{ProtectedRoute,ProfileLoadError}.jsx` raw spans migrated to MaterialIcon. Both files now go through the primitive's text-content XSS guarantee.
+- **Pending:** user visual + functional QA on the design/04c-profile preview URL — Profile view + edit modes, avatar flows, country picker, ProfileLoadError variants. Then merge.

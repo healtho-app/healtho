@@ -18,6 +18,7 @@
 //   'fullpage' — centered full-height card. Use when the whole page is blocked
 //                and the only sensible action is retry or re-auth.
 import { Link } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 
 // Copy per error type — user-facing. No stack traces, no Supabase error codes.
 // Each entry owns its own headline, body, icon, and primary CTA.
@@ -82,12 +83,12 @@ export default function ProfileLoadError({
         >
           {retrying ? (
             <>
-              <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+              <MaterialIcon name="progress_activity" size={16} className="animate-spin" />
               Retrying…
             </>
           ) : (
             <>
-              <span className="material-symbols-outlined text-base">refresh</span>
+              <MaterialIcon name="refresh" size={16} />
               {msg.cta}
             </>
           )}
@@ -101,7 +102,7 @@ export default function ProfileLoadError({
         to={to}
         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-bold transition-colors"
       >
-        <span className="material-symbols-outlined text-base">arrow_forward</span>
+        <MaterialIcon name="arrow_forward" size={16} />
         {msg.cta}
       </Link>
     )
@@ -117,9 +118,7 @@ export default function ProfileLoadError({
         role="alert"
         className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center gap-3"
       >
-        <span className={`material-symbols-outlined flex-shrink-0 ${msg.iconColor}`}>
-          {msg.icon}
-        </span>
+        <MaterialIcon name={msg.icon} size={20} className={`flex-shrink-0 ${msg.iconColor}`} />
         <div className="flex-1 min-w-0">
           <p className="text-white text-sm font-semibold truncate">{msg.headline}</p>
           <p className="text-slate-400 text-xs mt-0.5 truncate">{msg.body}</p>
@@ -139,9 +138,7 @@ export default function ProfileLoadError({
         className="flex flex-col items-center justify-center text-center py-16 px-4"
       >
         <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-4">
-          <span className={`material-symbols-outlined text-3xl ${msg.iconColor}`}>
-            {msg.icon}
-          </span>
+          <MaterialIcon name={msg.icon} size={28} className={msg.iconColor} />
         </div>
         <h2 className="text-white text-2xl font-extrabold tracking-tight mb-2">
           {msg.headline}
@@ -161,7 +158,7 @@ export default function ProfileLoadError({
       className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center gap-4"
     >
       <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0">
-        <span className={`material-symbols-outlined ${msg.iconColor}`}>{msg.icon}</span>
+        <MaterialIcon name={msg.icon} size={20} className={msg.iconColor} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white text-sm font-bold">{msg.headline}</p>
