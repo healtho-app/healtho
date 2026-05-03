@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 import { supabase } from '../lib/supabase'
 
 /**
@@ -63,7 +64,7 @@ export default function AuthCallback() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background-dark px-4">
         <div className="text-center space-y-4">
-          <span className="material-symbols-outlined text-red-400 text-5xl">error</span>
+          <MaterialIcon name="error" size={48} className="text-red-400" />
           <p className="text-red-400 font-semibold">{error}</p>
           <button
             onClick={() => navigate('/login')}
@@ -80,9 +81,7 @@ export default function AuthCallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background-dark">
       <div className="flex flex-col items-center gap-4">
-        <span className="material-symbols-outlined animate-spin text-primary text-4xl">
-          progress_activity
-        </span>
+        <MaterialIcon name="progress_activity" size={36} className="animate-spin text-primary" />
         <p className="text-slate-500 text-sm font-semibold">Signing you in…</p>
       </div>
     </div>
