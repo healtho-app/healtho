@@ -585,7 +585,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
       className={`fixed inset-0 bg-black/60 z-50 flex items-end justify-center transition-opacity duration-200 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       onClick={handleOverlay}
     >
-      <div className={`w-full max-w-[520px] bg-[#1a1a1a] border border-slate-800 rounded-t-2xl p-5 pb-10 max-h-[90vh] overflow-y-auto scrollbar-hide transition-transform duration-300 ${open ? 'translate-y-0' : 'translate-y-full'}`}>
+      <div className={`w-full max-w-[520px] bg-[#1a1a1a] border border-slate-800 rounded-t-2xl p-5 pb-10 max-h-[90vh] overflow-y-auto scrollbar-hide transition-transform duration-300 motion-reduce:transition-none ${open ? 'translate-y-0' : 'translate-y-full'}`}>
 
         <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mb-5" />
         <h2 className="text-white text-2xl font-extrabold mb-1">

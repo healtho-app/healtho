@@ -1017,3 +1017,78 @@ Per-phase record. Each entry captures: merge SHA into `feature/design-system`, V
   - **Typography raw utilities flagged as stylistic, not a regression.** Could migrate in a future structural pass; not in Phase 5 scope.
   - **🚀 emoji in hero badge flagged as borderline rubric compliance.** Not changing — designer / marketing call.
 - **Pending:** user visual + functional QA on the design/05-landing preview URL — landing renders cleanly across desktop/tablet/mobile, all 4 migrated icons visible, animations fire normally with reduce-motion OFF, animations collapse to final state with reduce-motion ON (test via macOS System Preferences → Accessibility → Display → Reduce Motion). Then merge. **After 5 lands, only Phase 6 (polish) and Phase 7 (final merge) remain.**
+- **Closeout:**
+  - **Phase 5 commit SHA:** `5442745` (`feat(app): Phase 5 — landing polish (4 icons + reduce-motion guards)`)
+  - **PR #19** merged into `feature/design-system` at `b1e8800` ("Merge pull request #19 from healtho-app/design/05-landing"). User QA passed — landing renders correctly across viewports, reduce-motion guards behave as expected.
+  - **Audit-of-the-audit (correction surfaced during Phase 6 prep):** the Phase 5 closeout note above stated `celebration-enter`, `water-goal-glow`, and `ring-animate` were "Already handled by Phase 1 motion tokens." That claim is inaccurate — those three classes use **hardcoded** durations (`0.4s`, `2s ... infinite`, `1.4s`) and do NOT consume `var(--dur-*)` tokens. Phase 1's tokens.css `prefers-reduced-motion` block only zeroes the `--dur-*` custom properties; it cannot touch hardcoded animation shorthands. Phase 6 closes this gap (see Phase 6 entry below).
+
+### Phase 6 — Polish (auth-tail icons + CSP cleanup + reduce-motion audit + validation sweep)
+
+- **Date:** 2026-04-30 (today)
+- **Sub-branch:** `design/06-polish` cut from `feature/design-system@b1e8800`.
+- **Sync gate #2:** **skipped** — `origin/main` still at `efafab8` (PR #18 — Node 22 LTS bump — not yet merged off main per master-agent brief). Per dispatch instruction: "Sync gate #2 will run separately before Phase 7 dispatch." `git log origin/main` confirms no new commits since the last sync gate snapshot.
+
+#### Bucket 1 — Auth-tail / utility icon migration (raw `<span class="material-symbols-outlined">` → `<MaterialIcon />`)
+
+Six pages migrated. Each gained an `import { MaterialIcon } from '@healtho/ui'` and had every raw icon span swapped 1-for-1. No prop / callback / Supabase call changes. Behavioral preservation verified by diff inspection.
+
+- `apps/web/src/pages/ForgotPassword.jsx` — 6 spans → MaterialIcon (`error`, `mark_email_read`, `arrow_back`, `mail`, `progress_activity` ×2, `arrow_forward`)
+- `apps/web/src/pages/ResetPassword.jsx` — 11 spans → MaterialIcon (`error`, `check_circle`, `link_off`, `send`, `progress_activity` (verify), `lock`, dynamic `visibility`/`visibility_off`, `lock_reset`, `warning`, `progress_activity` (button), `arrow_forward`)
+- `apps/web/src/pages/AuthCallback.jsx` — 2 spans → MaterialIcon (`error`, `progress_activity` with `animate-spin`)
+- `apps/web/src/pages/NotFound.jsx` — 5 spans → MaterialIcon (`search_off`, `home`, `login`, dynamic `{icon}` in quick-links, `arrow_forward`)
+- `apps/web/src/pages/Terms.jsx` — 2 spans → MaterialIcon (`gavel`, `arrow_back`)
+- `apps/web/src/pages/Privacy.jsx` — 3 spans → MaterialIcon (`shield`, dynamic `{s.icon}` in section list, `arrow_back`)
+
+After this bucket, **zero** raw `material-symbols-outlined` spans remain across `apps/web/src/`.
+
+#### Bucket 2 — `vercel.json` CSP cleanup (Pickup D, pre-approved)
+
+Locked-in change per the master-agent brief — no other CSP directives touched:
+
+- `style-src`: removed `https://fonts.googleapis.com` (kept `https://fonts.googleapis.com/css2` since the import path uses the full URL with the `/css2` segment)
+- `font-src`: removed `https://fonts.gstatic.com` (we now self-host all fonts — Lexend, DM Mono, Material Symbols Outlined — via `packages/ui/fonts/` so the gstatic CDN allow-list is dead weight)
+- All other directives byte-identical: `default-src`, `script-src`, `worker-src`, `connect-src`, `img-src`, `frame-ancestors`
+
+Reasoning: closing the door on third-party font CDN connections matches the self-hosted-font reality from Phase 1 and Phase 3d. CSP attack surface shrinks. The Network tab on a freshly-loaded preview page should show **zero** requests to `fonts.googleapis.com` or `fonts.gstatic.com` — if any appear, that's a regression to investigate.
+
+(First-attempt over-broad edit was self-caught and reverted before commit; final value matches the brief precisely.)
+
+#### Bucket 3 — `prefers-reduced-motion` full-app audit
+
+Audit found **three** custom CSS animations in `apps/web/src/index.css` whose `animation` shorthand uses hardcoded durations (`0.4s`, `1.4s`, `2s ... infinite`) and therefore are NOT covered by tokens.css's `--dur-*` collapse rule. Each is now wrapped in a per-class `@media (prefers-reduced-motion: reduce)` override:
+
+- `.ring-animate` — `animation: none` + freezes `stroke-dashoffset` at the end-of-animation value (101.8) so the calorie ring renders in its filled final state without the 1.4 s sweep.
+- `.celebration-enter` — `animation: none` + `opacity: 1; transform: none;` so the celebration card appears in its final position immediately, no fade-and-scale.
+- `.water-goal-glow` — `animation: none`. **Critical:** this one is an INFINITE loop (`waterGlow 2s ease-in-out infinite`) — the most clearly vestibular-sensitive animation in the codebase. Static cyan border + gradient still convey goal-met state without the pulsing glow.
+
+`apps/web/src/components/LogFoodModal.jsx:588` — full-screen bottom-sheet slide-up uses `transition-transform duration-300` plus `${open ? 'translate-y-0' : 'translate-y-full'}`. That's a full-viewport-height translate — the largest single motion in the app outside the celebration overlay. Added `motion-reduce:transition-none` so the modal snaps into place instead of sliding when reduce-motion is on.
+
+Token-driven animations verified safe (no change needed):
+- `CalorieRing.jsx:157` reward state — `animation: 'rewardPop var(--dur-reward) var(--ease-spring) both'` ✅
+- `CelebrationOverlay.jsx:166,177,203` — `rewardBurst`, `rewardPop`, `rewardShimmer` all reference `var(--dur-reward)` ✅
+- `index.css` `.landing-fade-up` — `var(--dur-reveal)` (Phase 5) ✅
+- `index.css` `.landing-float` — `animation: none` reduce-motion override (Phase 5) ✅
+- `BackgroundMedia` video — autoplay suppressed with poster fallback (Phase 5) ✅
+
+Tailwind `animate-spin` / `animate-pulse` (loading spinners + skeleton) intentionally **not** disabled — they convey active loading state, removing them would make UI appear frozen. Per WCAG 2.3.3 these are functional indicators, not decorative motion.
+
+Tailwind `transition-colors` / `transition-opacity` / short hover transforms (`hover:-translate-y-0.5` ~2 px, `duration-200`) intentionally **not** disabled — these are sub-vestibular-threshold cosmetic state changes, not large translates / parallax / infinite loops.
+
+#### Bucket 4 — Final validation sweep
+
+- **`pnpm turbo run build --filter=healtho-web`:** ✅ green in 3.50 s. 511 modules transformed. Bundle warning about 598 kB main chunk is pre-existing (not introduced by Phase 6).
+- **`pnpm audit --prod`:** ✅ "No known vulnerabilities found"
+- **Hardened secret-scan** (credential-shape pattern across the repo, excluding node_modules / dist / .git / .turbo / build / .next / .vercel): ✅ no matches
+- **`vercel.json` final CSP value:** verified byte-precise match to brief
+- **No new dependencies:** ✅ no `package.json` changes in Phase 6
+- **Supabase / `.env`:** ✅ untouched
+- **`packages/ui` source:** ✅ untouched (only `apps/web/src/` modified for the icon swaps + index.css guards)
+- **Lighthouse + console-clean smoke + Network-tab third-party-font check:** to be performed by user on the design/06-polish Vercel preview URL.
+
+#### Working-tree summary at PR-prep time
+
+9 modified files: `apps/web/src/components/LogFoodModal.jsx`, `apps/web/src/index.css`, `apps/web/src/pages/AuthCallback.jsx`, `apps/web/src/pages/ForgotPassword.jsx`, `apps/web/src/pages/NotFound.jsx`, `apps/web/src/pages/Privacy.jsx`, `apps/web/src/pages/ResetPassword.jsx`, `apps/web/src/pages/Terms.jsx`, `vercel.json`.
+
+#### Pending
+
+User QA on the design/06-polish Vercel preview URL (validation sweep items above + visual). After QA approval: merge PR #20 into `feature/design-system`. Then **only Phase 7 (final merge to main) remains**, gated by sync gate #2 to absorb PR #18 once it lands on main.

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 import Header from '../components/Header'
 
 const SECTIONS = [
@@ -60,7 +61,7 @@ export default function Privacy() {
           {/* Heading */}
           <div className="mb-10">
             <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
-              <span className="material-symbols-outlined text-primary text-base">shield</span>
+              <MaterialIcon name="shield" size={16} className="text-primary" />
               <span className="text-primary text-xs font-bold uppercase tracking-wider">Legal</span>
             </div>
             <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">
@@ -82,7 +83,7 @@ export default function Privacy() {
               <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-6">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center mt-0.5">
-                    <span className="material-symbols-outlined text-primary text-lg">{s.icon}</span>
+                    <MaterialIcon name={s.icon} size={18} className="text-primary" />
                   </div>
                   <h2 className="text-white text-lg font-bold pt-1">{s.title}</h2>
                 </div>
@@ -97,7 +98,7 @@ export default function Privacy() {
               to="/register"
               className="inline-flex items-center gap-2 text-primary text-sm font-semibold hover:underline"
             >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
+              <MaterialIcon name="arrow_back" size={16} />
               Back to registration
             </Link>
           </div>
