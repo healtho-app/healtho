@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 import Header from '../components/Header'
 
 export default function NotFound() {
@@ -17,7 +18,7 @@ export default function NotFound() {
           {/* Icon */}
           <div className="flex justify-center mb-6 -mt-4">
             <div className="w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-4xl">search_off</span>
+              <MaterialIcon name="search_off" size={36} className="text-primary" />
             </div>
           </div>
 
@@ -36,14 +37,14 @@ export default function NotFound() {
               to="/dashboard"
               className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
             >
-              <span className="material-symbols-outlined">home</span>
+              <MaterialIcon name="home" size={20} />
               Go to Dashboard
             </Link>
             <Link
               to="/login"
               className="w-full h-12 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-base transition-colors flex items-center justify-center gap-2"
             >
-              <span className="material-symbols-outlined text-xl">login</span>
+              <MaterialIcon name="login" size={20} />
               Back to Login
             </Link>
           </div>
@@ -62,9 +63,9 @@ export default function NotFound() {
                   key={to} to={to}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors group"
                 >
-                  <span className="material-symbols-outlined text-primary text-base">{icon}</span>
+                  <MaterialIcon name={icon} size={16} className="text-primary" />
                   <span className="text-slate-300 text-sm font-semibold group-hover:text-white transition-colors">{label}</span>
-                  <span className="material-symbols-outlined text-slate-700 text-sm ml-auto group-hover:text-slate-500 transition-colors">arrow_forward</span>
+                  <MaterialIcon name="arrow_forward" size={14} className="text-slate-700 ml-auto group-hover:text-slate-500 transition-colors" />
                 </Link>
               ))}
             </div>

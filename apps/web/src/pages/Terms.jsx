@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 import Header from '../components/Header'
 
 const SECTIONS = [
@@ -59,7 +60,7 @@ export default function Terms() {
           {/* Heading */}
           <div className="mb-10">
             <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
-              <span className="material-symbols-outlined text-primary text-base">gavel</span>
+              <MaterialIcon name="gavel" size={16} className="text-primary" />
               <span className="text-primary text-xs font-bold uppercase tracking-wider">Legal</span>
             </div>
             <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight">
@@ -96,7 +97,7 @@ export default function Terms() {
               to="/register"
               className="inline-flex items-center gap-2 text-primary text-sm font-semibold hover:underline"
             >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
+              <MaterialIcon name="arrow_back" size={16} />
               Back to registration
             </Link>
           </div>

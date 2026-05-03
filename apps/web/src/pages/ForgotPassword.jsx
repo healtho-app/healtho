@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 
@@ -7,7 +8,7 @@ function FieldError({ message }) {
   if (!message) return null
   return (
     <p className="flex items-center gap-1.5 text-red-400 text-xs font-semibold mt-1">
-      <span className="material-symbols-outlined text-sm">error</span>
+      <MaterialIcon name="error" size={14} />
       {message}
     </p>
   )
@@ -51,7 +52,7 @@ export default function ForgotPassword() {
             /* ── Success state ── */
             <div className="text-center">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <span className="material-symbols-outlined text-primary text-3xl">mark_email_read</span>
+                <MaterialIcon name="mark_email_read" size={28} className="text-primary" />
               </div>
               <h1 className="text-white text-3xl font-extrabold mb-3">Check your inbox</h1>
               <p className="text-slate-400 text-base mb-2">
@@ -72,7 +73,7 @@ export default function ForgotPassword() {
                   to="/login"
                   className="w-full h-12 flex items-center justify-center gap-2 text-primary text-sm font-semibold hover:underline"
                 >
-                  <span className="material-symbols-outlined text-base">arrow_back</span>
+                  <MaterialIcon name="arrow_back" size={16} />
                   Back to login
                 </Link>
               </div>
@@ -92,7 +93,7 @@ export default function ForgotPassword() {
               <div className="space-y-5">
                 <div className="flex flex-col gap-1">
                   <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
-                    <span className="material-symbols-outlined text-primary text-xl">mail</span>
+                    <MaterialIcon name="mail" size={20} className="text-primary" />
                     Email
                   </label>
                   <input
@@ -117,13 +118,13 @@ export default function ForgotPassword() {
                 >
                   {loading ? (
                     <>
-                      <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+                      <MaterialIcon name="progress_activity" size={20} className="animate-spin" />
                       Sending…
                     </>
                   ) : (
                     <>
                       Send reset link
-                      <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                      <MaterialIcon name="arrow_forward" size={20} className="transition-transform group-hover:translate-x-1" />
                     </>
                   )}
                 </button>
