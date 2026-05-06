@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { MaterialIcon } from '@healtho/ui'
 import { supabase } from '../lib/supabase'
 
+// Meal-type emojis match SKILL.md non-negotiable §8 rubric (same palette
+// Dashboard's MEAL_META adopted in Phase 4a). meal_type DB keys unchanged.
 const MEAL_TYPES = [
-  { id: 'breakfast', label: 'Breakfast', emoji: '🌅' },
-  { id: 'lunch',     label: 'Lunch',     emoji: '☀️' },
-  { id: 'dinner',    label: 'Dinner',    emoji: '🌙' },
-  { id: 'snacks',    label: 'Snacks',    emoji: '🍎' },
+  { id: 'breakfast', label: 'Breakfast', emoji: '🍳'  },
+  { id: 'lunch',     label: 'Lunch',     emoji: '🥗'  },
+  { id: 'dinner',    label: 'Dinner',    emoji: '🍽️' },
+  { id: 'snacks',    label: 'Snacks',    emoji: '🍎'  },
 ]
 
 const SERVING_UNITS = ['g', 'oz', 'ml', 'cup', 'tbsp', 'tsp', 'piece', 'serving']
@@ -582,7 +585,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
       className={`fixed inset-0 bg-black/60 z-50 flex items-end justify-center transition-opacity duration-200 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       onClick={handleOverlay}
     >
-      <div className={`w-full max-w-[520px] bg-[#1a1a1a] border border-slate-800 rounded-t-2xl p-5 pb-10 max-h-[90vh] overflow-y-auto scrollbar-hide transition-transform duration-300 ${open ? 'translate-y-0' : 'translate-y-full'}`}>
+      <div className={`w-full max-w-[520px] bg-[#1a1a1a] border border-slate-800 rounded-t-2xl p-5 pb-10 max-h-[90vh] overflow-y-auto scrollbar-hide transition-transform duration-300 motion-reduce:transition-none ${open ? 'translate-y-0' : 'translate-y-full'}`}>
 
         <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mb-5" />
         <h2 className="text-white text-2xl font-extrabold mb-1">
@@ -600,7 +603,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
         {/* Past-date warning banner */}
         {!isEditing && logDate && logDate !== localDateStr() && (
           <div className="flex items-start gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 mb-5">
-            <span className="material-symbols-outlined text-yellow-400 text-base mt-0.5 flex-shrink-0">event</span>
+            <MaterialIcon name="event" size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-yellow-300 text-xs font-semibold">
                 Logging to {new Date(logDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -660,7 +663,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
               <div className="flex items-center justify-between px-1">
                 <button onClick={resetPins}
                   className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">restart_alt</span>
+                  <MaterialIcon name="restart_alt" size={12} />
                   Reset all to estimates
                 </button>
                 <span className="text-[10px] text-slate-600">Tap "Est" on any field to accept</span>
@@ -669,7 +672,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
 
             {/* Estimation disclaimer */}
             <div className="flex items-start gap-2 px-1">
-              <span className="material-symbols-outlined text-slate-600 text-sm mt-0.5 flex-shrink-0">info</span>
+              <MaterialIcon name="info" size={14} className="text-slate-600 mt-0.5 flex-shrink-0" />
               <p className="text-slate-600 text-[11px] leading-relaxed">
                 These values are estimates and may not be 100% precise. Adjust to match your actual portion for better accuracy.
               </p>
@@ -693,7 +696,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
         {!customMode && !isEditing && (
           <>
             <div className="relative mb-1">
-              <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xl">search</span>
+              <MaterialIcon name="search" size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 ref={searchRef}
                 value={query}
@@ -704,7 +707,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
               {query.length > 0 && (
                 <button className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                   onClick={() => { setQuery(''); setSelected(null); setResults([]) }}>
-                  <span className="material-symbols-outlined text-xl">close</span>
+                  <MaterialIcon name="close" size={20} />
                 </button>
               )}
             </div>
@@ -712,7 +715,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
             {/* Search loading indicator */}
             {searching && (
               <div className="flex items-center gap-2 px-2 py-3 text-slate-500 text-sm">
-                <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                <MaterialIcon name="progress_activity" size={16} className="animate-spin" />
                 Searching…
               </div>
             )}
@@ -750,7 +753,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
                 </p>
                 <button onClick={enterCustomMode}
                   className="w-full h-11 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-primary text-white rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">add_circle</span>
+                  <MaterialIcon name="add_circle" size={16} className="text-primary" />
                   Log "{query}" as custom food
                 </button>
               </div>
@@ -763,7 +766,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
           <div className="mb-5 space-y-4">
             <button onClick={exitCustomMode}
               className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
-              <span className="material-symbols-outlined text-base">arrow_back</span>
+              <MaterialIcon name="arrow_back" size={16} />
               Back to search
             </button>
 
@@ -858,7 +861,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
                   ))}
                 </div>
                 <p className="text-[10px] text-slate-600 mt-2 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">bookmark</span>
+                  <MaterialIcon name="bookmark" size={12} />
                   Will be saved to your food library
                 </p>
               </div>
@@ -878,7 +881,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
 
             {/* Estimation disclaimer */}
             <div className="flex items-start gap-2 px-1">
-              <span className="material-symbols-outlined text-slate-600 text-sm mt-0.5 flex-shrink-0">info</span>
+              <MaterialIcon name="info" size={14} className="text-slate-600 mt-0.5 flex-shrink-0" />
               <p className="text-slate-600 text-[11px] leading-relaxed">
                 These values are estimates and may not be 100% precise. Adjust to match your actual portion for better accuracy.
               </p>
@@ -931,7 +934,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
               <div className="flex items-center justify-between px-1 mt-3">
                 <button onClick={resetPins}
                   className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">restart_alt</span>
+                  <MaterialIcon name="restart_alt" size={12} />
                   Reset all to estimates
                 </button>
                 <span className="text-[10px] text-slate-600">Tap "Est" on any field to accept</span>
@@ -940,7 +943,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
 
             {/* Estimation disclaimer */}
             <div className="flex items-start gap-2 px-1 mt-3">
-              <span className="material-symbols-outlined text-slate-600 text-sm mt-0.5 flex-shrink-0">info</span>
+              <MaterialIcon name="info" size={14} className="text-slate-600 mt-0.5 flex-shrink-0" />
               <p className="text-slate-600 text-[11px] leading-relaxed">
                 These values are estimates and may not be 100% precise. Adjust to match your actual portion for better accuracy.
               </p>
@@ -996,7 +999,7 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
 
         {error && (
           <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl mt-4">
-            <span className="material-symbols-outlined text-red-400 text-base">warning</span>
+            <MaterialIcon name="warning" size={16} className="text-red-400" />
             <p className="text-red-400 text-sm font-semibold">{error}</p>
           </div>
         )}
@@ -1006,10 +1009,10 @@ export default function LogFoodModal({ open, defaultMeal = null, logDate, editEn
           disabled={saving || (isEditing ? !meal : (!customMode && (!selected || !meal)) || (customMode && (!customReady || !meal)))}
           className="w-full h-14 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-bold text-base shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 mt-5">
           {saving
-            ? <><span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>Saving…</>
+            ? <><MaterialIcon name="progress_activity" size={20} className="animate-spin" />Saving…</>
             : isEditing
-              ? <><span className="material-symbols-outlined text-xl">check_circle</span>Save Changes</>
-              : <><span className="material-symbols-outlined text-xl">add_circle</span>Log {customMode ? 'Custom Food' : itemType === 'food' ? 'Food' : 'Drink'}</>
+              ? <><MaterialIcon name="check_circle" size={20} />Save Changes</>
+              : <><MaterialIcon name="add_circle" size={20} />Log {customMode ? 'Custom Food' : itemType === 'food' ? 'Food' : 'Drink'}</>
           }
         </button>
 

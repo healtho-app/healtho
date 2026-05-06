@@ -1,3 +1,5 @@
+import { MaterialIcon } from '@healtho/ui'
+
 export default function DashboardPreview() {
   const macros = [
     { label: 'Protein', value: '32g', color: 'bg-protein/15 text-protein' },
@@ -38,7 +40,7 @@ export default function DashboardPreview() {
         {/* Streak card */}
         <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3">
           <div className="w-10 h-10 rounded-full bg-brand-gradient flex items-center justify-center text-lg">
-            <span className="material-symbols-outlined text-white text-xl">local_fire_department</span>
+            <MaterialIcon name="local_fire_department" size={20} className="text-white" />
           </div>
           <div>
             <div className="text-sm font-semibold text-white">7 Day Streak</div>

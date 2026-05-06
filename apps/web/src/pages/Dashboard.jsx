@@ -1,12 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-// Drinks that count toward water tracker, mapped to ml per serving
-const WATER_SERVING_ML = {
-  'Water':           250,
-  'Sparkling Water': 355,
-  'Coconut Water':   240,
-  'Nimbu Pani':      250,
-}
+import { Button, Card, IconButton, MaterialIcon } from '@healtho/ui'
 import { useProfile }  from '../contexts/ProfileContext'
 import Header            from '../components/Header'
 import CalorieRing       from '../components/CalorieRing'
@@ -19,11 +13,22 @@ import CelebrationOverlay from '../components/CelebrationOverlay'
 import { useCelebration } from '../hooks/useCelebration'
 import { computeMacroTargets } from '../lib/macroTargets'
 
+// Drinks that count toward water tracker, mapped to ml per serving
+const WATER_SERVING_ML = {
+  'Water':           250,
+  'Sparkling Water': 355,
+  'Coconut Water':   240,
+  'Nimbu Pani':      250,
+}
+
+// Meal-type emojis match the design-system rubric (SKILL.md non-negotiable
+// §8: emoji only in two contexts, meal types and activity-level pickers).
+// Updated from sun/moon/sunrise emojis to the rubric's egg/salad/plate/apple.
 const MEAL_META = [
-  { id: 'breakfast', emoji: '🌅', name: 'Breakfast', defaultOpen: true  },
-  { id: 'lunch',     emoji: '☀️', name: 'Lunch',     defaultOpen: false },
-  { id: 'dinner',    emoji: '🌙', name: 'Dinner',    defaultOpen: false },
-  { id: 'snacks',    emoji: '🍎', name: 'Snacks',    defaultOpen: false },
+  { id: 'breakfast', emoji: '🍳',  name: 'Breakfast', defaultOpen: true  },
+  { id: 'lunch',     emoji: '🥗',  name: 'Lunch',     defaultOpen: false },
+  { id: 'dinner',    emoji: '🍽️', name: 'Dinner',    defaultOpen: false },
+  { id: 'snacks',    emoji: '🍎',  name: 'Snacks',    defaultOpen: false },
 ]
 
 const ACTIVITY_MULTIPLIERS = {
@@ -273,6 +278,10 @@ export default function Dashboard() {
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
   const username  = profile?.username ? `@${profile.username}` : null
 
+  // Streak title text — kept dynamic for behavioral preservation. The
+  // visual treatment moves to DM Mono per the design-system spec.
+  const streakTitle = streak === 0 ? 'No streak yet' : `${streak} day streak`
+
   // ── Blocking error fallback ────────────────────────────────────────────────
   // For auth/notfound errors there's no meaningful dashboard to render — the
   // user must re-auth or finish onboarding. Short-circuit with a fullpage card
@@ -317,52 +326,59 @@ export default function Dashboard() {
             />
           )}
 
-          {/* Greeting */}
+          {/* Greeting + date navigator */}
           <div className="mb-2">
-            {/* Date navigator */}
-            <div className="flex items-center gap-2 mb-1">
-              <button
+            {/* Date navigator row */}
+            <div className="flex items-center gap-2 mb-2">
+              <IconButton
+                icon="chevron_left"
+                size="sm"
+                variant="plain"
                 onClick={goBack}
                 disabled={isAtEarliest}
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isAtEarliest ? 'text-slate-700 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
                 aria-label="Previous day"
                 title={isAtEarliest ? `History limited to ${MAX_HISTORY_DAYS} days` : 'Previous day'}
-              >
-                <span className="material-symbols-outlined text-sm">chevron_left</span>
-              </button>
-              <p className="text-slate-400 text-sm font-medium flex-1 truncate">{dateLabel}</p>
+              />
+              <p className="eyebrow flex-1 truncate normal-case tracking-wider text-slate-400 font-medium">
+                {dateLabel}
+              </p>
               {/* "Today" quick-jump — only shown when not on today */}
               {!isToday && (
                 <button
+                  type="button"
                   onClick={() => setSelectedDate(localDateStr())}
-                  className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-lg transition-colors flex-shrink-0"
+                  className="inline-flex items-center rounded-full bg-primary/[0.15] text-violet-300 border border-primary/35 px-3 py-1 text-[11px] font-semibold font-display hover:bg-primary/[0.25] transition-colors focus-visible:outline-none focus-visible:shadow-[var(--tap-ring)]"
                 >
                   Today
                 </button>
               )}
-              <button
-                onClick={goForward}
-                disabled={isToday}
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isToday ? 'text-slate-700 cursor-not-allowed opacity-0 pointer-events-none' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
-                aria-label="Next day"
-              >
-                <span className="material-symbols-outlined text-sm">chevron_right</span>
-              </button>
+              <div className={isToday ? 'opacity-0 pointer-events-none' : ''} aria-hidden={isToday}>
+                <IconButton
+                  icon="chevron_right"
+                  size="sm"
+                  variant="plain"
+                  onClick={goForward}
+                  disabled={isToday}
+                  aria-label="Next day"
+                />
+              </div>
             </div>
 
             {loading ? <Skeleton className="h-10 w-64 mt-1" /> : (
-              <h1 className="text-white text-4xl font-extrabold leading-tight tracking-tight mt-1">
-                {greeting(profile?.timezone)}, <span className="text-primary">{firstName}</span> 👋
+              <h1 className="text-3xl font-extrabold leading-tight tracking-[-0.02em] text-white font-display">
+                {greeting(profile?.timezone)},{' '}
+                <span className="text-gradient">{firstName}</span> 👋
               </h1>
             )}
-            <p className="text-slate-500 text-base mt-1">
-              {isToday ? "Here's your nutrition summary for today." : `Viewing logs for ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.`}
-              {username && <span className="ml-2 text-slate-600 font-mono text-sm">{username}</span>}
+            <p className="mt-1 text-base text-slate-400 font-display">
+              {isToday
+                ? "Here's your nutrition summary for today."
+                : `Viewing logs for ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.`}
+              {username && (
+                <span className="ml-2 text-slate-600 font-mono text-sm">{username}</span>
+              )}
             </p>
           </div>
-
-          {/* Calorie goal banner removed — CalorieRing already shows the same
-              daily_calorie_goal value. BMI + weight live on Profile page. */}
 
           {/* Calorie ring — live consumed from food_logs. Hidden during a
               partial profile error since the goal would be 0 and misleading. */}
@@ -376,31 +392,49 @@ export default function Dashboard() {
           </div>
 
           {/* Water */}
-          <WaterTracker waterLevel={waterLevel} goalMet={waterGoalMet} onLevelChange={setWaterTotalLevel} isToday={isToday} />
+          <WaterTracker
+            waterLevel={waterLevel}
+            goalMet={waterGoalMet}
+            onLevelChange={setWaterTotalLevel}
+            isToday={isToday}
+          />
 
           {/* Meals header */}
           <div className="flex items-center justify-between pt-2">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
-              {isToday ? "Today's Meals" : new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            <p className="label text-slate-400">
+              {isToday
+                ? "Today's Meals"
+                : new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
             </p>
-            <button onClick={() => { setLogMeal(null); setLogOpen(true) }} className="text-primary text-xs font-semibold hover:underline">
-              + Log food
+            <button
+              type="button"
+              onClick={() => { setLogMeal(null); setLogOpen(true) }}
+              className="inline-flex items-center gap-1 text-primary text-xs font-semibold font-display hover:underline underline-offset-4 decoration-primary/60 focus-visible:outline-none focus-visible:shadow-[var(--tap-ring)] rounded px-1 py-0.5"
+            >
+              <MaterialIcon name="add" size={14} />
+              Log food
             </button>
           </div>
 
-          {/* Meal sections — real data */}
+          {/* Meal sections — real data. Empty state for past dates with no logs. */}
           {logs.length === 0 && !loading && !isToday ? (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-center">
+            <Card padding="lg" radius="xl" className="text-center">
               <p className="text-3xl mb-2">📋</p>
-              <p className="text-slate-300 text-sm font-semibold">No entries for this day</p>
-              <p className="text-slate-600 text-xs mt-1">Nothing was logged on {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.</p>
+              <p className="text-sm font-semibold text-slate-300 font-display">
+                No entries for this day
+              </p>
+              <p className="text-xs text-slate-600 mt-1 font-display">
+                Nothing was logged on {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.
+              </p>
               <button
+                type="button"
                 onClick={() => { setLogMeal(null); setLogOpen(true) }}
-                className="mt-3 text-primary text-xs font-semibold hover:underline"
+                className="mt-3 inline-flex items-center gap-1 text-primary text-xs font-semibold font-display hover:underline underline-offset-4 decoration-primary/60 focus-visible:outline-none focus-visible:shadow-[var(--tap-ring)] rounded px-1 py-0.5"
               >
-                + Add an entry for this day
+                <MaterialIcon name="add" size={14} />
+                Add an entry for this day
               </button>
-            </div>
+            </Card>
           ) : (
             meals.map(meal => (
               <MealSection
@@ -417,18 +451,27 @@ export default function Dashboard() {
             ))
           )}
 
-          {/* Streak */}
+          {/* Streak — kept as raw <div> wrapper so the absolute-positioned
+              tooltip can escape its sibling card's bounds. Card primitive's
+              overflow-hidden would clip the tooltip. The inner card surface
+              uses the same slate-900/border-slate-800/rounded-xl shape as Card
+              for visual parity. */}
           <div className="relative group">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-4 cursor-default">
-              <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl flex-shrink-0">🔥</div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-white flex items-center gap-2">
-                  {streak === 0 ? 'No streak yet' : `Day ${streak} streak`}
+              {/* Brand-gradient flame circle (replaces the prior slate emoji box) */}
+              <div className="flex-shrink-0 w-11 h-11 rounded-full bg-brand-gradient flex items-center justify-center shadow-[0_8px_20px_-6px_rgba(139,92,246,0.5)]">
+                <MaterialIcon name="local_fire_department" size={22} fill={1} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-mono text-base font-bold text-white flex items-center gap-2 truncate">
+                  {streakTitle}
                   {!isToday && (
-                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">current</span>
+                    <span className="font-display text-[10px] font-semibold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full whitespace-nowrap">
+                      current
+                    </span>
                   )}
                 </p>
-                <p className="text-xs font-semibold mt-0.5 text-green-400">
+                <p className="text-xs font-semibold mt-0.5 text-fiber font-display">
                   {streak === 0 && 'Log a meal today to start your streak!'}
                   {streak === 1 && "Great start — log tomorrow to keep it going!"}
                   {streak >= 2 && streak < 7  && `${streak} days in a row — keep it up!`}
@@ -436,52 +479,58 @@ export default function Dashboard() {
                   {streak >= 30 && `🏆 ${streak} days — absolute legend!`}
                 </p>
               </div>
-              <span className="material-symbols-outlined text-primary">emoji_events</span>
+              <MaterialIcon name="emoji_events" size={22} className="text-primary flex-shrink-0" />
             </div>
 
-            {/* Tooltip — z-50 so it renders above all meal cards */}
-            <div className="absolute bottom-full left-0 right-0 mb-2 z-50 pointer-events-none
-                            opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {/* Tooltip — absolute, sibling of card, z-50 so it renders above all meal cards */}
+            <div
+              role="tooltip"
+              className="absolute bottom-full left-0 right-0 mb-2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
               <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-xl">
-                <p className="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                <p className="text-xs font-bold text-white mb-2 flex items-center gap-1.5 font-display">
                   <span className="text-base">🔥</span> How streaks work
                 </p>
                 <ul className="space-y-1.5">
-                  <li className="flex items-start gap-2 text-xs text-slate-400">
-                    <span className="text-green-400 mt-0.5">✓</span>
+                  <li className="flex items-start gap-2 text-xs text-slate-400 font-display">
+                    <span className="text-fiber mt-0.5">✓</span>
                     Log <span className="text-white font-semibold mx-1">at least 1 meal</span> per day to grow your streak
                   </li>
-                  <li className="flex items-start gap-2 text-xs text-slate-400">
-                    <span className="text-green-400 mt-0.5">✓</span>
+                  <li className="flex items-start gap-2 text-xs text-slate-400 font-display">
+                    <span className="text-fiber mt-0.5">✓</span>
                     Consecutive days logged = streak count
                   </li>
-                  <li className="flex items-start gap-2 text-xs text-slate-400">
+                  <li className="flex items-start gap-2 text-xs text-slate-400 font-display">
                     <span className="text-red-400 mt-0.5">✕</span>
                     Miss a day and your streak resets to 0
                   </li>
-                  <li className="flex items-start gap-2 text-xs text-slate-400">
+                  <li className="flex items-start gap-2 text-xs text-slate-400 font-display">
                     <span className="text-yellow-400 mt-0.5">◷</span>
                     You have until midnight to log and keep today's streak alive
                   </li>
                 </ul>
               </div>
-              {/* Arrow */}
               <div className="w-3 h-3 bg-slate-800 border-r border-b border-slate-700 rotate-45 mx-auto -mt-1.5" />
             </div>
           </div>
 
-          {/* Log Food CTA */}
-          <button onClick={() => { setLogMeal(null); setLogOpen(true) }}
-            className="w-full h-14 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group">
-            <span className="material-symbols-outlined">add_circle</span>
+          {/* Log Food CTA — Phase 2 Button primary variant gives the brand
+              gradient + soft violet shadow per spec. */}
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => { setLogMeal(null); setLogOpen(true) }}
+            className="w-full"
+          >
+            <MaterialIcon name="add_circle" size={20} fill={1} />
             Log Food
-          </button>
+          </Button>
 
         </div>
       </main>
 
       <footer className="py-6 px-6 text-center">
-        <p className="text-slate-700 text-xs">© {new Date().getFullYear()} Healtho. All rights reserved.</p>
+        <p className="text-slate-700 text-xs font-display">© {new Date().getFullYear()} Healtho. All rights reserved.</p>
       </footer>
 
       <LogFoodModal

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 import Header from '../components/Header'
 import { supabase } from '../lib/supabase'
 
@@ -7,7 +8,7 @@ function FieldError({ message }) {
   if (!message) return null
   return (
     <p className="flex items-center gap-1.5 text-red-400 text-xs font-semibold mt-1">
-      <span className="material-symbols-outlined text-sm">error</span>
+      <MaterialIcon name="error" size={14} />
       {message}
     </p>
   )
@@ -81,7 +82,7 @@ export default function ResetPassword() {
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[520px] text-center">
           <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
-            <span className="material-symbols-outlined text-green-400 text-3xl">check_circle</span>
+            <MaterialIcon name="check_circle" size={28} className="text-green-400" />
           </div>
           <h1 className="text-white text-3xl font-extrabold mb-3">Password updated!</h1>
           <p className="text-slate-400 text-base mb-8">
@@ -102,7 +103,7 @@ export default function ResetPassword() {
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[520px] text-center">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
-            <span className="material-symbols-outlined text-red-400 text-3xl">link_off</span>
+            <MaterialIcon name="link_off" size={28} className="text-red-400" />
           </div>
           <h1 className="text-white text-3xl font-extrabold mb-3">Link expired</h1>
           <p className="text-slate-400 text-base mb-8">
@@ -112,7 +113,7 @@ export default function ResetPassword() {
             to="/forgot-password"
             className="inline-flex items-center gap-2 h-12 px-6 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold text-sm transition-colors"
           >
-            <span className="material-symbols-outlined text-base">send</span>
+            <MaterialIcon name="send" size={16} />
             Request new link
           </Link>
         </div>
@@ -126,7 +127,7 @@ export default function ResetPassword() {
       <Header />
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="flex flex-col items-center gap-4">
-          <span className="material-symbols-outlined text-primary text-4xl animate-spin">progress_activity</span>
+          <MaterialIcon name="progress_activity" size={36} className="text-primary animate-spin" />
           <p className="text-slate-400 text-sm">Verifying reset link…</p>
         </div>
       </main>
@@ -155,7 +156,7 @@ export default function ResetPassword() {
             {/* New password */}
             <div className="flex flex-col gap-1">
               <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
-                <span className="material-symbols-outlined text-primary text-xl">lock</span>
+                <MaterialIcon name="lock" size={20} className="text-primary" />
                 New Password
               </label>
               <div className="relative">
@@ -176,7 +177,7 @@ export default function ResetPassword() {
                   onClick={() => setShowPw(v => !v)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                 >
-                  <span className="material-symbols-outlined text-xl">{showPw ? 'visibility_off' : 'visibility'}</span>
+                  <MaterialIcon name={showPw ? 'visibility_off' : 'visibility'} size={20} />
                 </button>
               </div>
               <FieldError message={errors.password} />
@@ -185,7 +186,7 @@ export default function ResetPassword() {
             {/* Confirm password */}
             <div className="flex flex-col gap-1">
               <label className="text-slate-300 text-sm font-semibold flex items-center gap-2 mb-1">
-                <span className="material-symbols-outlined text-primary text-xl">lock_reset</span>
+                <MaterialIcon name="lock_reset" size={20} className="text-primary" />
                 Confirm Password
               </label>
               <input
@@ -206,7 +207,7 @@ export default function ResetPassword() {
             {/* General error */}
             {errors.general && (
               <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
-                <span className="material-symbols-outlined text-red-400 text-base">warning</span>
+                <MaterialIcon name="warning" size={16} className="text-red-400" />
                 <p className="text-red-400 text-sm font-semibold">{errors.general}</p>
               </div>
             )}
@@ -218,13 +219,13 @@ export default function ResetPassword() {
             >
               {loading ? (
                 <>
-                  <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+                  <MaterialIcon name="progress_activity" size={20} className="animate-spin" />
                   Updating…
                 </>
               ) : (
                 <>
                   Update password
-                  <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                  <MaterialIcon name="arrow_forward" size={20} className="transition-transform group-hover:translate-x-1" />
                 </>
               )}
             </button>

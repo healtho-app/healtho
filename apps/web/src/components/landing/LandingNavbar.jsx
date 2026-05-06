@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { MaterialIcon } from '@healtho/ui'
 
 const navLinks = [
   { label: 'Features', to: '/features' },
@@ -60,10 +61,9 @@ export default function LandingNavbar() {
             onClick={() => setMenuOpen(prev => !prev)}
             className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/[0.06] transition-colors"
             aria-label="Toggle menu"
+            aria-expanded={menuOpen}
           >
-            <span className="material-symbols-outlined text-white text-2xl">
-              {menuOpen ? 'close' : 'menu'}
-            </span>
+            <MaterialIcon name={menuOpen ? 'close' : 'menu'} size={24} className="text-white" />
           </button>
         </div>
       </div>
