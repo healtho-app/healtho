@@ -1089,6 +1089,103 @@ Tailwind `transition-colors` / `transition-opacity` / short hover transforms (`h
 
 9 modified files: `apps/web/src/components/LogFoodModal.jsx`, `apps/web/src/index.css`, `apps/web/src/pages/AuthCallback.jsx`, `apps/web/src/pages/ForgotPassword.jsx`, `apps/web/src/pages/NotFound.jsx`, `apps/web/src/pages/Privacy.jsx`, `apps/web/src/pages/ResetPassword.jsx`, `apps/web/src/pages/Terms.jsx`, `vercel.json`.
 
-#### Pending
+#### Closeout
 
-User QA on the design/06-polish Vercel preview URL (validation sweep items above + visual). After QA approval: merge PR #20 into `feature/design-system`. Then **only Phase 7 (final merge to main) remains**, gated by sync gate #2 to absorb PR #18 once it lands on main.
+- **Phase 6 commit SHA:** `7f4ecf8` (`feat(app): Phase 6 — polish (auth-tail icons + CSP cleanup + reduce-motion guards)`)
+- **PR #20** merged into `feature/design-system` at `e3ae6d5` ("Merge pull request #20 from healtho-app/design/06-polish") on 2026-05-03 07:39 UTC. User QA passed on the design/06-polish Vercel preview — reduce-motion guards verified, no Network-tab requests to third-party font CDNs, all 11 routes console-clean.
+
+### Sync gate #2 — main → feature/design-system (Phase 7 entry)
+
+- **Date:** 2026-05-05
+- **Trigger:** PR #18 (Node 22 LTS bump) merged on main at `0f49beb` on 2026-05-03 07:48 UTC. Main subsequently moved to `f206b47` via the 2026-05-04 weekly content-brief auto-commit (docs-only, automation pipeline).
+- **Pre-sync state:** `feature/design-system` @ `e3ae6d5` (Phase 6 merge). Cut-from main was `efafab8` (pre-baseline, since that's what the original `pre-design-system` tag captured).
+- **Sync command:**
+  ```
+  git checkout feature/design-system
+  git pull --ff-only
+  git merge origin/main --no-ff -m "chore(sync): absorb main into feature/design-system (sync gate #2)"
+  git push origin feature/design-system
+  ```
+- **Post-sync `feature/design-system` HEAD:** `31c9cc7`.
+- **Files touched by the merge** (all from main, zero overlap with design-system work):
+  - `.nvmrc`: `20` → `22`
+  - `package.json`: `"engines.node": "20.x"` → `"22.x"`
+  - `automation/output/*` — content-brief auto-pipeline outputs (docs/marketing only; no code path touches these)
+- **Verification post-sync:**
+  - `cat .nvmrc` → `22` ✅
+  - `package.json` `engines.node` → `"22.x"` ✅
+  - `pnpm install --frozen-lockfile` ✅ no lockfile changes needed
+  - `pnpm turbo run build --filter=healtho-web` ✅ green in 5.53 s
+
+### Belt-and-suspenders rollback anchor
+
+Before opening Phase 7's PR to main, cut a second tag at the current main HEAD as an additional safety net (atop the existing `pre-design-system` @ `b9f1ed6`):
+
+- **Tag:** `main-before-design-merge`
+- **Points to:** `f206b47` (current `main` HEAD on 2026-05-05, immediately before PR #21 lands)
+- **Pushed to origin:** ✅ `git push origin main-before-design-merge` succeeded
+- **Both rollback tags verified on origin:**
+  ```
+  $ git ls-remote --tags origin | grep -E 'pre-design-system|main-before-design-merge'
+  f206b47…  refs/tags/main-before-design-merge
+  b9f1ed6…  refs/tags/pre-design-system
+  ```
+
+### Phase 7 — Final PR feature/design-system → main (only PR that touches production)
+
+- **Date:** 2026-05-05
+- **Hard rule:** the execution agent does NOT merge this PR. Ayush merges after his own QA pass on the production-bound preview.
+
+#### Pre-merge sweep results
+
+| Gate | Result |
+|---|---|
+| `pnpm install --frozen-lockfile` | ✅ no lockfile drift |
+| `pnpm turbo run build --filter=healtho-web` | ✅ green in 5.53 s, 511 modules transformed |
+| `pnpm audit --prod` | ✅ "No known vulnerabilities found" |
+| Cumulative `git diff` secret-scan vs `pre-design-system` baseline | ✅ no matches (credential-shape regex) |
+| `git diff pre-design-system feature/design-system -- vercel.json` | ✅ only allowed deltas (see below) |
+| `git diff pre-design-system feature/design-system -- '*supabase*'` | ✅ empty (zero diff) |
+| `git diff pre-design-system feature/design-system -- '.env*'` | ✅ empty (zero diff) |
+| `apps/` + `packages/` references to `fonts.googleapis.com` | ✅ zero (runtime same-origin) |
+| `apps/` + `packages/` references to `fonts.gstatic.com` | ✅ zero (runtime same-origin) |
+| Lighthouse comparison preview vs prod main | **deferred to Ayush's QA** (script can't run on Vercel-auth preview from this env) |
+| Console-clean smoke (11 routes) | **deferred to Ayush's QA** |
+| DevTools Network-tab third-party font CDN check | **deferred to Ayush's QA** |
+| Reduce-motion sweep (11 routes, OS toggle ON) | **deferred to Ayush's QA** |
+
+#### `vercel.json` delta vs `pre-design-system` baseline (only allowed changes)
+
+```diff
+-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://fonts.googleapis.com/css2; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.nal.usda.gov; img-src 'self' data: https:; frame-ancestors 'none';" }
++        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com/css2; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.nal.usda.gov; img-src 'self' data: https:; frame-ancestors 'none';" }
+```
+
+Two allowed deltas:
+1. **Add `worker-src 'self' blob:;`** — from PR #7 ("Fix: add worker-src to CSP for avatar Web Worker"), which had been merged to main at `efafab8` on 2026-04-30 but which `pre-design-system` (cut at `b9f1ed6`) predates.
+2. **Pickup D removals** — Phase 6 dropped the now-unused `https://fonts.googleapis.com` from style-src (the bare-domain entry; the more specific `https://fonts.googleapis.com/css2` URL is kept), and dropped `https://fonts.gstatic.com` from font-src.
+
+No other CSP directives changed.
+
+#### Same-origin enforcement notes
+
+- Runtime app code (`apps/` + `packages/`) has zero references to `fonts.googleapis.com` or `fonts.gstatic.com`. All fonts (Lexend × 10 weights, DM Mono × 6 cuts, Material Symbols Outlined variable) are bundled via Vite from `packages/ui/fonts/` and served from the deployment's own origin under `/assets/`.
+- The `vercel.json` CSP entry `https://fonts.googleapis.com/css2` (style-src) is now a **dead permission** — no app code references it. **Flagged as post-migration cleanup candidate**, not removed in this PR (would extend scope).
+- Reference matches that surfaced in repo grep but are NOT runtime concerns:
+  - `docs/*.md` — historical prose describing prior CSP states (audit trail). Not executable, not deployed.
+  - `ui-demos/*.html` — original Claude Design HTML mocks. Sit at repo root in `ui-demos/`; never built into the deployment (Vercel's `outputDirectory` is `apps/web/dist`). Reference-only files.
+
+#### Cumulative diff stats
+
+```
+$ git diff main...feature/design-system --shortstat
+ 61 files changed, 3752 insertions(+), 535 deletions(-)
+$ git rev-list --count main..feature/design-system
+ 39
+```
+
+(39 commits ahead of main: Phase 0 docs + 13 phase-feature commits + 13 phase-merge commits + 4 docs/log commits + 7 pre/post-phase doc commits + 1 sync-gate-#1 doc commit + sync-gate-#2 merge.)
+
+#### Phase 7 PR — pending opening
+
+PR #21 to be opened directly after this commit lands. URL will be appended in the post-merge closeout commit (per the deferred-closeout pattern).
