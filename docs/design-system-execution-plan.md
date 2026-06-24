@@ -1189,3 +1189,130 @@ $ git rev-list --count main..feature/design-system
 #### Phase 7 PR — pending opening
 
 PR #21 to be opened directly after this commit lands. URL will be appended in the post-merge closeout commit (per the deferred-closeout pattern).
+
+---
+
+## MIGRATION COMPLETE — PR #21 closeout
+
+- **PR:** [#21](https://github.com/healtho-app/healtho/pull/21) — `feat(design): cumulative design-system migration → main`
+- **Merge SHA on main:** `7228aca3b3b5e6f26abba58f8bf68fdc5059e7fd`
+- **Merge timestamp:** `2026-05-06T06:20:19Z`
+- **Production URL:** https://healtho-kohl.vercel.app
+- **Production deployment fingerprint:** Vite bundle hashes `index-DXIPnBbY.js` + `index-BUgolVrc.css` served from `/assets/` on the production origin. (Stable Vercel `dpl_*` deployment ID is not exposed on production HTML — no preview-toolbar injection in prod — and capturing it requires authenticated dashboard access; left for Ayush to record into the project's deployment ledger if desired.)
+
+### Production smoke-test results
+
+Tested directly against `https://healtho-kohl.vercel.app` from the closeout agent (read-only HTTP layer). Authenticated flows + DevTools-level checks were not in the static agent's reach and were handed off to Ayush.
+
+#### HTTP-layer (verified by closeout agent — PASS)
+
+| Route | Status | Notes |
+|---|---|---|
+| `/` | 200 | Same-origin SPA shell, identical bundle hashes |
+| `/login` | 200 | SPA route resolves client-side |
+| `/register` | 200 | SPA route resolves client-side |
+| `/dashboard` | 200 | SPA shell — auth gate enforced client-side via `ProtectedRoute` |
+| `/profile` | 200 | SPA route resolves client-side |
+| `/forgot-password` | 200 | SPA route resolves client-side |
+| `/reset-password` | 200 | SPA route resolves client-side |
+| `/404-doesnotexist` (any bad path) | 200 | SPA shell; `NotFound` rendered client-side via `Routes` fallback |
+| `/terms` | 200 | SPA route resolves client-side |
+| `/privacy` | 200 | SPA route resolves client-side |
+| `/_design-preview` | 200 | SPA shell; `isDesignPreviewAllowed()` returns `false` on `healtho-kohl.vercel.app` and falls through to `NotFound` (client-side gate verified by reading `apps/web/src/App.jsx`) |
+
+CSP / security headers identical across all routes:
+
+- `Content-Security-Policy` — Phase 6 hardened CSP (worker-src `'self' blob:`; style-src no longer includes bare `fonts.googleapis.com`; font-src `'self'` only; `fonts.googleapis.com/css2` retained as a path-restricted entry, dead permission — flagged as separate cleanup ticket)
+- `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, `X-XSS-Protection` — all present on every route
+
+Self-hosted assets verified 200 from the production origin:
+
+- `/assets/Lexend-Regular-peUU6jwM.ttf` ✅
+- `/assets/DMMono-Regular-CHcedrof.ttf` ✅
+- `/assets/MaterialSymbolsOutlined-Variable-OqZILbjW.woff2` ✅
+- `/assets/index-DXIPnBbY.js` (main JS bundle) ✅
+- `/assets/index-BUgolVrc.css` (main CSS bundle) ✅
+- All 16 self-hosted font URLs are referenced by the deployed CSS bundle (same Vite hashes as preview build).
+
+Production HTML inspection: zero `fonts.googleapis.com` / `fonts.gstatic.com` `<link>` tags, zero `<link rel="preconnect">` to Google CDNs, zero `vercel.live` toolbar script (preview-only injection — confirmed absent on production). Production CSS bundle inspection: zero references to `fonts.googleapis.com` or `fonts.gstatic.com`.
+
+#### Browser-layer (handed off to Ayush — must verify before declaring done)
+
+Static agent cannot reach these. Ayush's responsibility on the final pass:
+
+| Check | What to verify |
+|---|---|
+| Landing render | Hero loads, no FOUC, fonts swap to Lexend cleanly, CalorieRing demo + landing animations OK |
+| `/login`, `/register` | Form renders, 4-segment progress bar fits at 320 px, submit reachable, FieldError glyphs render |
+| `/dashboard` (authenticated) | Sign in with test account → ring + macros + meals render, food log shows |
+| `/profile` (authenticated) | Every field renders; edit + save flows; raw-span migration (Pickup E) clean |
+| LogFoodModal end-to-end | Open from dashboard → search USDA → save a food → modal closes → macros recalc |
+| Sign-out | `/dashboard` → sign out → redirect to `/login` |
+| DevTools Network (landing + dashboard) | Zero requests to `fonts.googleapis.com` or `fonts.gstatic.com`; all fonts from `/assets/` same-origin |
+| DevTools Console (landing + dashboard) | Zero errors, zero CSP violations (no preview-toolbar block on production), zero deprecation warnings |
+| `/_design-preview` on production host | Confirm `NotFound` renders (client-side gate behaves as designed) |
+
+If anything fails: do **not** patch in place. Layer 1 rollback is Vercel "Promote previous deployment" — fastest path back to `main-before-design-merge` @ `f206b47`.
+
+### Migration timeline
+
+- **Phase 0 first action:** 2026-04-29 (commit `30b9b98` — `docs: bootstrap design system execution plan`)
+- **PR #21 merge to main:** 2026-05-06 (merge commit `7228aca`)
+- **Calendar span:** Apr 29 → May 6 = 8 calendar days inclusive (7-day gap)
+- **Working days:** Apr 29 (Wed), 30 (Thu), May 1 (Fri), May 4 (Mon), May 5 (Tue), May 6 (Wed) = 6 working days. Phase 4d work also touched Sat May 2 (LogFoodModal continuation).
+
+### Total scope shipped
+
+- **14 sub-PRs** merged into `feature/design-system` over the migration window: PR #8 (primitives), #9 (3a read-only), #10 (3.5 Card radius), #11 (3b Header), #12 (3c CelebrationOverlay), #13 (3d self-host MS), #14 (4a Dashboard), #15 (4b Login + Register), #16 (4c Profile), #17 (4d LogFoodModal), #19 (Phase 5 landing), #20 (Phase 6 polish), plus `feature/design-system` direct merge for Phase 1 (no PR — `gh` not yet installed) and the cumulative shipping PR #21.
+- **2 sync gates** absorbing main into `feature/design-system`:
+  - **Sync gate #1** (2026-04-30) — picked up PR #7 (`worker-src 'self' blob:` CSP hotfix at `efafab8`); merge commit `4057ae4`.
+  - **Sync gate #2** (2026-05-05) — picked up PR #18 + weekly content brief; merge commit `31c9cc7`.
+- **2 infra hotfixes** during the migration window:
+  - **PR #7** — CSP `worker-src 'self' blob:` for the avatar Web Worker (parallel hotfix; not introduced by this migration).
+  - **PR #18** — Node `20 → 22` LTS bump aligning `.nvmrc` + `package.json` engines. Vercel project-level `nodeVersion` (currently `24.x`) update remains a dashboard-only follow-up for Ayush.
+
+### Pickups closed in this migration
+
+- **Pickup A** — Material Symbols Outlined now self-hosted (Phase 3d, PR #13). Variable woff2 + LICENSE.txt sit at `packages/ui/fonts/`; SHA-256 baselines logged.
+- **Pickup B** — Node 22 LTS adopted at the repo level (PR #18). Cosmetic Vercel-dashboard update (`nodeVersion: 24.x → 22.x`) deferred to Ayush.
+- **Pickup D** — CSP cleaned up in Phase 6 (Pickup D removals): bare `https://fonts.googleapis.com` removed from `style-src`; `https://fonts.gstatic.com` removed from `font-src`.
+- **Pickup E** — All raw `<span class="material-symbols-outlined">` instances across `apps/web/src/` migrated to the `MaterialIcon` primitive (closed across Phases 4c + 6). Final post-Phase-6 grep returns zero hits in app source.
+
+### Pickups deferred to HLTH backlog
+
+Tracked separately; intentionally not bundled into this migration:
+
+- **Pickup F** — `Register.jsx` step-internal layout refactor (the locked-in guardrail; reskin only, no structural changes).
+- **Card primitive** — add `overflow="visible"` prop for surfaces that need a non-clipping radius wrapper.
+- **USDA API parens-rejection quirk** — pre-existing 400 on certain food-name queries (e.g. `Bread (White)`); surfaced during Phase 4d QA, confirmed pre-existing.
+- **B1** — LogFoodModal edit-as-INSERT data-corruption bug. Intentionally **not** fixed in the reskin per the user's locked-in guardrail; separate ticket.
+- **LogFoodModal `MacroCard` naming collision** — internal helper component shares a name with `apps/web/src/components/MacroCard.jsx`. Phase 6 cleanup candidate; deferred.
+- **`fonts.googleapis.com/css2` CSP entry** — currently retained in `style-src` as a path-restricted permission. Now a dead permission (no app code references it post-self-hosting). Tighten in a follow-up CSP polish.
+
+### Rollback anchors (in place, NOT deleted)
+
+| Anchor | SHA | Retention |
+|---|---|---|
+| `pre-design-system` (tag) | `b9f1ed6` | **Permanent** — pre-migration baseline |
+| `main-before-design-merge` (tag) | `f206b47` | 1 week — last `main` HEAD before PR #21 |
+| `feature/design-system` (branch) | `4dc760b` | 1 week — full cumulative branch (recoverable cherry-pick source) |
+| `design/0X-*` sub-branches × 13 | — | 1 week — per-phase recovery anchors |
+
+Layer 1 rollback (Vercel "Promote previous deployment"): targets the deployment built from `f206b47`. Fastest path. Layer 2: `git revert -m 1 7228aca` on `main`. Layer 3: cherry-pick from `feature/design-system` for partial rollback. Layer 4: `git reset --hard pre-design-system` (nuclear; permanent baseline always available).
+
+### Branch retention + cleanup
+
+- `feature/design-system` and all 13 `design/0X-*` sub-branches remain on origin for 1 week as belt-and-suspenders.
+- `main-before-design-merge` tag held for 1 week alongside.
+- **Cleanup ticket:** scheduled for **2026-05-13**. At that point: delete the 14 working branches, optionally drop the `main-before-design-merge` tag (the `pre-design-system` tag stays permanent).
+
+### Out of scope (Ayush handles, not the agent)
+
+- Vercel project `nodeVersion: 24.x → 22.x` dashboard update (Pickup B cosmetic finish).
+- Sub-branch deletion on 2026-05-13 (cleanup ticket above).
+- Internal notification: Ishaan + any other stakeholders — migration-complete posting.
+
+### Migration formally complete
+
+PR #21 merged at `7228aca` on 2026-05-06T06:20:19Z. Production smoke test passed at the HTTP layer. Browser-layer verification handed to Ayush. Rollback anchors intact. All in-scope pickups (A, B repo-side, D, E) closed. All deferred pickups tracked in HLTH backlog. Migration window: 2026-04-29 → 2026-05-06 (8 calendar days, 14 sub-PRs, 2 sync gates, 2 infra hotfixes).
+
