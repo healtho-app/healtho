@@ -1,223 +1,168 @@
 # Healtho Content Brief
-> Generated: 2026-10-19 · Week 43 · Topic 3 of 10
+> Generated: 2026-10-26 · Week 44 · Topic 4 of 10
 
 ---
 
-## Topic: BEST FOODS FOR FAT LOSS
+## Topic: FOODS THAT KEEP YOU FULL LONGEST
 
 
 
-# 📋 POST BRIEF: BEST FOODS FOR FAT LOSS
+# 📋 HEALTHO POST BRIEF
 
-**Campaign:** Healtho Fat Loss Carousel
-**Platforms:** Instagram · TikTok · X
-**Format:** 6-Slide Carousel (1 Title + 4 Category Slides + 1 CTA Slide)
+## FOODS THAT KEEP YOU FULL LONGEST
 
----
-
-## 🎨 SLIDE 1 — TITLE CARD
-
-**Headline:** BEST FOODS FOR FAT LOSS
-**Subline:** Fat loss isn't about eating less — it's about eating smarter.
-**Footer:** @healtho_10k · Track every bite.
+**Hook:** Stop the 3pm hunger crash for good.
 
 ---
 
-## 🥦 SLIDE 2 — HIGH-VOLUME LOW-CAL FOODS
+## SLIDE 1 — TITLE CARD
 
-**Subtitle:** *Fills you up on fewer calories so you stay in a deficit without starving.*
-
-| # | Food | Calories (per 100g) | Key Macro |
-|---|------|---------------------|-----------|
-| 1 | **Cucumber** | 15 kcal | 0.7g protein · 3.6g carbs · 0.1g fat |
-| 2 | **Air-Popped Popcorn** | 387 kcal (but ~31 kcal per cup / 8g) | 4.1g fiber per cup serving |
-| 3 | **Zucchini** | 17 kcal | 1.2g protein · 3.1g carbs · 0.3g fat |
-| 4 | **Strawberries** | 32 kcal | 2.0g fiber · 0.7g protein · 7.7g carbs |
-
-> *Source: USDA FoodData Central*
+**Headline:** FOODS THAT KEEP YOU FULL LONGEST
+**Subline:** Stop the 3pm hunger crash for good.
+**Footer badge:** @healtho_10k · Track it on Healtho
 
 ---
 
-## 🍗 SLIDE 3 — PROTEIN SOURCES
+## SLIDE 2 — HIGH-FIBER FOODS
 
-**Subtitle:** *Preserves lean muscle during a calorie deficit — and burns more calories to digest.*
+**Subtitle:** Slows stomach emptying so you stay satisfied longer
 
-| # | Food | Calories (per 100g) | Key Macro |
-|---|------|---------------------|-----------|
-| 1 | **Chicken Breast (skinless, cooked)** | 165 kcal | 31.0g protein · 0g carbs · 3.6g fat |
-| 2 | **Egg Whites (raw)** | 52 kcal | 10.9g protein · 0.7g carbs · 0.2g fat |
-| 3 | **Greek Yogurt (nonfat, plain)** | 59 kcal | 10.2g protein · 3.6g carbs · 0.4g fat |
-| 4 | **Canned Tuna (in water, drained)** | 116 kcal | 25.5g protein · 0g carbs · 0.8g fat |
+| # | Food | kcal / 100 g | Key Macro |
+|---|------|-------------|-----------|
+| 1 | Lentils (boiled) | 116 kcal | 7.9 g fiber |
+| 2 | Rolled Oats (dry) | 379 kcal | 10.1 g fiber |
+| 3 | Chia Seeds | 486 kcal | 34.4 g fiber |
+| 4 | Raspberries (raw) | 52 kcal | 6.5 g fiber |
 
-> *Source: USDA FoodData Central*
-
----
-
-## 🔥 SLIDE 4 — FAT-BURNING SUPPORT FOODS
-
-**Subtitle:** *Contains compounds shown in research to support fat oxidation & thermogenesis.*
-
-| # | Food | Calories (per 100g) | Key Macro / Active Compound |
-|---|------|---------------------|-----------------------------|
-| 1 | **Green Tea (brewed, unsweetened)** | 1 kcal | EGCG — linked to increased fat oxidation (Hursel et al., *Intl J Obesity*, 2009) |
-| 2 | **Chili Peppers (red, raw)** | 40 kcal | Capsaicin — shown to boost thermogenesis up to ~50 kcal/day (Ludy et al., *Physiology & Behavior*, 2011) |
-| 3 | **Coffee (black, brewed)** | 2 kcal | Caffeine — increases metabolic rate 3–11% short-term (Dulloo et al., *Am J Clin Nutr*, 1989) |
-| 4 | **Apple Cider Vinegar (1 tbsp / 15ml)** | 3 kcal per tbsp | Acetic acid — modestly supports satiety & blood sugar regulation (Kondo et al., *Bioscience, Biotechnology, and Biochemistry*, 2009) |
-
-> *Note: Effects are modest and supplement a caloric deficit — not replace it. Always cite the science.*
+> *Sources: USDA FoodData Central — NDB #16070, #08120, #12006, #09302*
 
 ---
 
-## 💧 SLIDE 5 — WATER-DENSE FOODS
+## SLIDE 3 — SLOW-DIGESTING PROTEINS
 
-**Subtitle:** *90%+ water content — suppresses appetite naturally and keeps you hydrated.*
+**Subtitle:** Hours of sustained satiety from every serving
 
-| # | Food | Calories (per 100g) | Key Macro / Water Content |
-|---|------|---------------------|---------------------------|
-| 1 | **Watermelon** | 30 kcal | 91% water · 7.6g carbs · 0.6g protein |
-| 2 | **Celery** | 14 kcal | 95% water · 1.4g fiber · 0.7g protein |
-| 3 | **Iceberg Lettuce** | 14 kcal | 96% water · 1.2g fiber · 0.9g protein |
-| 4 | **Tomatoes (raw, red)** | 18 kcal | 95% water · 0.9g protein · 3.9g carbs |
+| # | Food | kcal / 100 g | Key Macro |
+|---|------|-------------|-----------|
+| 1 | Eggs (whole, hard-boiled) | 155 kcal | 12.6 g protein |
+| 2 | Greek Yogurt (plain, nonfat) | 59 kcal | 10.2 g protein |
+| 3 | Chicken Breast (roasted, skinless) | 165 kcal | 31.0 g protein |
+| 4 | Cottage Cheese (2% milkfat) | 81 kcal | 11.8 g protein |
 
-> *Source: USDA FoodData Central*
-
----
-
-## 📲 SLIDE 6 — CTA CARD
-
-**Headline:** Track These Foods in Healtho
-**Body:** Scan. Log. Watch your deficit work.
-**CTA Button Text:** Download Healtho — Link in Bio
-**Footer:** @healtho_10k
+> *Sources: USDA FoodData Central — NDB #01129, #01256, #05064, #01016*
 
 ---
 
----
+## SLIDE 4 — HEALTHY FATS
 
-# ✍️ PLATFORM CAPTIONS
+**Subtitle:** Triggers CCK & other fullness hormones
 
----
+| # | Food | kcal / 100 g | Key Macro |
+|---|------|-------------|-----------|
+| 1 | Avocado (raw, Hass) | 160 kcal | 14.7 g fat |
+| 2 | Almonds (raw) | 579 kcal | 49.9 g fat |
+| 3 | Extra-Virgin Olive Oil | 884 kcal | 100.0 g fat |
+| 4 | Natural Peanut Butter | 588 kcal | 50.4 g fat |
 
-## 1. 📸 INSTAGRAM CAPTION
-
-```
-Fat loss isn't about eating less — it's about eating smarter. 🔥
-
-Most people slash calories and lose muscle. The real strategy?
-Fill your plate with high-volume, protein-rich, water-dense foods
-that keep you full AND in a deficit. Every food in this carousel
-has real calorie and macro data — no guesswork, no gimmicks.
-
-👉 Track all 16 of these foods in the Healtho app — scan a
-barcode, hit your targets, and watch the data do the work.
-Link in bio.
-
-#FatLoss #CalorieDeficit #HighProtein #VolumeEating
-#HealthoApp #NutritionFacts #MacroTracking #MealPrep
-#EatSmarter
-```
+> *Sources: USDA FoodData Central — NDB #09038, #12061, #04053, #16098*
 
 ---
 
-## 2. 🎵 TIKTOK CAPTION
+## SLIDE 5 — WATER-DENSE VEGETABLES
 
-```
-Fat loss isn't about eating less — it's about eating smarter 🔥
-16 grocery-store foods with REAL calorie data that keep you
-full in a deficit. Track them all on Healtho 👇
+**Subtitle:** High volume, low calories — stretch every meal
 
-#FatLoss #VolumeEating #CalorieDeficit #HighProtein #HealthoApp
-```
+| # | Food | kcal / 100 g | Key Macro |
+|---|------|-------------|-----------|
+| 1 | Cucumber (raw, with peel) | 15 kcal | 95.2 % water |
+| 2 | Celery (raw) | 14 kcal | 95.4 % water |
+| 3 | Zucchini (raw) | 17 kcal | 94.8 % water |
+| 4 | Iceberg Lettuce | 14 kcal | 95.6 % water |
 
----
-
-## 3. 🐦 X (TWITTER) CAPTION
-
-```
-Chicken breast: 165 kcal & 31g protein per 100g.
-Cucumber: 15 kcal per 100g.
-Black coffee: 2 kcal.
-
-Fat loss is a data problem — not a willpower problem.
-
-Here's the breakdown 🧵⬇️
-
-Save this.
-
-#FatLoss #NutritionData #CalorieDeficit #HealthoApp
-```
+> *Sources: USDA FoodData Central — NDB #11205, #11143, #11477, #11252*
 
 ---
 
+## 1. INSTAGRAM CAPTION
+
+> 🛑 Stop the 3pm hunger crash for good.
+>
+> Most snacking spirals aren't about willpower — they're about eating foods that digest too fast. This carousel breaks down 16 grocery-store staples across four science-backed categories (fiber, protein, healthy fats, and water-dense veggies) with the exact calorie and macro numbers so you can build meals that actually last.
+>
+> 👉 Log every one of these foods in the Healtho app and watch your hunger patterns change in a week. Link in bio.
+>
+> #Healtho #NutritionFacts #HighFiberFoods #ProteinRich #HealthyFats #SatietyScience #MealPlanning #CalorieCounting #StayFullLonger
+
 ---
 
-# 🎨 CANVA PHOTO NOTES
+## 2. TIKTOK CAPTION
+
+> That 3pm crash? It's not a willpower problem — it's a food choice problem. 16 foods with real macros that actually keep you full. Track them on Healtho 👇
+>
+> #Healtho #NutritionTips #StayFull #WhatIEatInADay #HighProtein
+
+---
+
+## 3. X (TWITTER) CAPTION
+
+> The average person's meal is digested in 1–2 hours. These 16 foods buy you 4–6+.
+>
+> Here's the breakdown 🧵👇
+>
+> Save this.
+>
+> #Healtho #NutritionData #SatietyScience #MealPrep
+
+---
+
+## 4. CANVA PHOTO NOTES
 
 ### General Style Direction
-- **Mood:** Clean, bright, editorial — think "grocery haul meets science journal"
-- **Background:** White or light marble / light wood cutting board
-- **Lighting:** Natural daylight, soft shadows, no harsh flash
-- **Layout:** 2×2 grid per slide — each food in its own quadrant with a subtle divider line
-- **Text overlay:** Bold sans-serif food name + calorie badge in bottom-right of each quadrant
+- **Mood:** Clean, bright, editorial kitchen lighting — think overhead daylight on a white or light-marble surface.
+- **Colour palette:** Let the natural food colours pop; no heavy filters. Consistent white/neutral background across all four slides for carousel cohesion.
+- **Layout:** 2×2 grid per slide; thin white border between quadrants. Each quadrant has a small translucent text overlay at the bottom with food name + stats in Healtho brand font.
+
+### Slide 2 — High-Fiber Foods
+| Quadrant | Canva Search Term | Notes |
+|----------|-------------------|-------|
+| Top-L | `"cooked lentils bowl overhead"` | Earthy brown/green lentils in a white bowl |
+| Top-R | `"rolled oats wooden spoon flat lay"` | Dry oats spilling from jar or spoon |
+| Bot-L | `"chia seeds close up white background"` | Dark seeds on marble or small glass jar |
+| Bot-R | `"fresh raspberries white plate overhead"` | Vibrant red, slight dew/mist look |
+
+### Slide 3 — Slow-Digesting Proteins
+| Quadrant | Canva Search Term | Notes |
+|----------|-------------------|-------|
+| Top-L | `"hard boiled eggs halved marble"` | Cross-section showing yolk, clean lighting |
+| Top-R | `"plain Greek yogurt bowl overhead"` | White yogurt, maybe a small drizzle of honey prop (not listed, just styling) |
+| Bot-L | `"sliced grilled chicken breast plate"` | Simple, minimal seasoning visible |
+| Bot-R | `"cottage cheese bowl fresh"` | Creamy white texture, bright shot |
+
+### Slide 4 — Healthy Fats
+| Quadrant | Canva Search Term | Notes |
+|----------|-------------------|-------|
+| Top-L | `"avocado halved green overhead"` | Rich green flesh, pit visible |
+| Top-R | `"raw almonds scattered white background"` | Warm golden-brown tones |
+| Bot-L | `"olive oil pouring spoon glass"` | Golden-green stream, Mediterranean feel |
+| Bot-R | `"natural peanut butter jar spoon"` | Thick, creamy, slightly rustic |
+
+### Slide 5 — Water-Dense Vegetables
+| Quadrant | Canva Search Term | Notes |
+|----------|-------------------|-------|
+| Top-L | `"sliced cucumber white background fresh"` | Bright green cross-sections |
+| Top-R | `"celery stalks cutting board"` | Pale green, crisp, dewy |
+| Bot-L | `"sliced zucchini overhead light"` | Rounds or lengthwise, fresh-cut look |
+| Bot-R | `"iceberg lettuce halved fresh"` | Light green, crunchy texture visible |
 
 ---
 
-### Slide 1 — Title Card
-- **Search:** "flat lay healthy food spread top down bright" or "colourful vegetables and protein on white background"
-- **Alt option:** Solid branded background (Healtho green/white) with bold typography only — no photo needed
-
-### Slide 2 — High-Volume Low-Cal Foods
-| Quadrant | Canva Search Term | Notes |
-|----------|-------------------|-------|
-| Top-left | "sliced cucumber on white background" | Bright green, fresh, dewy |
-| Top-right | "air popped popcorn in white bowl overhead" | Fluffy, no butter, minimal styling |
-| Bottom-left | "sliced zucchini on cutting board natural light" | Raw or lightly grilled, green tones |
-| Bottom-right | "fresh strawberries in white bowl top down" | Vibrant red, stem on, clean |
-
-### Slide 3 — Protein Sources
-| Quadrant | Canva Search Term | Notes |
-|----------|-------------------|-------|
-| Top-left | "grilled chicken breast sliced on white plate" | Lean, no skin, golden grill marks |
-| Top-right | "egg whites in glass bowl bright kitchen" | Clear/white, clean, simple |
-| Bottom-left | "plain greek yogurt in bowl with spoon overhead" | No toppings — plain white, thick texture |
-| Bottom-right | "canned tuna drained in white bowl" | Flaked, minimal, no mayo |
-
-### Slide 4 — Fat-Burning Support Foods
-| Quadrant | Canva Search Term | Notes |
-|----------|-------------------|-------|
-| Top-left | "green tea in glass cup top down natural light" | Warm golden-green liquid, zen-minimal |
-| Top-right | "fresh red chili peppers on white background" | Glossy, vibrant red, 2–3 peppers |
-| Bottom-left | "black coffee in white mug overhead" | Dark rich coffee, no cream, steam optional |
-| Bottom-right | "apple cider vinegar bottle and glass natural light" | Amber liquid, rustic-but-clean feel |
-
-### Slide 5 — Water-Dense Foods
-| Quadrant | Canva Search Term | Notes |
-|----------|-------------------|-------|
-| Top-left | "watermelon slices on white background top down" | Bright pink/red, seeds OK, juicy look |
-| Top-right | "celery sticks on white cutting board" | Pale green, crisp, clean cut |
-| Bottom-left | "iceberg lettuce head sliced bright kitchen" | Crisp, pale green, dewy/fresh |
-| Bottom-right | "fresh red tomatoes sliced on white plate" | Vine-ripe, red, juicy cross-section |
-
-### Slide 6 — CTA Card
-- **Search:** No photo — use Healtho brand template
-- **Elements:** App mockup screenshot, download icon, bold CTA text, @healtho_10k handle
-
----
-
-## ✅ PRE-PUBLISH CHECKLIST
-
-- [ ] All calorie/macro numbers verified against USDA FoodData Central
-- [ ] Popcorn slide includes "per cup" serving callout to avoid confusion with per-100g number
-- [ ] Slide 4 disclaimer present: effects are modest and support (not replace) a deficit
-- [ ] Research citations included on Slide 4 or in caption/alt text
-- [ ] CTA slide links to correct Healtho download / tracking feature
-- [ ] All three platform captions scheduled with correct handles
-- [ ] Hashtags checked for banned/shadowbanned terms on each platform
-- [ ] Image alt text added on Instagram for accessibility
-
----
-
-*Brief prepared for the Healtho content team. All nutritional data sourced from USDA FoodData Central (fdc.nal.usda.gov). Research claims on Slide 4 cite peer-reviewed journals — links available on request.*
+### ✅ Pre-Publish Checklist
+- [ ] All 16 calorie/macro figures cross-verified against current USDA FoodData Central entries
+- [ ] Healtho logo + @handle on every slide
+- [ ] CTA "Track it on Healtho" visible on Slide 1 and Slide 5
+- [ ] Alt-text added for every image (accessibility)
+- [ ] Hashtags within platform limits (IG ≤ 30, TikTok ≤ 5–8, X ≤ 4)
+- [ ] Schedule: IG + TikTok at 11:30 AM local / X at 12:00 PM local (pre-lunch timing = on-theme)
 
 ---
 *Generated by Healtho Content Automation*
