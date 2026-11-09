@@ -1,164 +1,168 @@
 # Healtho Content Brief
-> Generated: 2026-11-02 · Week 45 · Topic 5 of 10
+> Generated: 2026-11-09 · Week 46 · Topic 6 of 10
 
 ---
 
-## Topic: LOWEST CALORIE FOODS ON THE PLANET
+## Topic: MUSCLE BUILDING FOODS
 
 
 
-# HEALTHO POST BRIEF
-
-## 🟢 LOWEST CALORIE FOODS ON THE PLANET
-
-**Hook:** Eat more, weigh less — these foods make it possible.
+# HEALTHO POST BRIEF — MUSCLE BUILDING FOODS
 
 ---
 
-## CAROUSEL CONTENT
+## 📌 POST OVERVIEW
+
+**Title Card (Slide 1):** MUSCLE BUILDING FOODS
+**Hook:** Muscle isn't just built in the gym — it's built in the kitchen.
+**Format:** Carousel (5 slides total — 1 title + 4 category slides)
+**Platforms:** Instagram · TikTok · X
 
 ---
 
-### SLIDE 1 — TITLE CARD
+## 🟩 SLIDE 2 — Complete Proteins
 
-**Headline:** LOWEST CALORIE FOODS ON THE PLANET
-**Subtext:** Eat more, weigh less — these foods make it possible.
-**Design note:** Bold sans-serif type, dark background, scattered fresh vegetable imagery faded behind text. Healtho logo + @healtho_10k bottom-right.
-
----
-
-### SLIDE 2 — CATEGORY 1
-
-**Category:** Under 20 kcal per 100 g — Virtually Zero Calorie Cost
-**Benefit subtitle:** *"These foods cost you almost nothing in your daily budget."*
+**Subtitle:** All 9 essential amino acids your muscles need to grow.
 
 | # | Food | kcal / 100 g | Key Macro |
 |---|------|-------------|-----------|
-| 1 | Cucumber (raw, with peel) | **15 kcal** | 0.7 g protein |
-| 2 | Celery (raw) | **14 kcal** | 0.7 g fiber |
-| 3 | Iceberg Lettuce (raw) | **14 kcal** | 1.2 g fiber |
-| 4 | Radishes (raw) | **16 kcal** | 1.6 g fiber |
+| 1 | Chicken Breast (skinless, cooked) | 165 kcal | 31 g protein |
+| 2 | Whole Eggs (hard-boiled) | 155 kcal | 13 g protein |
+| 3 | Quinoa (cooked) | 120 kcal | 4.4 g protein (complete plant source) |
+| 4 | Greek Yogurt (plain, nonfat) | 59 kcal | 10 g protein |
 
-> *Source: USDA FoodData Central*
+> *Data sourced from USDA FoodData Central*
 
 ---
 
-### SLIDE 3 — CATEGORY 2
+## 🟦 SLIDE 3 — Fast-Digesting Proteins
 
-**Category:** Under 30 kcal per 100 g — High Water, High Volume
-**Benefit subtitle:** *"Mostly water, maximum fullness."*
+**Subtitle:** Ideal for the 30–60 min post-workout window.
 
 | # | Food | kcal / 100 g | Key Macro |
 |---|------|-------------|-----------|
-| 1 | Zucchini (raw) | **17 kcal** | 1.0 g fiber |
-| 2 | Tomatoes (red, raw) | **18 kcal** | 0.9 g protein |
-| 3 | Spinach (raw) | **23 kcal** | 2.9 g protein |
-| 4 | Cauliflower (raw) | **25 kcal** | 2.0 g fiber |
+| 1 | Whey Protein Powder (unflavored) | 352 kcal | 80 g protein |
+| 2 | Egg Whites (cooked) | 52 kcal | 11 g protein |
+| 3 | Low-Fat Cottage Cheese (1% milkfat) | 72 kcal | 12 g protein |
+| 4 | Shrimp (cooked) | 99 kcal | 24 g protein |
 
-> *Source: USDA FoodData Central*
+> *Data sourced from USDA FoodData Central*
 
 ---
 
-### SLIDE 4 — CATEGORY 3
+## 🟨 SLIDE 4 — Complex Carb Sources
 
-**Category:** Under 50 kcal per 100 g — Nutrient-Dense & Filling
-**Benefit subtitle:** *"Real vitamins, real minerals, real volume."*
+**Subtitle:** Sustained energy to fuel workouts and recovery.
 
 | # | Food | kcal / 100 g | Key Macro |
 |---|------|-------------|-----------|
-| 1 | Broccoli (raw) | **34 kcal** | 2.8 g protein |
-| 2 | Carrots (raw) | **41 kcal** | 2.8 g fiber |
-| 3 | Strawberries (raw) | **32 kcal** | 2.0 g fiber |
-| 4 | Grapefruit (raw, pink/red) | **42 kcal** | 1.6 g fiber |
+| 1 | Sweet Potato (baked, flesh only) | 90 kcal | 20.7 g carbs |
+| 2 | Rolled Oats (dry) | 379 kcal | 67.7 g carbs |
+| 3 | Brown Rice (cooked) | 123 kcal | 25.6 g carbs |
+| 4 | Banana (raw) | 89 kcal | 22.8 g carbs |
 
-> *Source: USDA FoodData Central*
+> *Data sourced from USDA FoodData Central*
 
 ---
 
-### SLIDE 5 — CATEGORY 4
+## 🟥 SLIDE 5 — Recovery Foods
 
-**Category:** High-Volume Snack Options — Satisfies Cravings Guilt-Free
-**Benefit subtitle:** *"Swap the chips. Keep the crunch."*
+**Subtitle:** Reduces soreness and fights inflammation.
 
 | # | Food | kcal / 100 g | Key Macro |
 |---|------|-------------|-----------|
-| 1 | Plain Air-Popped Popcorn | **387 kcal / 100 g** (but only **31 kcal per cup / ~8 g**) | 1.0 g fiber per cup |
-| 2 | Watermelon (raw) | **30 kcal** | 0.6 g protein |
-| 3 | Sugar Snap Peas (raw) | **42 kcal** | 2.6 g fiber |
-| 4 | Pickles (dill, cucumber) | **11 kcal** | 1.2 g fiber |
+| 1 | Tart Cherry Juice (unsweetened) | 50 kcal | 12.2 g carbs (rich in anthocyanins) |
+| 2 | Wild Salmon (cooked) | 182 kcal | 2.6 g omega-3 fatty acids |
+| 3 | Blueberries (raw) | 57 kcal | 14.5 g carbs (high antioxidants) |
+| 4 | Spinach (raw) | 23 kcal | 2.9 g protein + 558 μg iron-supportive vitamin K |
 
-> *Source: USDA FoodData Central. Popcorn displayed per cup to reflect real snacking portion.*
-
----
-
-## PLATFORM CAPTIONS
+> *Data sourced from USDA FoodData Central*
 
 ---
 
-### 1. INSTAGRAM CAPTION
-
-> **Eat more, weigh less — these foods make it possible.** 🥒🍉
->
-> Not all calories are created equal. Some foods are so low in energy density that you can eat massive portions and barely dent your daily budget. We pulled the real numbers from the USDA database — no guessing, no rounding up — so you can see exactly what "volume eating" actually looks like.
->
-> Slide through for 16 foods under 50 kcal per 100 g, including snack swaps that actually satisfy.
->
-> 📲 **Track every one of these in the Healtho app** — scan, log, and see how much more you can eat when you choose smarter. Link in bio.
->
-> `#HealthoApp` `#VolumeEating` `#LowCalorieFoods` `#CalorieDeficit` `#MacroTracking` `#HealthyGroceryHaul` `#WeightLossTips` `#NutritionFacts` `#EatMoreWeighLess`
+## 📱 PLATFORM CAPTIONS
 
 ---
 
-### 2. TIKTOK CAPTION
+### 1. INSTAGRAM CAPTION — @healtho_10k
 
-> Eat more, weigh less? These 16 foods make it possible 🥒🔥 Real calorie counts, no fluff. Track them all on Healtho — link in bio 📲
+> Muscle isn't just built in the gym — it's built in the kitchen. 🍳🔥
 >
-> `#VolumeEating` `#LowCalorieFoods` `#CalorieDeficit` `#HealthoApp` `#WhatIEatInADay`
+> These 16 grocery-store foods cover every phase of muscle growth: complete proteins for synthesis, fast-digesting proteins for your post-workout window, complex carbs to fuel performance, and recovery foods to crush inflammation and soreness. Every food here comes with real kcal and macro numbers — no guesswork.
+>
+> Want to track all of these in one tap? Download Healtho and start logging your muscle-building meals today. Link in bio. 💪📲
+>
+> #MuscleBuilding #HighProtein #PostWorkoutMeal #MealPrep #NutritionFacts #GymFood #ProteinRich #HealthoApp #TrackYourMacros
 
 ---
 
-### 3. X (TWITTER) CAPTION
+### 2. TIKTOK CAPTION — @healtho_10k
 
-> Cucumber: 15 kcal per 100 g.
-> Celery: 14 kcal per 100 g.
-> Pickles: 11 kcal per 100 g.
+> Muscle isn't just built in the gym — it's built in the kitchen. 🍗💪 Here are 16 foods with REAL macro numbers to build, fuel, and recover. Track them all on Healtho 📲
 >
-> Some foods are basically free in your calorie budget.
+> #MuscleBuilding #GymTok #HighProtein #MealPrep #Healtho
+
+---
+
+### 3. X CAPTION — @HealthO_10k
+
+> Chicken breast: 165 kcal, 31 g protein per 100 g.
+> Wild salmon: 182 kcal, 2.6 g omega-3s.
+> Sweet potato: 90 kcal, 20.7 g carbs.
+>
+> Muscle isn't just built in the gym — it's built in the kitchen.
 >
 > Here's the breakdown 🧵👇
 >
 > Save this.
 >
-> `#VolumeEating` `#CalorieDeficit` `#NutritionData` `#HealthoApp`
+> #MuscleBuilding #HighProtein #MacroTracking #Healtho
 
 ---
 
-## CANVA PHOTO NOTES
+## 🎨 CANVA PHOTO NOTES
 
-| Slide | Search Terms & Style Direction |
-|-------|-------------------------------|
-| **Slide 1 (Title)** | Search: *"fresh vegetables dark background flat lay"* — moody, high-contrast, editorial food photography. Dark slate/black surface. A scattering of cucumber slices, celery sticks, radishes, and spinach leaves as background texture. Bold white or neon-green title text overlaid. |
-| **Slide 2 (Under 20 kcal)** | **Top-left:** *"cucumber slices white background"* — clean, bright, minimal. **Top-right:** *"celery sticks close up"* — crisp green, natural light. **Bottom-left:** *"iceberg lettuce head cut"* — light green, dewy. **Bottom-right:** *"fresh red radishes bunch"* — pop of red/magenta for contrast. Consistent white or light-grey backgrounds across all four. |
-| **Slide 3 (Under 30 kcal)** | **Top-left:** *"sliced zucchini wooden board"* — warm tones, rustic. **Top-right:** *"ripe red tomatoes vine"* — vibrant red, natural light, slight depth of field. **Bottom-left:** *"fresh spinach leaves bowl"* — deep green, overhead shot. **Bottom-right:** *"cauliflower florets white surface"* — bright, clean, almost monochrome. Aim for a natural-light, farmers-market feel. |
-| **Slide 4 (Under 50 kcal)** | **Top-left:** *"broccoli florets close up green"* — tight macro shot, vivid green. **Top-right:** *"whole carrots orange rustic"* — earthy, orange pop. **Bottom-left:** *"fresh strawberries red close up"* — bright red, juicy, seeds visible. **Bottom-right:** *"grapefruit half pink cross section"* — citrus pink/coral, overhead. Mix of warm and cool tones to create visual variety. |
-| **Slide 5 (Snacks)** | **Top-left:** *"air popped popcorn bowl overhead"* — white popcorn in a dark bowl for contrast. **Top-right:** *"watermelon slices triangles"* — bright pink/red flesh, green rind, summery. **Bottom-left:** *"sugar snap peas pile green"* — vibrant, crunchy, fresh. **Bottom-right:** *"dill pickles jar spears"* — green pickles, maybe a mason jar, rustic vibe. Overall: playful, snack-y energy — brighter and more casual than previous slides. |
+### Slide 1 — Title Card
+- **Search terms:** gym kitchen flat lay, protein foods dark background, dumbbells and meal prep
+- **Style:** Bold, dark/moody background (charcoal or deep navy). Large white sans-serif title text. Subtle food imagery or gym texture in background. Brand logo bottom-right.
+- **Mood:** Strong, clean, authoritative
 
-**General Canva guidelines:**
-- Consistent rounded-corner photo frames across all 2×2 grids.
-- Each food photo has a small white or green overlay bar at the bottom with: **Food Name · XX kcal / 100 g**.
-- Use Healtho brand green (#00C853 or equivalent) for accent elements.
-- Bottom of every slide: *"Track it on Healtho 📲"* in small type + logo.
-- Aspect ratio: **1080 × 1080 px** (Instagram square carousel).
+### Slide 2 — Complete Proteins
+- **Search terms:** raw chicken breast on cutting board · whole eggs in bowl overhead · quinoa in white bowl styled · Greek yogurt glass jar spoon
+- **Style:** Bright, clean, natural-light food photography. White or light marble backgrounds. Overhead/flat-lay angle.
+- **Mood:** Fresh, wholesome, kitchen-ready
+- **Colour palette:** Warm whites, golden tones, neutral creams
+
+### Slide 3 — Fast-Digesting Proteins
+- **Search terms:** whey protein scoop in shaker · egg whites in glass bowl · cottage cheese wooden spoon · cooked shrimp plate lemon
+- **Style:** Slightly more energetic. Clean backgrounds but allow a pop of colour (pink shrimp, white powder). Post-workout vibe — gym towel or shaker bottle as subtle prop.
+- **Mood:** Quick, efficient, performance-driven
+- **Colour palette:** Clean whites, soft pinks, cool greys
+
+### Slide 4 — Complex Carb Sources
+- **Search terms:** baked sweet potato sliced · rolled oats in jar · brown rice steamed bowl · banana bunch rustic table
+- **Style:** Warm, earthy tones. Wooden surfaces, rustic linen. Natural-light, slightly lifestyle-oriented.
+- **Mood:** Grounded, energising, earthy
+- **Colour palette:** Warm oranges, golden yellows, natural browns
+
+### Slide 5 — Recovery Foods
+- **Search terms:** tart cherry juice glass bottle · grilled salmon fillet herbs · blueberries in ceramic bowl · fresh spinach leaves colander
+- **Style:** Rich, vibrant colours — deep reds, ocean pinks, deep blues, vivid greens. Clean plate styling with herbs or linen accents. Slight cool-tone edit.
+- **Mood:** Restorative, anti-inflammatory, calm strength
+- **Colour palette:** Deep ruby, salmon pink, indigo blue, forest green
 
 ---
 
-## DATA INTEGRITY NOTE
+### ✅ GENERAL DESIGN NOTES
 
-All calorie and macronutrient values sourced from **USDA FoodData Central (fdc.nal.usda.gov)**, referencing standard raw/uncooked entries. Values may vary slightly by cultivar, season, and preparation method. Popcorn is air-popped with no added fat or salt; per-cup figure based on USDA serving weight of ~8 g. No values were approximated or fabricated.
+- **All slides:** Use a consistent 2×2 photo grid layout with thin white or dark dividers between quadrants.
+- **Overlay text:** Food name, kcal, and key macro in a semi-transparent pill/badge overlay on each food photo. Font: clean sans-serif (e.g., Montserrat Bold or similar).
+- **Brand watermark:** Healtho logo + @healtho_10k handle on every slide, bottom-right corner.
+- **Consistency:** Keep border radius, text size, and badge placement identical across all four category slides for swipe cohesion.
 
 ---
 
-*Brief prepared for the Healtho content team · @healtho_10k across all platforms.*
+*All nutritional values referenced from USDA FoodData Central. Verify final numbers before publishing if sourcing updated entries.*
 
 ---
 *Generated by Healtho Content Automation*
