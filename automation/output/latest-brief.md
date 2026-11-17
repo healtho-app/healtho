@@ -1,168 +1,169 @@
 # Healtho Content Brief
-> Generated: 2026-11-09 · Week 46 · Topic 6 of 10
+> Generated: 2026-11-17 · Week 47 · Topic 7 of 10
 
 ---
 
-## Topic: MUSCLE BUILDING FOODS
+## Topic: FOODS TO EAT FOR BETTER SLEEP
 
 
 
-# HEALTHO POST BRIEF — MUSCLE BUILDING FOODS
+# 📋 POST BRIEF: FOODS TO EAT FOR BETTER SLEEP
 
----
-
-## 📌 POST OVERVIEW
-
-**Title Card (Slide 1):** MUSCLE BUILDING FOODS
-**Hook:** Muscle isn't just built in the gym — it's built in the kitchen.
-**Format:** Carousel (5 slides total — 1 title + 4 category slides)
-**Platforms:** Instagram · TikTok · X
+**Campaign:** Sleep × Nutrition Series
+**Platforms:** Instagram @healtho_10k · TikTok @healtho_10k · X @HealthO_10k
+**Format:** Carousel (5 slides — 1 title + 4 category grids)
 
 ---
 
-## 🟩 SLIDE 2 — Complete Proteins
+## 🎨 SLIDE 1 — TITLE CARD
 
-**Subtitle:** All 9 essential amino acids your muscles need to grow.
-
-| # | Food | kcal / 100 g | Key Macro |
-|---|------|-------------|-----------|
-| 1 | Chicken Breast (skinless, cooked) | 165 kcal | 31 g protein |
-| 2 | Whole Eggs (hard-boiled) | 155 kcal | 13 g protein |
-| 3 | Quinoa (cooked) | 120 kcal | 4.4 g protein (complete plant source) |
-| 4 | Greek Yogurt (plain, nonfat) | 59 kcal | 10 g protein |
-
-> *Data sourced from USDA FoodData Central*
+**Headline:** FOODS TO EAT FOR BETTER SLEEP
+**Subline:** Bad sleep is often a nutrition problem in disguise.
+**Footer:** Swipe → to see the data | @healtho_10k
 
 ---
 
-## 🟦 SLIDE 3 — Fast-Digesting Proteins
+## 🟢 SLIDE 2 — MELATONIN-RICH FOODS
 
-**Subtitle:** Ideal for the 30–60 min post-workout window.
+**Subtitle:** *Triggers your body's natural sleep signals*
 
-| # | Food | kcal / 100 g | Key Macro |
-|---|------|-------------|-----------|
-| 1 | Whey Protein Powder (unflavored) | 352 kcal | 80 g protein |
-| 2 | Egg Whites (cooked) | 52 kcal | 11 g protein |
-| 3 | Low-Fat Cottage Cheese (1% milkfat) | 72 kcal | 12 g protein |
-| 4 | Shrimp (cooked) | 99 kcal | 24 g protein |
+| # | Food | Kcal per 100 g | Key Macro |
+|---|------|-----------------|-----------|
+| 1 | **Tart Cherry Juice (unsweetened)** | 50 kcal | 12.2 g carbs |
+| 2 | **Pistachios (raw)** | 560 kcal | 20.2 g protein |
+| 3 | **Goji Berries (dried)** | 349 kcal | 14.3 g protein |
+| 4 | **Rolled Oats (dry)** | 379 kcal | 13.2 g protein |
 
-> *Data sourced from USDA FoodData Central*
-
----
-
-## 🟨 SLIDE 4 — Complex Carb Sources
-
-**Subtitle:** Sustained energy to fuel workouts and recovery.
-
-| # | Food | kcal / 100 g | Key Macro |
-|---|------|-------------|-----------|
-| 1 | Sweet Potato (baked, flesh only) | 90 kcal | 20.7 g carbs |
-| 2 | Rolled Oats (dry) | 379 kcal | 67.7 g carbs |
-| 3 | Brown Rice (cooked) | 123 kcal | 25.6 g carbs |
-| 4 | Banana (raw) | 89 kcal | 22.8 g carbs |
-
-> *Data sourced from USDA FoodData Central*
+> *Why it matters:* These foods contain naturally occurring melatonin — the hormone your brain produces to signal "time to sleep." Eating them 1–2 hours before bed can support your circadian rhythm without supplements.
 
 ---
 
-## 🟥 SLIDE 5 — Recovery Foods
+## 🔵 SLIDE 3 — MAGNESIUM-RICH FOODS
 
-**Subtitle:** Reduces soreness and fights inflammation.
+**Subtitle:** *Relaxes muscles and calms the nervous system*
 
-| # | Food | kcal / 100 g | Key Macro |
-|---|------|-------------|-----------|
-| 1 | Tart Cherry Juice (unsweetened) | 50 kcal | 12.2 g carbs (rich in anthocyanins) |
-| 2 | Wild Salmon (cooked) | 182 kcal | 2.6 g omega-3 fatty acids |
-| 3 | Blueberries (raw) | 57 kcal | 14.5 g carbs (high antioxidants) |
-| 4 | Spinach (raw) | 23 kcal | 2.9 g protein + 558 μg iron-supportive vitamin K |
+| # | Food | Kcal per 100 g | Key Macro |
+|---|------|-----------------|-----------|
+| 1 | **Pumpkin Seeds (raw)** | 559 kcal | 30.2 g protein |
+| 2 | **Dark Chocolate (70–85% cacao)** | 598 kcal | 7.8 g protein |
+| 3 | **Spinach (raw)** | 23 kcal | 2.9 g protein |
+| 4 | **Black Beans (boiled)** | 132 kcal | 8.9 g protein |
 
-> *Data sourced from USDA FoodData Central*
-
----
-
-## 📱 PLATFORM CAPTIONS
+> *Why it matters:* Magnesium activates the parasympathetic nervous system — your "rest and digest" mode. Low magnesium is linked to restless sleep and nighttime waking.
 
 ---
 
-### 1. INSTAGRAM CAPTION — @healtho_10k
+## 🟣 SLIDE 4 — TRYPTOPHAN SOURCES
 
-> Muscle isn't just built in the gym — it's built in the kitchen. 🍳🔥
+**Subtitle:** *Precursor to serotonin & melatonin production*
+
+| # | Food | Kcal per 100 g | Key Macro |
+|---|------|-----------------|-----------|
+| 1 | **Turkey Breast (roasted)** | 135 kcal | 30.1 g protein |
+| 2 | **Eggs (whole, hard-boiled)** | 155 kcal | 12.6 g protein |
+| 3 | **Cottage Cheese (2% fat)** | 84 kcal | 11.8 g protein |
+| 4 | **Banana (raw)** | 89 kcal | 1.1 g protein · 22.8 g carbs |
+
+> *Why it matters:* Tryptophan is an essential amino acid your body converts into serotonin, then melatonin. Pairing tryptophan foods with a small carb source (like banana or oats) helps it cross the blood-brain barrier more efficiently.
+
+---
+
+## 🔴 SLIDE 5 — FOODS TO AVOID AT NIGHT
+
+**Subtitle:** *These disrupt deep sleep cycles*
+
+| # | Food | Kcal per 100 g | Disruption Factor |
+|---|------|-----------------|-------------------|
+| 1 | **Coffee (brewed, black)** | 2 kcal | ~95 mg caffeine per 240 ml — blocks adenosine receptors for up to 6 hours |
+| 2 | **Milk Chocolate** | 535 kcal | ~20 mg caffeine + 43.4 g sugar per 100 g — spikes blood sugar before bed |
+| 3 | **Hot Sauce / Spicy Peppers** | 11 kcal | Capsaicin raises core body temperature — directly opposes the cooling your body needs to initiate sleep |
+| 4 | **Pepperoni Pizza (frozen, prepared)** | 266 kcal | 10.1 g saturated fat — high-fat meals delay gastric emptying and reduce sleep efficiency |
+
+> *Why it matters:* Caffeine, excess sugar, capsaicin, and high saturated fat close to bedtime independently reduce time spent in deep and REM sleep stages.
+
+---
+
+## 📸 1 — INSTAGRAM CAPTION
+
+> Bad sleep is often a nutrition problem in disguise.
 >
-> These 16 grocery-store foods cover every phase of muscle growth: complete proteins for synthesis, fast-digesting proteins for your post-workout window, complex carbs to fuel performance, and recovery foods to crush inflammation and soreness. Every food here comes with real kcal and macro numbers — no guesswork.
+> Before you blame your mattress or your screen time, look at your plate. Research shows that specific nutrients — melatonin, magnesium, and tryptophan — directly influence how fast you fall asleep, how deep you stay, and how rested you wake up. The best part? You don't need supplements. These are all grocery-store foods you can add to your evening routine tonight.
 >
-> Want to track all of these in one tap? Download Healtho and start logging your muscle-building meals today. Link in bio. 💪📲
+> 👉 Track your evening meals on **Healtho** and start connecting what you eat to how you sleep. Download free — link in bio.
 >
-> #MuscleBuilding #HighProtein #PostWorkoutMeal #MealPrep #NutritionFacts #GymFood #ProteinRich #HealthoApp #TrackYourMacros
+> #SleepBetter #NutritionTips #HealthyEating #SleepHacks #FoodIsMedicine #HealthoApp #MacroTracking #MealPlanning #WholeFoods
 
 ---
 
-### 2. TIKTOK CAPTION — @healtho_10k
+## 🎵 2 — TIKTOK CAPTION
 
-> Muscle isn't just built in the gym — it's built in the kitchen. 🍗💪 Here are 16 foods with REAL macro numbers to build, fuel, and recover. Track them all on Healtho 📲
+> Bad sleep? It might be a nutrition problem 🧠🌙
 >
-> #MuscleBuilding #GymTok #HighProtein #MealPrep #Healtho
+> These 12 foods help you fall asleep faster — and 4 foods you need to cut after 6pm. Save this for your next grocery run. Track it all on Healtho 👇
+>
+> #SleepHacks #NutritionTok #HealthyEating #FoodScience #Healtho
 
 ---
 
-### 3. X CAPTION — @HealthO_10k
+## 🐦 3 — X (TWITTER) CAPTION
 
-> Chicken breast: 165 kcal, 31 g protein per 100 g.
-> Wild salmon: 182 kcal, 2.6 g omega-3s.
-> Sweet potato: 90 kcal, 20.7 g carbs.
+> 73% of adults don't get enough magnesium — and it's wrecking their sleep.
 >
-> Muscle isn't just built in the gym — it's built in the kitchen.
->
-> Here's the breakdown 🧵👇
+> Here's the breakdown of 16 foods that fix (or ruin) your sleep, with real calorie + macro data 🧵
 >
 > Save this.
 >
-> #MuscleBuilding #HighProtein #MacroTracking #Healtho
+> #SleepScience #NutritionData #HealthoApp #Macros
 
 ---
 
-## 🎨 CANVA PHOTO NOTES
+## 🖼️ 4 — CANVA PHOTO NOTES
 
 ### Slide 1 — Title Card
-- **Search terms:** gym kitchen flat lay, protein foods dark background, dumbbells and meal prep
-- **Style:** Bold, dark/moody background (charcoal or deep navy). Large white sans-serif title text. Subtle food imagery or gym texture in background. Brand logo bottom-right.
-- **Mood:** Strong, clean, authoritative
+- **Background:** Deep navy or midnight blue gradient
+- **Accent:** Soft moonlight yellow for headline text
+- **Imagery:** Subtle crescent moon icon or pillow/zzz motif — keep it clean and data-forward, not "spa vibes"
+- **Logo:** @healtho_10k bottom-centre, white
 
-### Slide 2 — Complete Proteins
-- **Search terms:** raw chicken breast on cutting board · whole eggs in bowl overhead · quinoa in white bowl styled · Greek yogurt glass jar spoon
-- **Style:** Bright, clean, natural-light food photography. White or light marble backgrounds. Overhead/flat-lay angle.
-- **Mood:** Fresh, wholesome, kitchen-ready
-- **Colour palette:** Warm whites, golden tones, neutral creams
+### Slide 2 — Melatonin-Rich Foods (2×2 Grid)
+- **Search terms:** `tart cherry juice glass dark background`, `raw pistachios white bowl overhead`, `dried goji berries wooden spoon`, `rolled oats bowl rustic`
+- **Mood:** Warm, evening-toned — amber lighting, dark wood or slate surfaces
+- **Style:** Flat lay, single-ingredient hero shots, natural light or warm tungsten
 
-### Slide 3 — Fast-Digesting Proteins
-- **Search terms:** whey protein scoop in shaker · egg whites in glass bowl · cottage cheese wooden spoon · cooked shrimp plate lemon
-- **Style:** Slightly more energetic. Clean backgrounds but allow a pop of colour (pink shrimp, white powder). Post-workout vibe — gym towel or shaker bottle as subtle prop.
-- **Mood:** Quick, efficient, performance-driven
-- **Colour palette:** Clean whites, soft pinks, cool greys
+### Slide 3 — Magnesium-Rich Foods (2×2 Grid)
+- **Search terms:** `pumpkin seeds scattered dark slate`, `dark chocolate squares broken close-up`, `fresh spinach leaves bowl top-down`, `black beans cooked white bowl`
+- **Mood:** Rich and earthy — deep greens, browns, dark chocolate tones
+- **Style:** Close-up texture shots, moody food photography, shallow depth of field
 
-### Slide 4 — Complex Carb Sources
-- **Search terms:** baked sweet potato sliced · rolled oats in jar · brown rice steamed bowl · banana bunch rustic table
-- **Style:** Warm, earthy tones. Wooden surfaces, rustic linen. Natural-light, slightly lifestyle-oriented.
-- **Mood:** Grounded, energising, earthy
-- **Colour palette:** Warm oranges, golden yellows, natural browns
+### Slide 4 — Tryptophan Sources (2×2 Grid)
+- **Search terms:** `sliced turkey breast plate clean`, `hard boiled eggs halved marble surface`, `cottage cheese small bowl spoon`, `banana whole and sliced light background`
+- **Mood:** Clean and bright but soft — think late-afternoon kitchen light
+- **Style:** Minimal props, white/neutral backgrounds, high contrast with soft shadows
 
-### Slide 5 — Recovery Foods
-- **Search terms:** tart cherry juice glass bottle · grilled salmon fillet herbs · blueberries in ceramic bowl · fresh spinach leaves colander
-- **Style:** Rich, vibrant colours — deep reds, ocean pinks, deep blues, vivid greens. Clean plate styling with herbs or linen accents. Slight cool-tone edit.
-- **Mood:** Restorative, anti-inflammatory, calm strength
-- **Colour palette:** Deep ruby, salmon pink, indigo blue, forest green
+### Slide 5 — Foods to Avoid at Night (2×2 Grid)
+- **Search terms:** `black coffee cup dark background steam`, `milk chocolate bar unwrapped`, `hot sauce bottle red peppers`, `frozen pepperoni pizza close-up`
+- **Mood:** Red-tinted caution energy — use a subtle red overlay or red accent borders to signal "avoid"
+- **Style:** Still appetizing photography (not demonizing) but framed with ❌ or 🚫 icon overlays in the corner of each quadrant
 
----
-
-### ✅ GENERAL DESIGN NOTES
-
-- **All slides:** Use a consistent 2×2 photo grid layout with thin white or dark dividers between quadrants.
-- **Overlay text:** Food name, kcal, and key macro in a semi-transparent pill/badge overlay on each food photo. Font: clean sans-serif (e.g., Montserrat Bold or similar).
-- **Brand watermark:** Healtho logo + @healtho_10k handle on every slide, bottom-right corner.
-- **Consistency:** Keep border radius, text size, and badge placement identical across all four category slides for swipe cohesion.
+### Typography Across All Slides
+- **Font pairing:** Bold sans-serif headline (e.g., Montserrat Bold) + clean body text (e.g., Inter or DM Sans)
+- **Data callouts:** Kcal and macro numbers in a contrasting pill/badge shape for scanability
+- **Colour coding:** Green badge = eat · Red badge = avoid
 
 ---
 
-*All nutritional values referenced from USDA FoodData Central. Verify final numbers before publishing if sourcing updated entries.*
+## ✅ PRE-PUBLISH CHECKLIST
+
+- [ ] All calorie and macro values cross-referenced with USDA FoodData Central
+- [ ] No supplement or pharmaceutical claims — food only
+- [ ] CTA in every caption routes to Healtho app download
+- [ ] Alt-text written for accessibility on Instagram
+- [ ] Slide aspect ratio: 1080 × 1080 px (Instagram square carousel)
+- [ ] TikTok version: consider animating slides as 9:16 slideshow with voiceover
+
+---
+
+*Brief prepared for Healtho content team. Nutritional data sourced from USDA FoodData Central. Verify all values before final design.*
 
 ---
 *Generated by Healtho Content Automation*
